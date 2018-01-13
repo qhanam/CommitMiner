@@ -25,6 +25,21 @@
 			<artifactId>args4j</artifactId>
 			<version>2.33</version>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-core</artifactId>
+			<version>2.10.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.eclipse.jgit</groupId>
+			<artifactId>org.eclipse.jgit</artifactId>
+			<version>4.10.0.201712302008-r</version>
+		</dependency>
+		<dependency>
+			<groupId>org.kohsuke</groupId>
+			<artifactId>github-api</artifactId>
+			<version>1.90</version>
+		</dependency>
 	</dependencies>
 
 </project>
