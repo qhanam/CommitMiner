@@ -15,6 +15,7 @@ public class MiningDomainAnalysisFactory implements IDomainAnalysisFactory {
 
 	public MiningDomainAnalysisFactory(List<IASTVisitorFactory> astVisitorFactories, ICFGFactory cfgFactory) {
 		this.astVisitorFactories = astVisitorFactories;
+		this.cfgFactory = cfgFactory;
 	}
 
 	@Override

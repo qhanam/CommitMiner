@@ -37,12 +37,20 @@ public class MiningDomainAnalysis extends DomainAnalysis {
 	 * @param dstAnalysisClass The analysis to run on the repaired file.
 	 */
 	protected void analyzeFile(SourceCodeFileChange sourceCodeFileChange) throws Exception {
-
+		
+		System.out.println(sourceCodeFileChange.repairedFile);
+		
 		/* Get the file extension. */
 		String fileExtension = getSourceCodeFileExtension(sourceCodeFileChange.buggyFile, sourceCodeFileChange.repairedFile);
 
 		/* Difference the files and analyze if they are an extension we handle. */
 		if(fileExtension != null && cfgFactory.acceptsExtension(fileExtension)) {
+			
+			/* Abort on large files. */
+			if(sourceCodeFileChange.repairedCode.length() > 200000) {
+				System.err.println("File too large (> 200,000 characters)");
+				return;
+			}
 
 			/* AST-diff the files. */
 			Diff diff = null;
@@ -75,6 +83,7 @@ public class MiningDomainAnalysis extends DomainAnalysis {
 			analyzeAST(sourceCodeFileChange, diffContext);
 
 		}
+
 
 	}
 

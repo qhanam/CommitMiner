@@ -103,6 +103,7 @@ public class Diff {
 	 */
 	public static DiffContext setup(ICFGFactory cfgFactory, DiffOptions options, String srcSourceCode, String dstSourceCode) throws Exception {
 
+
         /* Create the abstract GumTree representations of the ASTs. */
         TreeContext src = null;
         TreeContext dst = null;
@@ -128,7 +129,7 @@ public class Diff {
 		ClassifiedASTNode srcRoot = src.getRoot().getClassifiedASTNode();
 		ClassifiedASTNode dstRoot = dst.getRoot().getClassifiedASTNode();
 		return new DiffContext(srcRoot, dstRoot, srcCFGs, dstCFGs);
-
+		
 	}
 	
 	/**
@@ -220,7 +221,9 @@ public class Diff {
 	 */
 	private static Matcher matchTreeNodes(ITree src, ITree dst) {
 		Matcher matcher = Matchers.getInstance().getMatcher(src, dst);
+				System.out.println("Before");
 		matcher.match();
+				System.out.println("After");
 		return matcher;
 	}
 

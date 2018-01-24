@@ -118,6 +118,12 @@ public class GitProjectAnalysis extends GitProject {
 		/* Iterate through the modified files and add them as
 		 * {@code SourceCodeFileChange}s in the commit. */
 		for(DiffEntry diff : diffs) {
+			
+			/* Skip files in dist folder. */
+			if (diff.getOldPath().matches("^.*/dist/.*$") || diff.getNewPath().matches("^.*/dist/.*$")) {
+				logger.info("[SKIP_FILE] dist file: " + diff.getOldPath());
+				continue;
+			}
 
 			/* Skip jquery files. */
 			if (diff.getOldPath().matches("^.*jquery.*$") || diff.getNewPath().matches("^.*jquery.*$")) {
@@ -159,11 +165,15 @@ public class GitProjectAnalysis extends GitProject {
 			CommitAnalysis commitAnalysis = commitAnalysisFactory.newInstance();
 
 			/* Run the analysis with GumTree diff. */
+			System.out.println(commit.url + "/commit/" + commit.repairedCommitID);
 			commitAnalysis.analyze(commit);
 			for(SourceCodeFileChange fileChange : commit.sourceCodeFileChanges)
 				annotations.put(fileChange, AnnotationFactBase.getInstance(fileChange));
 
 			/* TODO: Do something with the annotations. */
+			for(SourceCodeFileChange fileChange : commit.sourceCodeFileChanges)
+				AnnotationFactBase.getInstance(fileChange).printDataSet();
+
 			
 		}
 		catch(Exception ignore) {
