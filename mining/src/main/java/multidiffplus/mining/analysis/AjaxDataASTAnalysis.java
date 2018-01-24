@@ -14,6 +14,9 @@ import multidiffplus.commit.DependencyIdentifier;
 import multidiffplus.commit.SourceCodeFileChange;
 
 public class AjaxDataASTAnalysis implements NodeVisitor {
+	
+	/** The root node being visited. **/
+	AstNode root;
 
 	/** Register facts here. */
 	AnnotationFactBase factBase;
@@ -22,8 +25,9 @@ public class AjaxDataASTAnalysis implements NodeVisitor {
 	 * @param sourceCodeFileChange used to look up the correct dataset for
 	 * storing facts.
 	 */
-	public AjaxDataASTAnalysis(SourceCodeFileChange sourceCodeFileChange) {
+	public AjaxDataASTAnalysis(SourceCodeFileChange sourceCodeFileChange, AstNode root) {
 		this.factBase = AnnotationFactBase.getInstance(sourceCodeFileChange);
+		this.root = root;
 	}
 
 	@Override
@@ -32,9 +36,11 @@ public class AjaxDataASTAnalysis implements NodeVisitor {
 		/* Stop on function declarations & investigate call sites. */
 		switch(node.getType()) {
 		case Token.FUNCTION:
-			return false;
+			if(node != root) return false;
+			break;
 		case Token.CALL:
 			visitFunctionCall((FunctionCall)node);
+			break;
 		}
 		
 		/* Recursively search for AST analysis. */
@@ -49,12 +55,11 @@ public class AjaxDataASTAnalysis implements NodeVisitor {
 
 		/* Is this a call to $.ajax? */
 		AstNode target = call.getTarget();
-		if(target.toSource().equals("$.ajax")
-				|| target.toSource().equals("jQuery.ajax")) {
+		if(target.toSource().equals("$.ajax") || target.toSource().equals("jQuery.ajax")) {
 			
 			/* Has the call been updated? */
-			if(target.getChangeType() == ChangeType.UPDATED) {
-
+			if(call.getChangeType() == ChangeType.UPDATED) {
+				
 				/* Register an annotation with the fact database. */
 				Annotation annotation = new Annotation("AJAX", 
 						new LinkedList<DependencyIdentifier>(), 

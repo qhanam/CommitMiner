@@ -125,6 +125,12 @@ public class GitProjectAnalysis extends GitProject {
 				continue;
 			}
 
+			/* Skip files in lib folder. */
+			if (diff.getOldPath().matches("^.*/lib/.*$") || diff.getNewPath().matches("^.*/lib/.*$")) {
+				logger.info("[SKIP_FILE] lib file: " + diff.getOldPath());
+				continue;
+			}
+
 			/* Skip jquery files. */
 			if (diff.getOldPath().matches("^.*jquery.*$") || diff.getNewPath().matches("^.*jquery.*$")) {
 				logger.info("[SKIP_FILE] jquery file: " + diff.getOldPath());
@@ -173,14 +179,15 @@ public class GitProjectAnalysis extends GitProject {
 			/* TODO: Do something with the annotations. */
 			for(SourceCodeFileChange fileChange : commit.sourceCodeFileChanges)
 				AnnotationFactBase.getInstance(fileChange).printDataSet();
-
 			
 		}
 		catch(Exception ignore) {
 			System.err.println("Ignoring exception in ProjectAnalysis.runSDJSB.\nBuggy Revision: " + buggyRevision + "\nBug Fixing Revision: " + bugFixingRevision);
+			ignore.printStackTrace();
 		}
 		catch(Error e) {
 			System.err.println("Ignoring error in ProjectAnalysis.runSDJSB.\nBuggy Revision: " + buggyRevision + "\nBug Fixing Revision: " + bugFixingRevision);
+			e.printStackTrace();
 		}
 
 	}

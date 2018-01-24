@@ -221,9 +221,7 @@ public class Diff {
 	 */
 	private static Matcher matchTreeNodes(ITree src, ITree dst) {
 		Matcher matcher = Matchers.getInstance().getMatcher(src, dst);
-				System.out.println("Before");
 		matcher.match();
-				System.out.println("After");
 		return matcher;
 	}
 

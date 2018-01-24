@@ -1,5 +1,6 @@
 package multidiffplus.mining.factories;
 
+import org.mozilla.javascript.ast.AstNode;
 import org.mozilla.javascript.ast.NodeVisitor;
 
 import multidiffplus.commit.SourceCodeFileChange;
@@ -9,8 +10,8 @@ import multidiffplus.mining.analysis.AjaxDataASTAnalysis;
 public class AjaxDataASTAnalysisFactory implements IASTVisitorFactory {
 
 	@Override
-	public NodeVisitor newInstance(SourceCodeFileChange sourceCodeFileChange) {
-		return new AjaxDataASTAnalysis(sourceCodeFileChange);
+	public NodeVisitor newInstance(SourceCodeFileChange sourceCodeFileChange, AstNode root) {
+		return new AjaxDataASTAnalysis(sourceCodeFileChange, root);
 	}
 
 }

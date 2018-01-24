@@ -97,7 +97,8 @@ public class MiningDomainAnalysis extends DomainAnalysis {
 		/* Generate facts by analyzing the destination functions. */
 		for(CFG cfg : diffContext.dstCFGs) {
 			for(IASTVisitorFactory astVF : astVisitorFactories) {
-				((AstNode)cfg.getEntryNode().getStatement()).visit(astVF.newInstance(sourceCodeFileChange));
+				AstNode root = (AstNode)cfg.getEntryNode().getStatement();
+				root.visit(astVF.newInstance(sourceCodeFileChange, root));
 			}
 		}
 		
