@@ -155,13 +155,13 @@ public class GitProjectAnalysis extends GitProject {
 
 		try {
 
-			Map<SourceCodeFileChange, AnnotationFactBase> gumtreeAnnotations = new HashMap<SourceCodeFileChange, AnnotationFactBase>();
+			Map<SourceCodeFileChange, AnnotationFactBase> annotations = new HashMap<SourceCodeFileChange, AnnotationFactBase>();
 			CommitAnalysis commitAnalysis = commitAnalysisFactory.newInstance();
 
 			/* Run the analysis with GumTree diff. */
 			commitAnalysis.analyze(commit);
 			for(SourceCodeFileChange fileChange : commit.sourceCodeFileChanges)
-				gumtreeAnnotations.put(fileChange, AnnotationFactBase.getInstance(fileChange));
+				annotations.put(fileChange, AnnotationFactBase.getInstance(fileChange));
 
 			/* TODO: Do something with the annotations. */
 			

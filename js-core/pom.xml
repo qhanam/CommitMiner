@@ -40,6 +40,11 @@
 			<artifactId>github-api</artifactId>
 			<version>1.90</version>
 		</dependency>
+		<dependency>
+			<groupId>io.apigee</groupId>
+			<artifactId>rhino</artifactId>
+			<version>1.7R5pre5-SNAPSHOT</version>
+		</dependency>
 	</dependencies>
 
 </project>

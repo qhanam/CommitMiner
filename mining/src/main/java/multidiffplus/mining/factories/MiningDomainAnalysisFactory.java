@@ -1,0 +1,25 @@
+package multidiffplus.mining.factories;
+
+import java.util.List;
+
+import multidiffplus.analysis.DomainAnalysis;
+import multidiffplus.factories.IASTVisitorFactory;
+import multidiffplus.factories.ICFGFactory;
+import multidiffplus.factories.IDomainAnalysisFactory;
+import multidiffplus.mining.analysis.MiningDomainAnalysis;
+
+public class MiningDomainAnalysisFactory implements IDomainAnalysisFactory {
+
+	private List<IASTVisitorFactory> astVisitorFactories;
+	private ICFGFactory cfgFactory;
+
+	public MiningDomainAnalysisFactory(List<IASTVisitorFactory> astVisitorFactories, ICFGFactory cfgFactory) {
+		this.astVisitorFactories = astVisitorFactories;
+	}
+
+	@Override
+	public DomainAnalysis newInstance() {
+		return new MiningDomainAnalysis(astVisitorFactories, cfgFactory);
+	}
+
+}

@@ -13,6 +13,13 @@ public class Annotation {
 	public Integer absolutePosition;
 	public Integer length;
 
+	/**
+	 * @param label Describes the meaning of the annotation.
+	 * @param dependencyIDs Unique IDs that links dependencies to criteria.
+	 * @param line The line number where the annotation starts.
+	 * @param absolutePosition The absolute position in the file where the annotation starts.
+	 * @param length The length of the annotation (in characters).
+	 */
 	public Annotation(String label, 
 					  List<DependencyIdentifier> dependencyIDs,
 					  int line, int absolutePosition, int length) {

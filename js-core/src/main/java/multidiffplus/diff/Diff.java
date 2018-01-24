@@ -29,10 +29,10 @@ public class Diff {
 
 	/** Stores the CFG and AST for analysis. **/
 	private DiffContext context;
-
+	
 	/**
 	 * Creates the analysis context by control flow differencing the source
-	 * and destination files (provided as a string).
+	 * and destination files (provided in command line args).
 	 * @param cfgFactory The factory class that builds the CFGs.
 	 * @param args The command line options (contains the paths to the source
 	 * 			   and destination files to difference).
