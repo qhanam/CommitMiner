@@ -114,6 +114,12 @@ public class GitProjectAnalysis extends GitProject {
 				this.projectHomepage,
 				buggyRevision, bugFixingRevision,
 				commitMessageType);
+		
+		/* Skip merge commits. */
+		if(commit.commitMessageType == Type.MERGE) {
+			logger.info("[SKIP_COMMIT] merge commit: " + commit.repairedCommitID);
+			return;
+		}
 
 		/* Iterate through the modified files and add them as
 		 * {@code SourceCodeFileChange}s in the commit. */
