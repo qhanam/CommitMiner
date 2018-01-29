@@ -47,8 +47,8 @@ public class MiningDomainAnalysis extends DomainAnalysis {
 		if(fileExtension != null && cfgFactory.acceptsExtension(fileExtension)) {
 			
 			/* Abort on large files. */
-			if(sourceCodeFileChange.repairedCode.length() > 200000) {
-				System.err.println("File too large (> 200,000 characters)");
+			if(sourceCodeFileChange.repairedCode.length() > 150000) {
+				System.err.println("File too large (> 150,000 characters)");
 				return;
 			}
 

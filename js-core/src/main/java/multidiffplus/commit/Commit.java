@@ -83,6 +83,11 @@ public class Commit {
 	public int hashCode() {
 		return (projectID + repairedCommitID).hashCode();
 	}
+	
+	@Override
+	public String toString() {
+		return url + "/commit/" + repairedCommitID;
+	}
 
 	/**
 	 * Specifies nominal values for the commit type based on an NLP analysis

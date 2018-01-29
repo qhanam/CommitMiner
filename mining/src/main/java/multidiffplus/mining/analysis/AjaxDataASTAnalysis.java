@@ -74,9 +74,6 @@ public class AjaxDataASTAnalysis implements NodeVisitor {
 		AstNode target = call.getTarget();
 		if(!target.toSource().equals("$.ajax") && !target.toSource().equals("jQuery.ajax")) return;
 		
-		/* Has the call been updated? */
-		if(call.getChangeType() != ChangeType.UPDATED) return;
-				
 		/* Find the settings argument (usually an object literal). */
 		ObjectLiteral settings = null;
 		for(AstNode arg : call.getArguments()) {
@@ -84,67 +81,87 @@ public class AjaxDataASTAnalysis implements NodeVisitor {
 		}
 		if(settings == null) return;
 		
-		/* Find and check the data field. */
-		for(ObjectProperty property : settings.getElements()) {
+		/* Find the data field. */
+		ObjectProperty dataProperty = getDataField(settings);
+		if(dataProperty == null) return;
+		
+		/* Find the call to JSON.stringify. */
+		FunctionCall stringify = getStringify(dataProperty.getRight());
+		if(stringify == null) return;
+		
+		/* Register a AJAX_STRINGIFY fact. */
+		if(call.getChangeType() == ChangeType.UPDATED
+				&& dataProperty.getChangeType() == ChangeType.UPDATED
+				&& stringify.getChangeType() == ChangeType.INSERTED) {
 
-			FunctionCall stringify = null;
-			AstNode field = property.getLeft();
-			AstNode value = property.getRight();
-			
-			switch(field.getType()) {
-			case Token.NAME:
-				if(!field.toSource().equals("data")) continue;
-				else break;
-			case Token.STRING:
-				if(!((StringLiteral)field).getValue().equals("data")) continue;
-				else break;
-			}
-
-			/* Inserted call site? */
-			if(value.getChangeType() != ChangeType.INSERTED
-					|| value.getType() != Token.CALL) return;
-
-			stringify = (FunctionCall) value;
-
-			/* Call to JSON.stringify with one argument? */
-			if(!stringify.getTarget().toSource().equals("JSON.stringify")
-					|| stringify.getArguments().size() != 1) return;
-			
-			/* Argument is an object literal? */
-			for(AstNode node : stringify.getArguments()) {
-				if(node.getType() != Token.OBJECTLIT
-						|| node.getChangeType() != ChangeType.MOVED) return;
-			}
-
-			/* Register an annotation with the fact database. */
-			Annotation annotation = new Annotation("AJAX_STRINGIFY", 
-					new LinkedList<DependencyIdentifier>(), 
-					call.getLineno(), 
-					call.getAbsolutePosition(), 
-					call.getLength());
+			/* This is a repair. */
+			Annotation annotation = new Annotation("AJAX_STRINGIFY_REPAIR",
+					new LinkedList<DependencyIdentifier>(),
+					stringify.getLineno(),
+					stringify.getAbsolutePosition(),
+					stringify.getLength());
 			factBase.registerAnnotationFact(annotation);
 
+		}
+		else if(call.getChangeType() == ChangeType.UPDATED
+				|| call.getChangeType() == ChangeType.INSERTED) {
+
+			/* This is mutation candidate. */
+			Annotation annotation = new Annotation("AJAX_STRINGIFY_MUTATE", 
+					new LinkedList<DependencyIdentifier>(), 
+					stringify.getLineno(), 
+					stringify.getAbsolutePosition(), 
+					stringify.getLength());
+			factBase.registerAnnotationFact(annotation);
+			
 		}
 
 	}
 	
 	/**
-	 * 
+	 * @return the call to JSON.stringify(value), or {@code null} if not
+	 * stringified
 	 */
-	public void visitUpdatedAjaxCall(FunctionCall call) {
+	private FunctionCall getStringify(AstNode value) {
+
+		if(value.getType() != Token.CALL) return null;
+
+		FunctionCall call = (FunctionCall) value;
+
+		/* Call to JSON.stringify with one argument? */
+		if(!(call.getTarget().toSource().equals("JSON.call")
+				|| call.getTarget().toSource().equals("$.toJSON")
+				|| call.getTarget().toSource().equals("jQuery.toJSON"))
+				|| call.getArguments().size() != 1) return call;
 		
-		for(AstNode arg : call.getArguments()) {
-			
-			switch(arg.getType()) {
-			case Token.OBJECTLIT:
-				
-			}
-			
-		}
+		return null;
 		
 	}
-	
-	public void visitAjaxSettings(ObjectLiteral obj) {
+
+	/**
+	 * @return The object property of the 'data' field, or {@code null} if not
+	 * found.
+	 */
+	private ObjectProperty getDataField(ObjectLiteral settings) {
+
+		/* Find and check the data field. */
+		for(ObjectProperty property : settings.getElements()) {
+
+			AstNode field = property.getLeft();
+
+			switch(field.getType()) {
+			case Token.NAME:
+				if(field.toSource().equals("data")) return property;
+				break;
+			case Token.STRING:
+				if(((StringLiteral)field).getValue().equals("data")) return property;
+				break;
+			}
+
+		}
+		
+		/* The 'data' field is not in the object literal. */
+		return null;
 		
 	}
 

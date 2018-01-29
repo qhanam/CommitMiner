@@ -1,0 +1,35 @@
+commit 6255b6cc6f1c1c292e1355b08fd52f37efbdcf04
+Author: Quinn Hanam <qhanam@gmail.com>
+Date:   Wed Jan 24 12:29:17 2018 -0800
+
+    working ajax JSON.stringify repair pattern miner
+
+commit 48a9c2dc5dfef2f1e7283fd3f4a90a7fe528e3ce
+Author: Quinn Hanam <qhanam@gmail.com>
+Date:   Tue Jan 23 18:18:58 2018 -0800
+
+    fix ajax call site visitor
+
+commit 2e3c5dda7afbf30ed431dfa6f84fe4832baa0550
+Author: Quinn Hanam <qhanam@gmail.com>
+Date:   Tue Jan 23 17:48:57 2018 -0800
+
+    avoid analyzing very large files
+
+commit 05d87bdb53428f57c6ef800e292eeeeccb44b30b
+Author: Quinn Hanam <qhanam@gmail.com>
+Date:   Tue Jan 23 17:00:12 2018 -0800
+
+    add AST analysis for exploring calls to $.ajax()
+
+commit 6699dbfae047aa46b27487f0bcbeed0d4df47d5f
+Author: Quinn Hanam <qhanam@gmail.com>
+Date:   Fri Jan 12 17:02:10 2018 -0800
+
+    add bulk (version history) analysis
+
+commit cb9b5aa5da7fb487892406318471e40db460fb2f
+Author: Quinn Hanam <qhanam@gmail.com>
+Date:   Thu Jan 11 16:50:25 2018 -0800
+
+    import from MultiDiffPlus

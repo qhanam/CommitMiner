@@ -1,5 +1,7 @@
 package multidiffplus.mining;
 
+import java.io.File;
+
 import org.kohsuke.args4j.Option;
 
 public class MiningOptions {
@@ -11,6 +13,10 @@ public class MiningOptions {
 	@Option(name="-d", aliases={"--directory"}, usage="The git directory (e.g., /path/to/project/.git/).")
 	private String directory = null;
 	public String getGitDirectory() { return this.directory; }
+	
+	@Option(name="-o", aliases= {"--out"}, usage="The output file.")
+	private String outFile = null;
+	public File getOutFile() { return outFile == null ? null : new File(outFile); }
 
 	@Option(name="-h", aliases={"--help"}, usage="Display the help file.")
 	private boolean help = false;

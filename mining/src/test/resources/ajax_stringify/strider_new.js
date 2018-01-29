@@ -1,3 +1,4 @@
+// https://github.com/Strider-CD/strider/commit/d13f7f2a1d1ebf9fe89282812d2a7ec194972c6e
 'use strict';
 
 var $ = require('jquery');

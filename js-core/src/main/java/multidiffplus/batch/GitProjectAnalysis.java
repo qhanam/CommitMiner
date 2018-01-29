@@ -1,9 +1,10 @@
 package multidiffplus.batch;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.HashMap;
+import java.io.PrintStream;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.commons.lang3.tuple.Triple;
 
@@ -25,6 +26,7 @@ import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.treewalk.TreeWalk;
 
+import multidiffplus.commit.Annotation;
 import multidiffplus.commit.AnnotationFactBase;
 import multidiffplus.commit.Commit;
 import multidiffplus.commit.Commit.Type;
@@ -41,14 +43,19 @@ public class GitProjectAnalysis extends GitProject {
 
 	/** Runs an analysis on a source file. **/
 	private ICommitAnalysisFactory commitAnalysisFactory;
+	
+	/** File to write results to. **/
+	private File outFile;
 
 	/**
 	 * Constructor that is used by our static factory methods.
 	 */
 	protected GitProjectAnalysis(GitProject gitProject,
-								 ICommitAnalysisFactory commitAnalysisFactory) {
+								 ICommitAnalysisFactory commitAnalysisFactory,
+								 File outFile) {
 		super(gitProject);
 		this.commitAnalysisFactory = commitAnalysisFactory;
+		this.outFile = outFile;
 	}
 
 	/**
@@ -173,19 +180,21 @@ public class GitProjectAnalysis extends GitProject {
 
 		try {
 
-			Map<SourceCodeFileChange, AnnotationFactBase> annotations = new HashMap<SourceCodeFileChange, AnnotationFactBase>();
-			CommitAnalysis commitAnalysis = commitAnalysisFactory.newInstance();
+			System.out.println(commit.url + "/commit/" + commit.repairedCommitID);
 
 			/* Run the analysis with GumTree diff. */
-			System.out.println(commit.url + "/commit/" + commit.repairedCommitID);
+			CommitAnalysis commitAnalysis = commitAnalysisFactory.newInstance();
 			commitAnalysis.analyze(commit);
-			for(SourceCodeFileChange fileChange : commit.sourceCodeFileChanges)
-				annotations.put(fileChange, AnnotationFactBase.getInstance(fileChange));
-
-			/* TODO: Do something with the annotations. */
-			for(SourceCodeFileChange fileChange : commit.sourceCodeFileChanges)
-				AnnotationFactBase.getInstance(fileChange).printDataSet();
 			
+			/* Flush the results of the analysis to persistent storage. */
+			if(outFile != null) {
+
+				for(SourceCodeFileChange fileChange : commit.sourceCodeFileChanges) {
+					flushToFile(commit, fileChange, outFile);
+				}
+
+			}
+
 		}
 		catch(Exception ignore) {
 			System.err.println("Ignoring exception in ProjectAnalysis.runSDJSB.\nBuggy Revision: " + buggyRevision + "\nBug Fixing Revision: " + bugFixingRevision);
@@ -238,6 +247,39 @@ public class GitProjectAnalysis extends GitProject {
 
     }
 
+	/**
+	 * Appends the annotations to a file for persistent storage.
+	 * @throws IOException 
+	 */
+	private static synchronized void flushToFile(Commit commit, 
+			SourceCodeFileChange sourceCodeFileChange, 
+			File file) throws IOException {
+
+		AnnotationFactBase factBase = AnnotationFactBase.getInstance(sourceCodeFileChange);
+		
+		if(file == null || factBase.getAnnotations().isEmpty()) return;
+
+		/* The path to the file may not exist. Create it if needed. */
+		file.getParentFile().mkdirs();
+		file.createNewFile();
+
+		/* May throw IOException if the path does not exist. */
+		try (PrintStream stream = new PrintStream(new FileOutputStream(file, true))) {
+
+			/* Write the data set. */
+			for(Annotation annotation : factBase.getAnnotations()) {
+				stream.println(commit.toString() 
+						+ "," + sourceCodeFileChange.toString() 
+						+ "," + annotation.toString());
+			}
+		
+		}
+		
+		/* We are done with the factbase and can recover the memory. */
+		AnnotationFactBase.removeInstance(sourceCodeFileChange);
+
+	}
+
 	/*
 	 * Static factory methods
 	 */
@@ -249,14 +291,15 @@ public class GitProjectAnalysis extends GitProject {
 	 * @param commitMessageRegex The regular expression that a commit message
 	 * 		  needs to match in order to be analyzed.
 	 * @param commitAnalysis The analysis to run on each commit.
+	 * @param outFile The file to output results (if null, no results will be stored)
 	 * @return An instance of GitProjectAnalysis.
 	 * @throws GitProjectAnalysisException
 	 */
-	public static GitProjectAnalysis fromDirectory(String directory, ICommitAnalysisFactory commitAnalysisFactory)
+	public static GitProjectAnalysis fromDirectory(String directory, ICommitAnalysisFactory commitAnalysisFactory, File outFile)
 			throws GitProjectAnalysisException {
 		GitProject gitProject = GitProject.fromDirectory(directory);
 
-		return new GitProjectAnalysis(gitProject, commitAnalysisFactory);
+		return new GitProjectAnalysis(gitProject, commitAnalysisFactory, outFile);
 	}
 
 	/**
@@ -267,16 +310,17 @@ public class GitProjectAnalysis extends GitProject {
 	 * @param commitMessageRegex The regular expression that a commit message
 	 * 		  needs to match in order to be analyzed.
 	 * @param commitAnalysis The analysis to run on each commit.
+	 * @param outFile The file to output results (if null, no results will be stored)
  	 * @return An instance of GitProjectAnalysis.
 	 * @throws GitAPIException
 	 * @throws TransportException
 	 * @throws InvalidRemoteException
 	 */
-	public static GitProjectAnalysis fromURI(String uri, String directory, ICommitAnalysisFactory commitAnalysisFactory)
+	public static GitProjectAnalysis fromURI(String uri, String directory, ICommitAnalysisFactory commitAnalysisFactory, File outFile)
 			throws GitProjectAnalysisException, InvalidRemoteException, TransportException, GitAPIException {
 		GitProject gitProject = GitProject.fromURI(uri, directory);
 
-		return new GitProjectAnalysis(gitProject, commitAnalysisFactory);
+		return new GitProjectAnalysis(gitProject, commitAnalysisFactory, outFile);
 	}
 
 }
