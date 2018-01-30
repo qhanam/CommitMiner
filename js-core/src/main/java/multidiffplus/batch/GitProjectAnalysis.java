@@ -7,6 +7,7 @@ import java.io.PrintStream;
 import java.util.List;
 
 import org.apache.commons.lang3.tuple.Triple;
+import org.apache.commons.lang3.time.StopWatch;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -65,6 +66,11 @@ public class GitProjectAnalysis extends GitProject {
 	 * @throws IOException
 	 */
 	public void analyze() throws GitAPIException, IOException, Exception {
+		
+		/* Time the analysis so we can stop if it gets out of hand. */
+		StopWatch projectTimer = new StopWatch();
+		projectTimer.start();
+
 		long startTime = System.currentTimeMillis();
 		logger.info("[START ANALYSIS] {}", this.getURI());
 
@@ -75,12 +81,19 @@ public class GitProjectAnalysis extends GitProject {
 
 		/* Analyze the changes made in each bug fixing commit. */
 		for(Triple<String, String, Type> commit : commits) {
+			
+			/* Abort if the analysis goes over 5 minutes. */
+			if(projectTimer.getTime() > 300000) {
+				logger.warn(" [WARNING] {} aborting due to project timeout", this.getURI());
+				break;
+			}
 
 			try {
 				this.analyzeDiff(commit.getLeft(), commit.getMiddle(), commit.getRight());
 			} catch (Exception e) {
 				logger.error("[ERROR] {}, {}", commit.getMiddle(),  e.getMessage());
 			}
+			
 		}
 
 		long endTime = System.currentTimeMillis();

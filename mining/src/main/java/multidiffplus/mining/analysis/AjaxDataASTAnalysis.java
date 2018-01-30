@@ -129,10 +129,11 @@ public class AjaxDataASTAnalysis implements NodeVisitor {
 		FunctionCall call = (FunctionCall) value;
 
 		/* Call to JSON.stringify with one argument? */
-		if(!(call.getTarget().toSource().equals("JSON.call")
+		if(call.getTarget().toSource().equals("JSON.stringify")
 				|| call.getTarget().toSource().equals("$.toJSON")
-				|| call.getTarget().toSource().equals("jQuery.toJSON"))
-				|| call.getArguments().size() != 1) return call;
+				|| call.getTarget().toSource().equals("jQuery.toJSON")) {
+			return call;
+		}
 		
 		return null;
 		

@@ -101,6 +101,12 @@ public class Main {
 
 			/* Analyze all projects. */
 			for(String uri : uris) {
+				
+				/* Ignore commented urls. */
+				if(uri.startsWith("#")) {
+					latch.countDown();
+					continue;
+				}
 
 				try {
 					/* Build git repository object */
@@ -120,6 +126,8 @@ public class Main {
 			/* Wait for all threads to finish their work */
 			try {
 				latch.await();
+				executor.shutdown();
+				System.out.println("All threads finished!");
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 				return;
