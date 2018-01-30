@@ -2,8 +2,6 @@ package multidiffplus.mining.test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.SortedSet;
 
 import org.apache.commons.io.FileUtils;
@@ -15,21 +13,16 @@ import multidiffplus.commit.Annotation;
 import multidiffplus.commit.AnnotationFactBase;
 import multidiffplus.commit.Commit;
 import multidiffplus.commit.Commit.Type;
-import multidiffplus.commit.DependencyIdentifier;
 import multidiffplus.commit.SourceCodeFileChange;
 import multidiffplus.factories.ICommitAnalysisFactory;
 import multidiffplus.mining.factories.MiningCommitAnalysisFactory;
 
 public class AjaxDataTests {
 	
-	private static final List<DependencyIdentifier> EMPTY = new LinkedList<DependencyIdentifier>();
-
 	/**
 	 * Tests data mining data set construction.
-	 * @param args The command line arguments (i.e., old and new file names).
-	 * @throws Exception
 	 */
-	protected void runTest(String src, String dst, Annotation expected) throws Exception {
+	protected void runTest(String src, String dst, String expected) throws Exception {
 
 		/* Read the source files. */
 		SourceCodeFileChange sourceCodeFileChange = getSourceCodeFileChange(src, dst);
@@ -52,11 +45,11 @@ public class AjaxDataTests {
 		factBase.printDataSet();
 	
 		/* Check that the correct annotations were generated. */
-		SortedSet<Annotation> actualAnnotations = factBase.getAnnotations();
+		SortedSet<Annotation> annotations = factBase.getAnnotations();
 		if(expected != null)
-			Assert.assertTrue(actualAnnotations.contains(expected));
+			Assert.assertTrue(contains(annotations, expected));
 		else
-			Assert.assertTrue(actualAnnotations.isEmpty());
+			Assert.assertTrue(annotations.isEmpty());
 
 	}
 
@@ -64,7 +57,7 @@ public class AjaxDataTests {
 	public void testContrived() throws Exception {
 		String src = "src/test/resources/ajax_stringify/contrived_old.js";
 		String dst = "src/test/resources/ajax_stringify/contrived_new.js";
-		Annotation expected = new Annotation("AJAX_STRINGIFY_MUTATE", EMPTY, 2, 16, 37);
+		String expected = "AJAX_STRINGIFY_MUTATE_DEL";
 		this.runTest(src, dst, expected);
 	}
 
@@ -72,7 +65,7 @@ public class AjaxDataTests {
 	public void testStrider() throws Exception {
 		String src = "src/test/resources/ajax_stringify/strider_old.js";
 		String dst = "src/test/resources/ajax_stringify/strider_new.js";
-		Annotation expected = new Annotation("AJAX_STRINGIFY_REPAIR", EMPTY, 70, 2103, 34);
+		String expected = "AJAX_STRINGIFY_REPAIR";
 		this.runTest(src, dst, expected);
 	}
 
@@ -80,7 +73,7 @@ public class AjaxDataTests {
 	public void testRecline() throws Exception {
 		String src = "src/test/resources/ajax_stringify/recline_old.js";
 		String dst = "src/test/resources/ajax_stringify/recline_new.js";
-		Annotation expected = new Annotation("AJAX_STRINGIFY_REPAIR", EMPTY, 126, 3996, 20);
+		String expected = "AJAX_STRINGIFY_REPAIR";
 		this.runTest(src, dst, expected);
 	}
 
@@ -88,14 +81,14 @@ public class AjaxDataTests {
 	public void testAnnotator() throws Exception {
 		String src = "src/test/resources/ajax_stringify/annotator_old.js";
 		String dst = "src/test/resources/ajax_stringify/annotator_new.js";
-		Annotation expected = null;
+		String expected = "AJAX_STRINGIFY_MUTATE_ADD";
 		this.runTest(src, dst, expected);
 	}
 
 	/**
 	 * @return A dummy commit for testing.
 	 */
-	public static Commit getCommit() {
+	private static Commit getCommit() {
 		return new Commit("test", "http://github.com/saltlab/Pangor", "c0", "c1", Type.BUG_FIX);
 	}
 
@@ -103,7 +96,7 @@ public class AjaxDataTests {
 	 * @return A dummy source code file change for testing.
 	 * @throws IOException
 	 */
-	public static SourceCodeFileChange getSourceCodeFileChange(String srcFile, String dstFile) throws IOException {
+	private static SourceCodeFileChange getSourceCodeFileChange(String srcFile, String dstFile) throws IOException {
 		String buggyCode = readFile(srcFile);
 		String repairedCode = readFile(dstFile);
 		return new SourceCodeFileChange(srcFile, dstFile, buggyCode, repairedCode);
@@ -117,6 +110,15 @@ public class AjaxDataTests {
 	 */
 	private static String readFile(String path) throws IOException {
 		return FileUtils.readFileToString(new File(path));
+	}
+	
+	/**
+	 * @return {@cod true} if the annotations contain the label.
+	 */
+	private static boolean contains(SortedSet<Annotation> annotations, String label) {
+		for(Annotation annotation : annotations)
+			if(annotation.label.equals(label)) return true;
+		return false;
 	}
 
 }

@@ -87,7 +87,20 @@ public class AjaxDataASTAnalysis implements NodeVisitor {
 		
 		/* Find the call to JSON.stringify. */
 		FunctionCall stringify = getStringify(dataProperty.getRight());
-		if(stringify == null) return;
+
+		if(stringify == null) {
+			
+			/* This is mutation candidate. */
+			Annotation annotation = new Annotation("AJAX_STRINGIFY_MUTATE_ADD", 
+					new LinkedList<DependencyIdentifier>(), 
+					dataProperty.getRight().getLineno(), 
+					dataProperty.getRight().getAbsolutePosition(), 
+					dataProperty.getRight().getLength());
+			factBase.registerAnnotationFact(annotation);
+
+			return;
+
+		}
 		
 		/* Register a AJAX_STRINGIFY fact. */
 		if(call.getChangeType() == ChangeType.UPDATED
@@ -107,7 +120,7 @@ public class AjaxDataASTAnalysis implements NodeVisitor {
 				|| call.getChangeType() == ChangeType.INSERTED) {
 
 			/* This is mutation candidate. */
-			Annotation annotation = new Annotation("AJAX_STRINGIFY_MUTATE", 
+			Annotation annotation = new Annotation("AJAX_STRINGIFY_MUTATE_DEL", 
 					new LinkedList<DependencyIdentifier>(), 
 					stringify.getLineno(), 
 					stringify.getAbsolutePosition(), 
