@@ -83,7 +83,20 @@ public class AjaxDataASTAnalysis implements NodeVisitor {
 		
 		/* Find the data field. */
 		ObjectProperty dataProperty = getDataField(settings);
-		if(dataProperty == null) return;
+
+		if(dataProperty == null) {
+
+			/* There is no data being sent. */
+			Annotation annotation = new Annotation("AJAX_OTHER", 
+					new LinkedList<DependencyIdentifier>(), 
+					settings.getLineno(), 
+					settings.getAbsolutePosition(), 
+					settings.getLength());
+			factBase.registerAnnotationFact(annotation);
+
+			return;
+
+		}
 		
 		/* Find the call to JSON.stringify. */
 		FunctionCall stringify = getStringify(dataProperty.getRight());

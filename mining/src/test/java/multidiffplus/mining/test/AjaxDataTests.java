@@ -85,6 +85,22 @@ public class AjaxDataTests {
 		this.runTest(src, dst, expected);
 	}
 
+	@Test
+	public void testNodeRed1() throws Exception {
+		String src = "src/test/resources/ajax_stringify/node-red_old.js";
+		String dst = "src/test/resources/ajax_stringify/node-red_new.js";
+		String expected = "AJAX_STRINGIFY_MUTATE_DEL";
+		this.runTest(src, dst, expected);
+	}
+
+	@Test
+	public void testNodeRed2() throws Exception {
+		String src = "src/test/resources/ajax_stringify/node-red_old.js";
+		String dst = "src/test/resources/ajax_stringify/node-red_new.js";
+		String expected = "AJAX_OTHER";
+		this.runTest(src, dst, expected);
+	}
+
 	/**
 	 * @return A dummy commit for testing.
 	 */
