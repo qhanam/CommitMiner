@@ -1,7 +1,6 @@
 package multidiffplus.mining.analysis;
 
 import java.util.List;
-import java.util.regex.Matcher;
 
 import org.mozilla.javascript.EvaluatorException;
 import org.mozilla.javascript.ast.AstNode;
@@ -41,7 +40,7 @@ public class MiningDomainAnalysis extends DomainAnalysis {
 		System.out.println(sourceCodeFileChange.repairedFile);
 		
 		/* Get the file extension. */
-		String fileExtension = getSourceCodeFileExtension(sourceCodeFileChange.buggyFile, sourceCodeFileChange.repairedFile);
+		String fileExtension = getSourceCodeFileExtension(sourceCodeFileChange.repairedFile);
 
 		/* Difference the files and analyze if they are an extension we handle. */
 		if(fileExtension != null && cfgFactory.acceptsExtension(fileExtension)) {
@@ -102,31 +101,6 @@ public class MiningDomainAnalysis extends DomainAnalysis {
 			}
 		}
 		
-	}
-
-	/**
-	 * @param preCommitPath The path of the file before the commit.
-	 * @param postCommitPath The path of the file after the commit.
-	 * @return The extension of the source code file or null if none is found
-	 * 	or the extensions of the pre and post paths do not match.
-	 */
-	protected static String getSourceCodeFileExtension(String preCommitPath, String postCommitPath) {
-
-		java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\.([a-z]+)$");
-		Matcher preMatcher = pattern.matcher(preCommitPath);
-		Matcher postMatcher = pattern.matcher(postCommitPath);
-
-		String preExtension = null;
-		String postExtension = null;
-
-		if(preMatcher.find() && postMatcher.find()) {
-			preExtension = preMatcher.group(1);
-			postExtension = postMatcher.group(1);
-			if(preExtension.equals(postExtension)) return preExtension;
-		}
-
-		return null;
-
 	}
 
 }

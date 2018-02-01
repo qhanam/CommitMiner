@@ -74,7 +74,7 @@ public class SourceCodeFileChange {
 
 	@Override
 	public int hashCode() {
-		return (this.buggyFile + this.repairedCode).hashCode();
+		return (this.buggyFile + this.repairedFile).hashCode();
 	}
 	
 	@Override

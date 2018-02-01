@@ -295,6 +295,9 @@ public class GitProject {
 			if(commit.getParentCount()  > 0) {
 				bugFixingCommits.add(Triple.of(commit.getParent(0).name(), commit.name(), commitMessageType));
 			}
+			else {
+				bugFixingCommits.add(Triple.of(null, commit.name(), commitMessageType));
+			}
 
 			/*
 			 * First commit on iteration is most recent one (what we call "last")

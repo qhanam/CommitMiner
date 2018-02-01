@@ -107,8 +107,8 @@ public class Diff {
         /* Create the abstract GumTree representations of the ASTs. */
         TreeContext src = null;
         TreeContext dst = null;
-        if(srcSourceCode == null) src = Diff.createGumTree(cfgFactory, options.getSrc(), options.getPreProcess());
-        else src = Diff.createGumTree(cfgFactory, srcSourceCode, options.getSrc(), options.getPreProcess());
+        if(srcSourceCode == null) src = Diff.createGumTree(cfgFactory, options.getDst(), options.getPreProcess());
+        else src = Diff.createGumTree(cfgFactory, srcSourceCode, options.getDst(), options.getPreProcess());
         if(dstSourceCode == null) dst = Diff.createGumTree(cfgFactory, options.getDst(), options.getPreProcess());
         else dst = Diff.createGumTree(cfgFactory, dstSourceCode, options.getDst(), options.getPreProcess());
 

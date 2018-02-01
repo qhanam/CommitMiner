@@ -70,6 +70,14 @@ public class AjaxDataTests {
 	}
 
 	@Test
+	public void testStrider2() throws Exception {
+		String src = "src/test/resources/ajax_stringify/strider2_old.js";
+		String dst = "src/test/resources/ajax_stringify/strider2_new.js";
+		String expected = null;
+		this.runTest(src, dst, expected);
+	}
+
+	@Test
 	public void testRecline() throws Exception {
 		String src = "src/test/resources/ajax_stringify/recline_old.js";
 		String dst = "src/test/resources/ajax_stringify/recline_new.js";

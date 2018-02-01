@@ -92,6 +92,7 @@ public class GitProjectAnalysis extends GitProject {
 				this.analyzeDiff(commit.getLeft(), commit.getMiddle(), commit.getRight());
 			} catch (Exception e) {
 				logger.error("[ERROR] {}, {}", commit.getMiddle(),  e.getMessage());
+				e.printStackTrace();
 			}
 			
 		}
@@ -119,7 +120,10 @@ public class GitProjectAnalysis extends GitProject {
 		ObjectReader reader = this.repository.newObjectReader();
 
 		CanonicalTreeParser buggyTreeIter = new CanonicalTreeParser();
-		buggyTreeIter.reset(reader, buggy);
+		if(buggyRevision != null)
+			buggyTreeIter.reset(reader, buggy);
+		else
+			buggyTreeIter.reset();
 
 		CanonicalTreeParser repairedTreeIter = new CanonicalTreeParser();
 		repairedTreeIter.reset(reader, repaired);
@@ -146,33 +150,45 @@ public class GitProjectAnalysis extends GitProject {
 		for(DiffEntry diff : diffs) {
 			
 			/* Skip files in dist folder. */
-			if (diff.getOldPath().matches("^.*/dist/.*$") || diff.getNewPath().matches("^.*/dist/.*$")) {
-				logger.info("[SKIP_FILE] dist file: " + diff.getOldPath());
+			if (diff.getNewPath().matches("^dist/.*$") || diff.getNewPath().matches("^.*/dist/.*$")) {
+				logger.info("[SKIP_FILE] dist file: " + diff.getNewPath());
 				continue;
 			}
 
 			/* Skip files in lib folder. */
-			if (diff.getOldPath().matches("^.*/lib/.*$") || diff.getNewPath().matches("^.*/lib/.*$")) {
-				logger.info("[SKIP_FILE] lib file: " + diff.getOldPath());
+			if (diff.getNewPath().matches("^lib/.*$") || diff.getNewPath().matches("^.*/lib/.*$")) {
+				logger.info("[SKIP_FILE] lib file: " + diff.getNewPath());
+				continue;
+			}
+
+			/* Skip files in bin folder. */
+			if (diff.getNewPath().matches("^bin/.*$") || diff.getNewPath().matches("^.*/bin/.*$")) {
+				logger.info("[SKIP_FILE] bin file: " + diff.getNewPath());
+				continue;
+			}
+
+			/* Skip test files. */
+			if (diff.getNewPath().matches("^.*test.*$") || diff.getNewPath().matches("^.*test.*$")) {
+				logger.info("[SKIP_FILE] test file: " + diff.getNewPath());
 				continue;
 			}
 
 			/* Skip jquery files. */
-			if (diff.getOldPath().matches("^.*jquery.*$") || diff.getNewPath().matches("^.*jquery.*$")) {
-				logger.info("[SKIP_FILE] jquery file: " + diff.getOldPath());
+			if (diff.getNewPath().matches("^.*jquery.*$") || diff.getNewPath().matches("^.*jquery.*$")) {
+				logger.info("[SKIP_FILE] jquery file: " + diff.getNewPath());
 				continue;
 			}
 
 			/* Skip minified files. */
-			if (diff.getOldPath().endsWith(".min.js") || diff.getNewPath().endsWith(".min.js")) {
-				logger.info("[SKIP_FILE] Skipping minifed file: " + diff.getOldPath());
-				return;
+			if (diff.getNewPath().endsWith(".min.js") || diff.getNewPath().endsWith(".min.js")) {
+				logger.info("[SKIP_FILE] Skipping minifed file: " + diff.getNewPath());
+				continue;
 			}
 
 			/* Skip anything that is not a js file. */
-			if (!diff.getOldPath().endsWith(".js") || !diff.getNewPath().endsWith(".js")) {
-				logger.info("[SKIP_FILE] Skipping non-js file: " + diff.getOldPath());
-				return;
+			if (!diff.getNewPath().endsWith(".js") || !diff.getNewPath().endsWith(".js")) {
+				logger.info("[SKIP_FILE] Skipping non-js file: " + diff.getNewPath());
+				continue;
 			}
 
 			logger.debug("Exploring diff \n {} \n {} - {} \n {} - {}", getURI(), buggyRevision, diff.getOldPath(),
@@ -180,7 +196,9 @@ public class GitProjectAnalysis extends GitProject {
 
 			/* Add this source code file change to the commit. */
 
-			String oldFile = this.fetchBlob(buggyRevision, diff.getOldPath());
+			String oldFile = "";
+			if(buggyRevision != null) this.fetchBlob(buggyRevision, diff.getOldPath());
+
 			String newFile = this.fetchBlob(bugFixingRevision, diff.getNewPath());
 
 			commit.addSourceCodeFileChange(new SourceCodeFileChange(

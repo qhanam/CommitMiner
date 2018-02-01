@@ -72,7 +72,12 @@ public class AjaxDataASTAnalysis implements NodeVisitor {
 
 		/* Is this a call to $.ajax? */
 		AstNode target = call.getTarget();
-		if(!target.toSource().equals("$.ajax") && !target.toSource().equals("jQuery.ajax")) return;
+		if(!target.toSource().equals("$.ajax") 
+				&& !target.toSource().equals("jQuery.ajax")) return;
+		
+		/* Is this a new or updated call? */
+		if(call.getChangeType() != ChangeType.INSERTED
+				&& call.getChangeType() != ChangeType.UPDATED) return;
 		
 		/* Find the settings argument (usually an object literal). */
 		ObjectLiteral settings = null;
