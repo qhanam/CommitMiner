@@ -10,9 +10,9 @@ import org.mozilla.javascript.ast.AstRoot;
 import org.mozilla.javascript.ast.FunctionNode;
 import org.mozilla.javascript.ast.NodeVisitor;
 
-import multidiffplus.commit.Annotation;
 import multidiffplus.commit.DependencyIdentifier;
 import multidiffplus.commit.GenericDependencyIdentifier;
+import multidiffplus.facts.Annotation;
 import multidiffplus.jsanalysis.abstractdomain.Change;
 import multidiffplus.jsanalysis.abstractdomain.State;
 

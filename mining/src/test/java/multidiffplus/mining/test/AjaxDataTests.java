@@ -9,12 +9,12 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import multidiffplus.analysis.CommitAnalysis;
-import multidiffplus.commit.Annotation;
-import multidiffplus.commit.AnnotationFactBase;
 import multidiffplus.commit.Commit;
 import multidiffplus.commit.Commit.Type;
 import multidiffplus.commit.SourceCodeFileChange;
 import multidiffplus.factories.ICommitAnalysisFactory;
+import multidiffplus.facts.Annotation;
+import multidiffplus.facts.AnnotationFactBase;
 import multidiffplus.mining.factories.MiningCommitAnalysisFactory;
 
 public class AjaxDataTests {

@@ -13,11 +13,11 @@ import org.kohsuke.args4j.CmdLineParser;
 import multidiff.js.factories.ChangeImpactCommitAnalysisFactory;
 import multidiffplus.analysis.CommitAnalysis;
 import multidiffplus.analysis.Options;
-import multidiffplus.commit.AnnotationFactBase;
 import multidiffplus.commit.Commit;
 import multidiffplus.commit.Commit.Type;
 import multidiffplus.commit.SourceCodeFileChange;
 import multidiffplus.factories.ICommitAnalysisFactory;
+import multidiffplus.facts.AnnotationFactBase;
 import multidiffplus.jsdiff.view.HTMLMultiDiffViewer;
 import multidiffplus.jsdiff.view.HTMLUnixDiffViewer;
 

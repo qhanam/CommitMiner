@@ -11,10 +11,10 @@ import org.mozilla.javascript.ast.ObjectProperty;
 import org.mozilla.javascript.ast.StringLiteral;
 
 import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode.ChangeType;
-import multidiffplus.commit.Annotation;
-import multidiffplus.commit.AnnotationFactBase;
 import multidiffplus.commit.DependencyIdentifier;
 import multidiffplus.commit.SourceCodeFileChange;
+import multidiffplus.facts.Annotation;
+import multidiffplus.facts.AnnotationFactBase;
 
 /**
  * Search for the repair pattern where a JSON object is incorrectly passed as an
@@ -74,18 +74,18 @@ public class AjaxDataASTAnalysis implements NodeVisitor {
 		AstNode target = call.getTarget();
 		if(!target.toSource().equals("$.ajax") 
 				&& !target.toSource().equals("jQuery.ajax")) return;
-		
+
 		/* Is this a new or updated call? */
 		if(call.getChangeType() != ChangeType.INSERTED
 				&& call.getChangeType() != ChangeType.UPDATED) return;
-		
+
 		/* Find the settings argument (usually an object literal). */
 		ObjectLiteral settings = null;
 		for(AstNode arg : call.getArguments()) {
 			if(arg.getType() == Token.OBJECTLIT) settings = (ObjectLiteral) arg;
 		}
 		if(settings == null) return;
-		
+
 		/* Find the data field. */
 		ObjectProperty dataProperty = getDataField(settings);
 

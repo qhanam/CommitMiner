@@ -59,7 +59,9 @@ public class Main {
 
 			try {
                 gitProjectAnalysis = GitProjectAnalysis.fromURI(options.getURI(),
-                		CHECKOUT_DIR, factory, options.getOutFile());
+                		CHECKOUT_DIR, factory, 
+                		options.getSourceDir(), 
+                		options.getOutFile());
 				gitProjectAnalysis.analyze();
 
 			} catch (Exception e) {
@@ -111,7 +113,9 @@ public class Main {
 				try {
 					/* Build git repository object */
 					gitProjectAnalysis = GitProjectAnalysis.fromURI(uri,
-							CHECKOUT_DIR, factory, options.getOutFile());
+							CHECKOUT_DIR, factory, 
+							options.getSourceDir(), 
+							options.getOutFile());
 
 					/* Perform the analysis (this may take some time) */
 					executor.submit(new GitProjectAnalysisTask(gitProjectAnalysis, latch));

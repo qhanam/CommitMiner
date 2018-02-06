@@ -14,6 +14,10 @@ public class MiningOptions {
 	private String directory = null;
 	public String getGitDirectory() { return this.directory; }
 	
+	@Option(name="--source", usage="The directory to store source files.")
+	private String sourceDir = null;
+	public File getSourceDir() { return sourceDir == null ? null : new File(sourceDir); }
+	
 	@Option(name="-o", aliases= {"--out"}, usage="The output file.")
 	private String outFile = null;
 	public File getOutFile() { return outFile == null ? null : new File(outFile); }

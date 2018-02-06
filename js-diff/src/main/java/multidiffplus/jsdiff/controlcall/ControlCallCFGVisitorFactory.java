@@ -1,9 +1,9 @@
 package multidiffplus.jsdiff.controlcall;
 
 import multidiffplus.cfg.ICFGVisitor;
-import multidiffplus.commit.AnnotationFactBase;
 import multidiffplus.commit.SourceCodeFileChange;
 import multidiffplus.factories.ICFGVisitorFactory;
+import multidiffplus.facts.AnnotationFactBase;
 
 public class ControlCallCFGVisitorFactory implements ICFGVisitorFactory {
 

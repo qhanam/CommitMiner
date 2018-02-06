@@ -10,9 +10,9 @@ import org.mozilla.javascript.ast.FunctionNode;
 import multidiffplus.cfg.CFGEdge;
 import multidiffplus.cfg.CFGNode;
 import multidiffplus.cfg.ICFGVisitor;
-import multidiffplus.commit.Annotation;
-import multidiffplus.commit.AnnotationFactBase;
 import multidiffplus.commit.DependencyIdentifier;
+import multidiffplus.facts.Annotation;
+import multidiffplus.facts.AnnotationFactBase;
 import multidiffplus.jsanalysis.abstractdomain.State;
 
 /**

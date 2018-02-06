@@ -9,6 +9,12 @@ import java.util.regex.Matcher;
  * {@code SourceCodeFileAnalysis}.
  */
 public class SourceCodeFileChange {
+	
+	/** Used for generating unique SourceCodeFileChange IDs. **/
+	private static int unique = 1;
+	
+	/** The unique id for the {@code SourceCodeFileChange}. **/
+	private int id;
 
 	/** The path to the source file before the commit. **/
 	public String buggyFile;
@@ -33,11 +39,19 @@ public class SourceCodeFileChange {
 	 */
 	public SourceCodeFileChange(String buggyFile, String repairedFile,
 								String buggyCode, String repairedCode) {
+		this.id = getUniqueID();
 		this.buggyFile = buggyFile;
 		this.repairedFile = repairedFile;
 		this.buggyCode = buggyCode;
 		this.repairedCode = repairedCode;
 		this.analysisRuntime = -1;
+	}
+	
+	/**
+	 * @return the unique ID for the {@code SourceCodeFileChange}
+	 */
+	public int getID() {
+		return id;
 	}
 
 	/**
@@ -80,6 +94,12 @@ public class SourceCodeFileChange {
 	@Override
 	public String toString() {
 		return repairedFile;
+	}
+	
+	private static synchronized int getUniqueID() {
+		int unique = SourceCodeFileChange.unique;
+		SourceCodeFileChange.unique++;
+		return unique;
 	}
 
 }

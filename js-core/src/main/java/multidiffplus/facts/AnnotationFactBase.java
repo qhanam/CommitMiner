@@ -1,4 +1,4 @@
-package multidiffplus.commit;
+package multidiffplus.facts;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -7,16 +7,15 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import multidiffplus.commit.SourceCodeFileChange;
+
 /**
  * Registers and stores facts related to annotating the source code file.
- * 
- * An analysis should extend this class to register concrete predicates that 
- * will be used to annotate the source code file.
  */
 public class AnnotationFactBase extends FactBase {
 	
 	private static Map<SourceCodeFileChange, AnnotationFactBase> instances = new HashMap<SourceCodeFileChange, AnnotationFactBase>();
-
+	
 	private SortedSet<Annotation> annotations;
 	
 	/**

@@ -1,4 +1,6 @@
-package multidiffplus.commit;
+package multidiffplus.facts;
+
+import multidiffplus.commit.SourceCodeFileChange;
 
 /**
  * Facts should be registered through a FactBase. The goal of a FactBase is to

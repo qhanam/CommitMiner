@@ -27,12 +27,12 @@ import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.treewalk.TreeWalk;
 
-import multidiffplus.commit.Annotation;
-import multidiffplus.commit.AnnotationFactBase;
 import multidiffplus.commit.Commit;
 import multidiffplus.commit.Commit.Type;
 import multidiffplus.commit.SourceCodeFileChange;
 import multidiffplus.factories.ICommitAnalysisFactory;
+import multidiffplus.facts.Annotation;
+import multidiffplus.facts.AnnotationFactBase;
 import multidiffplus.analysis.CommitAnalysis;
 
 /**
@@ -45,18 +45,23 @@ public class GitProjectAnalysis extends GitProject {
 	/** Runs an analysis on a source file. **/
 	private ICommitAnalysisFactory commitAnalysisFactory;
 	
-	/** File to write results to. **/
-	private File outFile;
+	/** Directory to write source code to. **/
+	private File sourceDir;
+	
+	/** CSV file to write results to. **/
+	private File csvFile;
 
 	/**
 	 * Constructor that is used by our static factory methods.
 	 */
 	protected GitProjectAnalysis(GitProject gitProject,
 								 ICommitAnalysisFactory commitAnalysisFactory,
-								 File outFile) {
+								 File sourceDir,
+								 File csvFile) {
 		super(gitProject);
 		this.commitAnalysisFactory = commitAnalysisFactory;
-		this.outFile = outFile;
+		this.sourceDir = sourceDir;
+		this.csvFile = csvFile;
 	}
 
 	/**
@@ -196,8 +201,8 @@ public class GitProjectAnalysis extends GitProject {
 
 			/* Add this source code file change to the commit. */
 
-			String oldFile = "";
-			if(buggyRevision != null) this.fetchBlob(buggyRevision, diff.getOldPath());
+			String oldFile = buggyRevision == null 
+					? "" : this.fetchBlob(buggyRevision, diff.getOldPath());
 
 			String newFile = this.fetchBlob(bugFixingRevision, diff.getNewPath());
 
@@ -218,10 +223,10 @@ public class GitProjectAnalysis extends GitProject {
 			commitAnalysis.analyze(commit);
 			
 			/* Flush the results of the analysis to persistent storage. */
-			if(outFile != null) {
+			if(sourceDir != null && csvFile != null) {
 
 				for(SourceCodeFileChange fileChange : commit.sourceCodeFileChanges) {
-					flushToFile(commit, fileChange, outFile);
+					flushToFile(commit, fileChange, sourceDir, csvFile);
 				}
 
 			}
@@ -280,26 +285,44 @@ public class GitProjectAnalysis extends GitProject {
 
 	/**
 	 * Appends the annotations to a file for persistent storage.
-	 * @throws IOException 
+	 * @throws IOException if a path does not exist.
 	 */
 	private static synchronized void flushToFile(Commit commit, 
 			SourceCodeFileChange sourceCodeFileChange, 
-			File file) throws IOException {
+			File sourceDir, File csvFile) throws IOException {
 
 		AnnotationFactBase factBase = AnnotationFactBase.getInstance(sourceCodeFileChange);
 		
-		if(file == null || factBase.getAnnotations().isEmpty()) return;
+		if(csvFile == null || factBase.getAnnotations().isEmpty()) return;
+	
+		/* Write the src/dst files to disk so that we can run a flow analysis on
+		* them later. */
+		File srcFile = new File(sourceDir, sourceCodeFileChange.getID() + "_old.js");
+		File dstFile = new File(sourceDir, sourceCodeFileChange.getID() + "_new.js");
 
-		/* The path to the file may not exist. Create it if needed. */
-		file.getParentFile().mkdirs();
-		file.createNewFile();
+		sourceDir.mkdirs();
+		srcFile.createNewFile();
+		dstFile.createNewFile();
 
-		/* May throw IOException if the path does not exist. */
-		try (PrintStream stream = new PrintStream(new FileOutputStream(file, true))) {
+		try(PrintStream stream = new PrintStream(new FileOutputStream(srcFile, false))) {
+			stream.print(sourceCodeFileChange.buggyCode);
+		}
+		
+		try(PrintStream stream = new PrintStream(new FileOutputStream(dstFile, false))) {
+			stream.print(sourceCodeFileChange.repairedCode);
+		}
+
+		/* Write the annotations to the CSV file. */
+		csvFile.getParentFile().mkdirs();
+		csvFile.createNewFile();
+
+		try (PrintStream stream = new PrintStream(new FileOutputStream(csvFile, true))) {
 
 			/* Write the data set. */
 			for(Annotation annotation : factBase.getAnnotations()) {
 				stream.println(commit.toString() 
+						+ "," + srcFile
+						+ "," + dstFile
 						+ "," + sourceCodeFileChange.toString() 
 						+ "," + annotation.toString());
 			}
@@ -322,15 +345,16 @@ public class GitProjectAnalysis extends GitProject {
 	 * @param commitMessageRegex The regular expression that a commit message
 	 * 		  needs to match in order to be analyzed.
 	 * @param commitAnalysis The analysis to run on each commit.
+	 * @param sourceDir The directory to write source files.
 	 * @param outFile The file to output results (if null, no results will be stored)
 	 * @return An instance of GitProjectAnalysis.
 	 * @throws GitProjectAnalysisException
 	 */
-	public static GitProjectAnalysis fromDirectory(String directory, ICommitAnalysisFactory commitAnalysisFactory, File outFile)
+	public static GitProjectAnalysis fromDirectory(String directory, ICommitAnalysisFactory commitAnalysisFactory, File sourceDir, File outFile)
 			throws GitProjectAnalysisException {
 		GitProject gitProject = GitProject.fromDirectory(directory);
 
-		return new GitProjectAnalysis(gitProject, commitAnalysisFactory, outFile);
+		return new GitProjectAnalysis(gitProject, commitAnalysisFactory, sourceDir, outFile);
 	}
 
 	/**
@@ -341,17 +365,18 @@ public class GitProjectAnalysis extends GitProject {
 	 * @param commitMessageRegex The regular expression that a commit message
 	 * 		  needs to match in order to be analyzed.
 	 * @param commitAnalysis The analysis to run on each commit.
+	 * @param sourceDir The directory to write source files.
 	 * @param outFile The file to output results (if null, no results will be stored)
  	 * @return An instance of GitProjectAnalysis.
 	 * @throws GitAPIException
 	 * @throws TransportException
 	 * @throws InvalidRemoteException
 	 */
-	public static GitProjectAnalysis fromURI(String uri, String directory, ICommitAnalysisFactory commitAnalysisFactory, File outFile)
+	public static GitProjectAnalysis fromURI(String uri, String directory, ICommitAnalysisFactory commitAnalysisFactory, File sourceDir, File outFile)
 			throws GitProjectAnalysisException, InvalidRemoteException, TransportException, GitAPIException {
 		GitProject gitProject = GitProject.fromURI(uri, directory);
 
-		return new GitProjectAnalysis(gitProject, commitAnalysisFactory, outFile);
+		return new GitProjectAnalysis(gitProject, commitAnalysisFactory, sourceDir, outFile);
 	}
 
 }

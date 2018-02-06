@@ -6,8 +6,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 
-import multidiffplus.commit.Annotation;
-import multidiffplus.commit.AnnotationFactBase;
+import multidiffplus.facts.Annotation;
+import multidiffplus.facts.AnnotationFactBase;
 
 /**
  * Prints source code as annotated HTML.

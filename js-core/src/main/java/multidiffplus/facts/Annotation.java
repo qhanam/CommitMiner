@@ -1,6 +1,8 @@
-package multidiffplus.commit;
+package multidiffplus.facts;
 
 import java.util.List;
+
+import multidiffplus.commit.DependencyIdentifier;
 
 /**
  * Stores the label, references, and location of a source file annotation.
