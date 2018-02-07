@@ -1,4 +1,4 @@
-package multidiffplus.mining;
+package multidiffplus.mining.ast;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -16,7 +16,7 @@ import org.kohsuke.args4j.CmdLineParser;
 import multidiffplus.batch.GitProjectAnalysis;
 import multidiffplus.batch.GitProjectAnalysisTask;
 import multidiffplus.factories.ICommitAnalysisFactory;
-import multidiffplus.mining.factories.MiningCommitAnalysisFactory;
+import multidiffplus.mining.ast.factories.MiningCommitAnalysisFactory;
 
 public class Main {
 

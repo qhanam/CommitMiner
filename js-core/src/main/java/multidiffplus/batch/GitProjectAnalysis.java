@@ -321,10 +321,11 @@ public class GitProjectAnalysis extends GitProject {
 			/* Write the data set. */
 			for(Annotation annotation : factBase.getAnnotations()) {
 				stream.println(commit.toString() 
-						+ "," + srcFile
-						+ "," + dstFile
 						+ "," + sourceCodeFileChange.toString() 
-						+ "," + annotation.toString());
+						+ "," + srcFile.getName()
+						+ "," + dstFile.getName()
+						+ "," + annotation.getLabel()
+						+ "," + annotation.getLine());
 			}
 		
 		}

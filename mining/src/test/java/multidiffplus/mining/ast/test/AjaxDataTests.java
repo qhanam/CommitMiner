@@ -1,4 +1,4 @@
-package multidiffplus.mining.test;
+package multidiffplus.mining.ast.test;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,7 +15,7 @@ import multidiffplus.commit.SourceCodeFileChange;
 import multidiffplus.factories.ICommitAnalysisFactory;
 import multidiffplus.facts.Annotation;
 import multidiffplus.facts.AnnotationFactBase;
-import multidiffplus.mining.factories.MiningCommitAnalysisFactory;
+import multidiffplus.mining.ast.factories.MiningCommitAnalysisFactory;
 
 public class AjaxDataTests {
 	

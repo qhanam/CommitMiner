@@ -1,4 +1,4 @@
-package multidiffplus.mining.analysis;
+package multidiffplus.mining.ast.analysis;
 
 import java.util.LinkedList;
 
