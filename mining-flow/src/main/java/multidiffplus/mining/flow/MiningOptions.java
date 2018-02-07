@@ -1,4 +1,4 @@
-package multidiffplus.mining.ast;
+package multidiffplus.mining.flow;
 
 import java.io.File;
 

@@ -1,4 +1,4 @@
-package multidiffplus.mining.ast.factories;
+package multidiffplus.mining.flow.factories;
 
 import java.util.LinkedList;
 import java.util.List;

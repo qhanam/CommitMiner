@@ -15,7 +15,7 @@ import multidiffplus.commit.SourceCodeFileChange;
 import multidiffplus.factories.ICommitAnalysisFactory;
 import multidiffplus.facts.Annotation;
 import multidiffplus.facts.AnnotationFactBase;
-import multidiffplus.mining.ast.factories.MiningCommitAnalysisFactory;
+import multidiffplus.mining.flow.factories.MiningCommitAnalysisFactory;
 
 public class AjaxDataTests {
 	

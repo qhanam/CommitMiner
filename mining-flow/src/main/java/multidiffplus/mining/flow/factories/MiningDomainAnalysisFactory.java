@@ -1,4 +1,4 @@
-package multidiffplus.mining.ast.factories;
+package multidiffplus.mining.flow.factories;
 
 import java.util.List;
 
@@ -6,7 +6,7 @@ import multidiffplus.analysis.DomainAnalysis;
 import multidiffplus.factories.IASTVisitorFactory;
 import multidiffplus.factories.ICFGFactory;
 import multidiffplus.factories.IDomainAnalysisFactory;
-import multidiffplus.mining.ast.analysis.MiningDomainAnalysis;
+import multidiffplus.mining.flow.analysis.MiningDomainAnalysis;
 
 public class MiningDomainAnalysisFactory implements IDomainAnalysisFactory {
 
