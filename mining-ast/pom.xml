@@ -8,7 +8,7 @@
     <version>1.0-SNAPSHOT</version>
   </parent>
   <groupId>ca.ubc.ece.salt.commitminer</groupId>
-  <artifactId>mining</artifactId>
+  <artifactId>mining-ast</artifactId>
   <version>1.0-SNAPSHOT</version>
   <name>mining</name>
   <url>http://maven.apache.org</url>

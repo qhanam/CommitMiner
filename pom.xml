@@ -61,7 +61,8 @@
 		<module>js-analysis</module>
 		<module>js-diff</module>
 		<module>js-verify</module>
-    <module>mining</module>
+    <module>mining-ast</module>
+    <module>mining-flow</module>
   </modules>
 
 	<dependencyManagement>
