@@ -1,9 +1,10 @@
 package multidiffplus.mining.flow;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -12,11 +13,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
-
-import multidiffplus.batch.GitProjectAnalysis;
-import multidiffplus.batch.GitProjectAnalysisTask;
-import multidiffplus.factories.ICommitAnalysisFactory;
-import multidiffplus.mining.flow.factories.MiningCommitAnalysisFactory;
 
 public class Main {
 
@@ -27,8 +23,6 @@ public class Main {
 
 	/**
 	 * Creates the learning data set for extracting repair patterns.
-	 * @param args
-	 * @throws Exception
 	 */
 	public static void main(String[] args) {
 
@@ -48,18 +42,22 @@ public class Main {
 			return;
 		}
 
-		/* Create the commit analysis that will analyze commits. */
-		ICommitAnalysisFactory factory = new MiningCommitAnalysisFactory();
-
-		/* Analyzes git histories in batch. */
-        GitProjectAnalysis gitProjectAnalysis;
-
 		/* Parse the file into a list of file pairs. */
-		List<String> versionPairs = new LinkedList<String>();
+		Set<Candidate> candidates = new HashSet<Candidate>();
 
 		try(BufferedReader br = new BufferedReader(new FileReader(options.getCandidatesFile()))) {
 			for(String line; (line = br.readLine()) != null; ) {
-				versionPairs.add(line);
+				
+				/* Parse the line into a Candidate object. */
+				String[] values = line.split(",");
+				Candidate candidate = new Candidate(values[0], values[1], 
+						new File(options.getSourceDir(), values[2]), 
+						new File(options.getSourceDir(), values[3]));
+				
+				/* Add the candidate if it is is not already in the candidate
+				* set (we will re-generate labels for each interesting change). */
+				candidates.add(candidate);
+
 			}
 		}
 		catch(Exception e) {
@@ -80,29 +78,18 @@ public class Main {
 		 * before starting the analysis.
 		 */
 		ExecutorService executor = Executors.newFixedThreadPool(options.getNThreads());
-		CountDownLatch latch = new CountDownLatch(versionPairs.size());
+		CountDownLatch latch = new CountDownLatch(candidates.size());
 
 		/* Analyze all projects. */
-		for(String uri : versionPairs) {
+		for(Candidate candidate : candidates) {
 			
-			/* Ignore commented urls. */
-			if(uri.startsWith("#")) {
-				latch.countDown();
-				continue;
-			}
-
 			try {
-				/* Build git repository object */
-				gitProjectAnalysis = GitProjectAnalysis.fromURI(uri,
-						CHECKOUT_DIR, factory, 
-						options.getSourceDir(), 
-						options.getOutFile());
-
 				/* Perform the analysis (this may take some time) */
-				executor.submit(new GitProjectAnalysisTask(gitProjectAnalysis, latch));
+				CandidateAnalysis candidateAnalysis = new CandidateAnalysis(candidate);
+				executor.submit(new CandidateAnalysisTask(candidateAnalysis, latch));
 			} catch (Exception e) {
 				e.printStackTrace(System.err);
-				logger.error("[IMPORTANT] Project " + uri + " threw an exception");
+				logger.error("[IMPORTANT] Project " + candidate.getURI() + "/" + candidate.getFile() + " threw an exception");
 				logger.error(e);
 				continue;
 			}
