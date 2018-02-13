@@ -15,7 +15,6 @@ import multidiffplus.commit.Commit;
 import multidiffplus.commit.Commit.Type;
 import multidiffplus.commit.SourceCodeFileChange;
 import multidiffplus.factories.ICommitAnalysisFactory;
-import multidiffplus.facts.AnnotationFactBase;
 import multidiffplus.mining.flow.factories.MiningCommitAnalysisFactory;
 import multidiffplus.mining.flow.facts.SliceFactBase;
 
@@ -42,9 +41,7 @@ public class CandidateAnalysis {
 		Commit commit = getCommit(candidate.getProject(), 
 				candidate.getURI(), 
 				candidate.getCommitID());
-		commit.addSourceCodeFileChange(getSourceCodeFileChange(candidate.getFile(), 
-				candidate.getOldFile(), 
-				candidate.getNewFile()));
+		commit.addSourceCodeFileChange(sourceCodeFileChange);
 
 		/* Builds the data set with our custom queries. */
 		SliceFactBase factBase = SliceFactBase.getInstance(sourceCodeFileChange);
