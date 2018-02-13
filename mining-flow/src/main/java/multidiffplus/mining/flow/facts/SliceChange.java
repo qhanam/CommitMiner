@@ -12,6 +12,7 @@ public class SliceChange {
 	 */
 	public enum Type {
 		REPAIR, // Implies before is buggy and after is fixed
+		MUTANT_REPAIR, // Mutated such that before is buggy and after is fixed
 		NOMINAL // Implies both versions are correct
 	}
 	

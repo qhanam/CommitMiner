@@ -14,6 +14,7 @@ import multidiffplus.mining.flow.facts.Slice;
 import multidiffplus.mining.flow.facts.SliceChange;
 import multidiffplus.mining.flow.facts.SliceFactBase;
 import multidiffplus.mining.flow.facts.Statement;
+import multidiffplus.mining.flow.mutations.MutateStringify;
 
 /**
  * Search for the repair pattern where a JSON object is incorrectly passed as an
@@ -90,8 +91,8 @@ public class AjaxDataASTAnalysis implements NodeVisitor {
 
 		if(dataProperty == null) {
 
-			/* There is no data being sent. No repairs and no mutations possible. */
-			this.registerNominalSliceChange(call, SliceChange.Type.NOMINAL);
+			/* There is no data being sent, so no repair should be applied. */
+			this.registerSliceChange(call, call, SliceChange.Type.NOMINAL);
 			return;
 
 		}
@@ -101,8 +102,8 @@ public class AjaxDataASTAnalysis implements NodeVisitor {
 
 		if(stringify == null) {
 
-			/* This is mutation candidate. */
-			this.registerNominalSliceChange(call, SliceChange.Type.NOMINAL);
+			/* JSON.stringify is not used, so no repair should be applied. */
+			registerSliceChange(call, call, SliceChange.Type.NOMINAL);
 			return;
 
 		}
@@ -111,16 +112,27 @@ public class AjaxDataASTAnalysis implements NodeVisitor {
 				&& dataProperty.getChangeType() == ChangeType.UPDATED
 				&& stringify.getChangeType() == ChangeType.INSERTED) {
 
-			/* This is a repair. */
-			this.registerNominalSliceChange(call, SliceChange.Type.REPAIR);
+			/* After the repair is applied, the code is nominal. */
+			registerSliceChange(call, call, SliceChange.Type.NOMINAL);
+
+			/* There is a concrete repair. */
+			registerSliceChange((FunctionCall)call.getMapping(), call, SliceChange.Type.REPAIR);
+
 			return;
 
 		}
 		else if(call.getChangeType() == ChangeType.UPDATED
 				|| call.getChangeType() == ChangeType.INSERTED) {
 
-			/* This is mutation candidate. */
-			this.registerNominalSliceChange(call, SliceChange.Type.NOMINAL);
+			/* JSON.stringify is already used, so no repair should be applied. */
+			registerSliceChange(call, call, SliceChange.Type.NOMINAL);
+			
+			/* Mutate a repair (delete JSON.stringify). */
+			MutateStringify mutation = new MutateStringify(call);
+			FunctionCall mutant = mutation.mutate();
+			if(mutant != null)
+				registerSliceChange(mutant, call, SliceChange.Type.MUTANT_REPAIR);
+
 			return;
 
 		}
@@ -176,15 +188,14 @@ public class AjaxDataASTAnalysis implements NodeVisitor {
 	}
 	
 	/**
-	 * Register's the change to the call's slice.
+	 * Registers the change to the call's slice.
 	 */
-	private void registerNominalSliceChange(FunctionCall call, SliceChange.Type type) {
-		AstNode mappedCall = (AstNode)call.getMapping();
-		Slice before = mappedCall == null ? null : buildSlice(mappedCall);
-		Slice after = buildSlice(call);
+	private void registerSliceChange(FunctionCall callA, FunctionCall callB, SliceChange.Type type) {
+		Slice before = callA == null ? null : buildSlice(callA);
+		Slice after = callB == null ? null : buildSlice(callB);
 		factBase.registerSliceFact(new SliceChange(before, after, type));
 	}
-	
+
 	/**
 	 * Builds a slice. Currently only supports one statement. 
 	 * @param node The statement that constitutes the slice.
