@@ -5,27 +5,17 @@ package multidiffplus.mining.flow.facts;
  */
 public class Statement {
 
-	/**
-	 * Specifies the statement's role in the slice.
-	 */
-	public enum Annotation {
-		DEFECTIVE,
-		NOMINAL
-	}
-
 	private String text;
 	private Integer line;
 	private Integer absolutePosition;
 	private Integer length;
-	private Statement.Annotation annotation;
 	
 	public Statement(String text, Integer line, Integer absolutePosition, 
-			Integer length, Statement.Annotation annotation) {
+			Integer length) {
 		this.text = text;
 		this.line = line;
 		this.absolutePosition = absolutePosition;
 		this.length = length;
-		this.annotation = annotation;
 	}
 	
 	/** @return the statement text */
@@ -39,9 +29,6 @@ public class Statement {
 	
 	/** @return the length of the statement text. */
 	public Integer getLength() { return length; }
-	
-	/** @return the annotation for the statement. */
-	public Statement.Annotation getAnnotation() { return annotation; }
 	
 	@Override
 	public String toString() {

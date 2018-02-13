@@ -5,6 +5,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 import multidiffplus.commit.SourceCodeFileChange;
 import multidiffplus.facts.FactBase;
 
@@ -15,7 +18,7 @@ public class SliceFactBase extends FactBase {
 	
 	private static Map<SourceCodeFileChange, SliceFactBase> instances = new HashMap<SourceCodeFileChange, SliceFactBase>();
 	
-	private Set<Slice> slices;
+	private Set<SliceChange> slices;
 	
 	/**
 	 * @return The AnnotationFactBase for the given {@code SourceCodeFileChange}.
@@ -38,7 +41,7 @@ public class SliceFactBase extends FactBase {
 	
 	private SliceFactBase(SourceCodeFileChange sourceCodeFileChange) {
 		super(sourceCodeFileChange);
-		slices = new HashSet<Slice>();
+		slices = new HashSet<SliceChange>();
 	}
 
 	/**
@@ -46,7 +49,7 @@ public class SliceFactBase extends FactBase {
 	 * 
 	 * The slice is assumed to be on the destination file.
 	 */
-	public void registerSliceFact(Slice slice) {
+	public void registerSliceFact(SliceChange slice) {
 		this.slices.add(slice);
 	}
 	
@@ -55,14 +58,14 @@ public class SliceFactBase extends FactBase {
 	 * 
 	 * The slice is assumed to be on the destination file.
 	 */
-	public void registerSliceFacts(Set<Slice> slices) {
+	public void registerSliceFacts(Set<SliceChange> slices) {
 		this.slices.addAll(slices);
 	}
 	
 	/**
 	 * @return The ordered set of slices in the fact base.
 	 */
-	public Set<Slice> getSlices() {
+	public Set<SliceChange> getSlices() {
 		return this.slices;
 	}
 	
@@ -73,8 +76,28 @@ public class SliceFactBase extends FactBase {
 		return this.slices.isEmpty();
 	}
 	
+	/**
+	 * @return the {@code SliceFactBase} as a {@code JsonObject}.
+	 */
+	public JsonObject getJsonObject() {
+		
+		JsonObject json = new JsonObject();
+		json.addProperty("id", sourceCodeFileChange.getID());
+		json.addProperty("file", sourceCodeFileChange.getFileName());
+		
+		JsonArray jsonArray = new JsonArray();
+		json.add("changes", jsonArray);
+
+		for(SliceChange slice : slices) {
+			jsonArray.add(slice.getJsonObject());
+		}
+		
+		return json;
+		
+	}
+	
 	public void printDataSet() {
-		for(Slice slice : slices) {
+		for(SliceChange slice : slices) {
 			System.out.println(slice.toString());
 		}
 	}

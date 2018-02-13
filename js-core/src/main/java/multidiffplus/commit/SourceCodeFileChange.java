@@ -58,11 +58,11 @@ public class SourceCodeFileChange {
 	 * @return the file name (without the full path).
 	 */
 	public String getFileName() {
-		java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("/([A-za-z]+)\\.java");
+		java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("/(?<name>[^/]+\\.js)");
 		Matcher m = pattern.matcher(this.repairedFile);
 
 		if(m.find()) {
-			return m.group(1);
+			return m.group("name");
 		}
 
 		return "[unknown]";

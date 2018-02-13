@@ -1,7 +1,5 @@
 package multidiffplus.mining.flow.analysis;
 
-import java.util.LinkedList;
-
 import org.mozilla.javascript.Token;
 import org.mozilla.javascript.ast.AstNode;
 import org.mozilla.javascript.ast.FunctionCall;
@@ -11,10 +9,11 @@ import org.mozilla.javascript.ast.ObjectProperty;
 import org.mozilla.javascript.ast.StringLiteral;
 
 import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode.ChangeType;
-import multidiffplus.commit.DependencyIdentifier;
 import multidiffplus.commit.SourceCodeFileChange;
-import multidiffplus.facts.Annotation;
-import multidiffplus.facts.AnnotationFactBase;
+import multidiffplus.mining.flow.facts.Slice;
+import multidiffplus.mining.flow.facts.SliceChange;
+import multidiffplus.mining.flow.facts.SliceFactBase;
+import multidiffplus.mining.flow.facts.Statement;
 
 /**
  * Search for the repair pattern where a JSON object is incorrectly passed as an
@@ -36,14 +35,14 @@ public class AjaxDataASTAnalysis implements NodeVisitor {
 	AstNode root;
 
 	/** Register facts here. */
-	AnnotationFactBase factBase;
+	SliceFactBase factBase;
 	
 	/**
 	 * @param sourceCodeFileChange used to look up the correct dataset for
 	 * storing facts.
 	 */
 	public AjaxDataASTAnalysis(SourceCodeFileChange sourceCodeFileChange, AstNode root) {
-		this.factBase = AnnotationFactBase.getInstance(sourceCodeFileChange);
+		this.factBase = SliceFactBase.getInstance(sourceCodeFileChange);
 		this.root = root;
 	}
 
@@ -91,14 +90,8 @@ public class AjaxDataASTAnalysis implements NodeVisitor {
 
 		if(dataProperty == null) {
 
-			/* There is no data being sent. */
-			Annotation annotation = new Annotation("AJAX_OTHER", 
-					new LinkedList<DependencyIdentifier>(), 
-					settings.getLineno(), 
-					settings.getAbsolutePosition(), 
-					settings.getLength());
-			factBase.registerAnnotationFact(annotation);
-
+			/* There is no data being sent. No repairs and no mutations possible. */
+			this.registerNominalSliceChange(call, SliceChange.Type.NOMINAL);
 			return;
 
 		}
@@ -107,44 +100,29 @@ public class AjaxDataASTAnalysis implements NodeVisitor {
 		FunctionCall stringify = getStringify(dataProperty.getRight());
 
 		if(stringify == null) {
-			
-			/* This is mutation candidate. */
-			Annotation annotation = new Annotation("AJAX_STRINGIFY_MUTATE_ADD", 
-					new LinkedList<DependencyIdentifier>(), 
-					dataProperty.getRight().getLineno(), 
-					dataProperty.getRight().getAbsolutePosition(), 
-					dataProperty.getRight().getLength());
-			factBase.registerAnnotationFact(annotation);
 
+			/* This is mutation candidate. */
+			this.registerNominalSliceChange(call, SliceChange.Type.NOMINAL);
 			return;
 
 		}
 		
-		/* Register a AJAX_STRINGIFY fact. */
 		if(call.getChangeType() == ChangeType.UPDATED
 				&& dataProperty.getChangeType() == ChangeType.UPDATED
 				&& stringify.getChangeType() == ChangeType.INSERTED) {
 
 			/* This is a repair. */
-			Annotation annotation = new Annotation("AJAX_STRINGIFY_REPAIR",
-					new LinkedList<DependencyIdentifier>(),
-					stringify.getLineno(),
-					stringify.getAbsolutePosition(),
-					stringify.getLength());
-			factBase.registerAnnotationFact(annotation);
+			this.registerNominalSliceChange(call, SliceChange.Type.REPAIR);
+			return;
 
 		}
 		else if(call.getChangeType() == ChangeType.UPDATED
 				|| call.getChangeType() == ChangeType.INSERTED) {
 
 			/* This is mutation candidate. */
-			Annotation annotation = new Annotation("AJAX_STRINGIFY_MUTATE_DEL", 
-					new LinkedList<DependencyIdentifier>(), 
-					stringify.getLineno(), 
-					stringify.getAbsolutePosition(), 
-					stringify.getLength());
-			factBase.registerAnnotationFact(annotation);
-			
+			this.registerNominalSliceChange(call, SliceChange.Type.NOMINAL);
+			return;
+
 		}
 
 	}
@@ -195,6 +173,30 @@ public class AjaxDataASTAnalysis implements NodeVisitor {
 		/* The 'data' field is not in the object literal. */
 		return null;
 		
+	}
+	
+	/**
+	 * Register's the change to the call's slice.
+	 */
+	private void registerNominalSliceChange(FunctionCall call, SliceChange.Type type) {
+		AstNode mappedCall = (AstNode)call.getMapping();
+		Slice before = mappedCall == null ? null : buildSlice(mappedCall);
+		Slice after = buildSlice(call);
+		factBase.registerSliceFact(new SliceChange(before, after, type));
+	}
+	
+	/**
+	 * Builds a slice. Currently only supports one statement. 
+	 * @param node The statement that constitutes the slice.
+	 * @return A single-statement slice.
+	 */
+	private Slice buildSlice(AstNode node) {
+		return new Slice(
+			new Statement(
+					node.toSource(),
+					node.getLineno(),
+					node.getAbsolutePosition(),
+					node.getLength()));
 	}
 
 }
