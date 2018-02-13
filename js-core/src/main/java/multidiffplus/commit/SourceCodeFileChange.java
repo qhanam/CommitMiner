@@ -70,20 +70,9 @@ public class SourceCodeFileChange {
 
 	@Override
 	public boolean equals(Object o) {
-
-		if(o instanceof SourceCodeFileChange) {
-
-			SourceCodeFileChange a = (SourceCodeFileChange) o;
-
-			if(this.buggyFile.equals(a.buggyFile)
-				&& this.repairedFile.equals(a.repairedFile)) {
-
-				return true;
-
-			}
-
-		}
-		return false;
+		if(!(o instanceof SourceCodeFileChange)) return false;
+		SourceCodeFileChange a = (SourceCodeFileChange) o;
+		return this.id == a.id;
 	}
 
 	@Override

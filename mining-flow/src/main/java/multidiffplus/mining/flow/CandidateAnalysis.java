@@ -69,7 +69,7 @@ public class CandidateAnalysis {
 		if(!factBase.isEmpty()) flushToFile(json, jsonFile);
 
 		/* We are done with the factbase and can recover the memory. */
-		AnnotationFactBase.removeInstance(sourceCodeFileChange);
+		SliceFactBase.removeInstance(sourceCodeFileChange);
 
 	}
 
