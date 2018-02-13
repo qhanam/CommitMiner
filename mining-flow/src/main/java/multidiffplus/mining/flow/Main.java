@@ -65,18 +65,8 @@ public class Main {
 			return;
 		}
 
-		/*
-		 * Create a pool of threads and use a CountDownLatch to check when
-		 * all threads are done.
-		 * http://stackoverflow.com/questions/1250643/how-to-wait-for-all-
-		 * threads-to-finish-using-executorservice
-		 *
-		 * I was going to create a list of Callable objects and use
-		 * executor.invokeAll, but this would remove the start of the
-		 * execution of the tasks from the loop to outside the loop, which
-		 * would mean all git project initializations would have to happen
-		 * before starting the analysis.
-		 */
+		/* Create a pool of threads and use a CountDownLatch to check when
+		 * all threads are done. */
 		ExecutorService executor = Executors.newFixedThreadPool(options.getNThreads());
 		CountDownLatch latch = new CountDownLatch(candidates.size());
 
@@ -85,7 +75,7 @@ public class Main {
 			
 			try {
 				/* Perform the analysis (this may take some time) */
-				CandidateAnalysis candidateAnalysis = new CandidateAnalysis(candidate);
+				CandidateAnalysis candidateAnalysis = new CandidateAnalysis(candidate, options.getOutFile());
 				executor.submit(new CandidateAnalysisTask(candidateAnalysis, latch));
 			} catch (Exception e) {
 				e.printStackTrace(System.err);
@@ -93,6 +83,7 @@ public class Main {
 				logger.error(e);
 				continue;
 			}
+
 		}
 
 		/* Wait for all threads to finish their work */

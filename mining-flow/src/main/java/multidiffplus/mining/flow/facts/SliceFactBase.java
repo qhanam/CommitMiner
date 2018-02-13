@@ -82,11 +82,11 @@ public class SliceFactBase extends FactBase {
 	public JsonObject getJsonObject() {
 		
 		JsonObject json = new JsonObject();
-		json.addProperty("id", sourceCodeFileChange.getID());
-		json.addProperty("file", sourceCodeFileChange.getFileName());
+		json.addProperty("sourceFileChangeID", sourceCodeFileChange.getID());
+		json.addProperty("fileName", sourceCodeFileChange.getFileName());
 		
 		JsonArray jsonArray = new JsonArray();
-		json.add("changes", jsonArray);
+		json.add("sliceChangePair", jsonArray);
 
 		for(SliceChange slice : slices) {
 			jsonArray.add(slice.getJsonObject());
