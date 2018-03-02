@@ -5,7 +5,7 @@ import java.util.regex.Matcher;
 
 import org.mozilla.javascript.EvaluatorException;
 
-import changeimpact.InterleavedChangeImpactAnalysis;
+import changeimpact.InterleavedInterCIA;
 import multidiffplus.analysis.DomainAnalysis;
 import multidiffplus.commit.SourceCodeFileChange;
 import multidiffplus.diff.Diff;
@@ -69,7 +69,7 @@ public class ChangeImpactDomainAnalysis extends DomainAnalysis {
 			DiffContext diffContext = diff.getContext();
 
 			/* To co-ordinate interleaving, we need to setup an analysis one level higher. */
-			InterleavedChangeImpactAnalysis interleavedAnalysis = new InterleavedChangeImpactAnalysis(
+			InterleavedInterCIA interleavedAnalysis = new InterleavedInterCIA(
 					cfgVisitorFactories, sourceCodeFileChange, diffContext);
 
 			/* Run the analysis. */

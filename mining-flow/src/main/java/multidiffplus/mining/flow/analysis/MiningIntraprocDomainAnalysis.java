@@ -3,15 +3,12 @@ package multidiffplus.mining.flow.analysis;
 import java.util.List;
 
 import org.mozilla.javascript.EvaluatorException;
-import org.mozilla.javascript.ast.AstNode;
 
-import changeimpact.InterleavedChangeImpactAnalysis;
+import changeimpact.InterleavedIntraCIA;
 import multidiffplus.analysis.DomainAnalysis;
-import multidiffplus.cfg.CFG;
 import multidiffplus.commit.SourceCodeFileChange;
 import multidiffplus.diff.Diff;
 import multidiffplus.diff.DiffContext;
-import multidiffplus.factories.IASTVisitorFactory;
 import multidiffplus.factories.ICFGFactory;
 import multidiffplus.factories.ICFGVisitorFactory;
 
@@ -81,7 +78,7 @@ public class MiningIntraprocDomainAnalysis extends DomainAnalysis {
 			DiffContext diffContext = diff.getContext();
 			
 			/* To co-ordinate interleaving, we need to setup an analysis one level higher. */
-			InterleavedChangeImpactAnalysis interleavedAnalysis = new InterleavedChangeImpactAnalysis(
+			InterleavedIntraCIA interleavedAnalysis = new InterleavedIntraCIA(
 					cfgVisitorFactories, sourceCodeFileChange, diffContext);
 
 			/* Run the analysis. */

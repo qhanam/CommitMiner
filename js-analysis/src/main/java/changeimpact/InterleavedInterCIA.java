@@ -9,9 +9,10 @@ import multidiffplus.factories.ICFGVisitorFactory;
 import multidiffplus.jsanalysis.flow.Analysis;
 
 /**
+ * Performs an inter-procedural analysis of a script (file).
  * Synchronizes the change impact analysis of the original and new files.
  */
-public class InterleavedChangeImpactAnalysis {
+public class InterleavedInterCIA {
 
 	List<ICFGVisitorFactory> cfgVisitorFactories;
 	SourceCodeFileChange sourceCodeFileChange;
@@ -20,7 +21,7 @@ public class InterleavedChangeImpactAnalysis {
 	Analysis srcAnalysis;
 	Analysis dstAnalysis;
 
-	public InterleavedChangeImpactAnalysis(List<ICFGVisitorFactory> cfgVisitorFactories, 
+	public InterleavedInterCIA(List<ICFGVisitorFactory> cfgVisitorFactories, 
 			SourceCodeFileChange sourceCodeFileChange, DiffContext diffContext) {
 		this.cfgVisitorFactories = cfgVisitorFactories;
 		this.sourceCodeFileChange = sourceCodeFileChange;
@@ -38,7 +39,7 @@ public class InterleavedChangeImpactAnalysis {
 		* available to the dst analysis. */
 		while(!srcAnalysis.isFinished()) srcAnalysis.advance();
 		
-		/* Run the dst analysis and verify changes with symex. */
+		/* Run the dst analysis. */
 		while(!dstAnalysis.isFinished()) {
 
 			/* Advance dst to the next common instruction. */
