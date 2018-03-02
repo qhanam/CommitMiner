@@ -2,14 +2,11 @@ package changeimpact;
 
 import java.util.List;
 
-import multidiffplus.analysis.Options;
 import multidiffplus.cfg.CFG;
-import multidiffplus.cfg.CFGNode;
 import multidiffplus.commit.SourceCodeFileChange;
 import multidiffplus.diff.DiffContext;
 import multidiffplus.factories.ICFGVisitorFactory;
 import multidiffplus.jsanalysis.flow.Analysis;
-import multidiffplus.jsanalysis.flow.Instruction;
 
 /**
  * Synchronizes the change impact analysis of the original and new files.
@@ -45,44 +42,12 @@ public class InterleavedChangeImpactAnalysis {
 		while(!dstAnalysis.isFinished()) {
 
 			/* Advance dst to the next common instruction. */
-			Instruction dstInstruction = dstAnalysis.advance();
-
-			/* If this is a common instruction, check for changes. */
-			if(dstInstruction != null && dstInstruction.hasMappedInstruction()) {
-
-				CFGNode srcNode = dstInstruction.getMappedInstruction();
-				CFGNode dstNode = dstInstruction.getInstruction();
-				
-				/* Check for semantic equivalence of values with 'changed'
-				* lattice elements. */
-				if(Options.getInstance().useSymEx())
-					checkSemanticEquivalence(srcNode, dstNode);
-				
-			}
+			dstAnalysis.advance();
 
 		}
 	
 		/* Generate desired facts for post-analysis processing. */
 		this.generateFacts(diffContext.dstCFGs);
-
-	}
-	
-	/** 
-	 * Attempt to prove equivalence. Progressively increase size of backwards slice. 
-	 */
-	private void checkSemanticEquivalence(CFGNode srcNode, CFGNode dstNode) {
-		
-		/* The maximum depth of statements in the backwards slice. */
-		int MAX_DEPTH = 3;
-
-		boolean equiv = false;
-		
-		int i = 0;
-		while(!equiv && i < MAX_DEPTH) {
-			VerificationTask task = VerificationTask.build(srcNode, dstNode, i + 1);
-			equiv = task.verify();
-			i++;
-		}
 
 	}
 	

@@ -50,7 +50,8 @@ public class SliceChange {
 		json.addProperty("type", type.toString());
 
 		switch(type) {
-		case REPAIR: // Train the DL model to apply this fix to before code.
+		case MUTANT_REPAIR: // Train the DL model to apply this fix to before code.
+		case REPAIR:
 			json.addProperty("before", before.toString());
 			json.addProperty("after", after.toString());
 			break;

@@ -5,6 +5,7 @@ import java.util.List;
 import org.mozilla.javascript.EvaluatorException;
 import org.mozilla.javascript.ast.AstNode;
 
+import changeimpact.InterleavedChangeImpactAnalysis;
 import multidiffplus.analysis.DomainAnalysis;
 import multidiffplus.cfg.CFG;
 import multidiffplus.commit.SourceCodeFileChange;
@@ -12,18 +13,21 @@ import multidiffplus.diff.Diff;
 import multidiffplus.diff.DiffContext;
 import multidiffplus.factories.IASTVisitorFactory;
 import multidiffplus.factories.ICFGFactory;
+import multidiffplus.factories.ICFGVisitorFactory;
 
 /**
- * Gathers change impact facts about one source code file.
+ * Gathers change impact facts about one source code file using an intra-procedural flow analysis.
+ * 
+ * This improves precision with limited effect on runtime.
  */
-public class MiningDomainAnalysis extends DomainAnalysis {
+public class MiningIntraprocDomainAnalysis extends DomainAnalysis {
+	
+	public List<ICFGVisitorFactory> cfgVisitorFactories;
 
-	public List<IASTVisitorFactory> astVisitorFactories;
-
-	public MiningDomainAnalysis(List<IASTVisitorFactory> astVisitorFactories,
+	public MiningIntraprocDomainAnalysis(List<ICFGVisitorFactory> cfgVisitorFactories,
 			ICFGFactory cfgFactory) {
 		super(null, null, cfgFactory, false, true);
-		this.astVisitorFactories = astVisitorFactories;
+		this.cfgVisitorFactories = cfgVisitorFactories;
 	}
 
 	/**
@@ -76,31 +80,16 @@ public class MiningDomainAnalysis extends DomainAnalysis {
 			 * and CFGs. */
 			DiffContext diffContext = diff.getContext();
 			
-			/* TODO: Hook up the flow analysis here if needed (use InterleavedChangeImpactAnalysis). */
+			/* To co-ordinate interleaving, we need to setup an analysis one level higher. */
+			InterleavedChangeImpactAnalysis interleavedAnalysis = new InterleavedChangeImpactAnalysis(
+					cfgVisitorFactories, sourceCodeFileChange, diffContext);
+
+			/* Run the analysis. */
+			interleavedAnalysis.analyze();
 			
-			/* Run the AST visitors. */
-			analyzeAST(sourceCodeFileChange, diffContext);
-
 		}
 
 
-	}
-
-	/**
-	 * Generate facts by accepting visitors to the ASTs.
-	 */
-	private void analyzeAST(SourceCodeFileChange sourceCodeFileChange, DiffContext diffContext) {
-		
-		/* TODO: Generate facts by analyzing the source functions? */
-
-		/* Generate facts by analyzing the destination functions. */
-		for(CFG cfg : diffContext.dstCFGs) {
-			for(IASTVisitorFactory astVF : astVisitorFactories) {
-				AstNode root = (AstNode)cfg.getEntryNode().getStatement();
-				root.visit(astVF.newInstance(sourceCodeFileChange, root));
-			}
-		}
-		
 	}
 
 }

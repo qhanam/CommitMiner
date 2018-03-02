@@ -6,7 +6,7 @@ import multidiffplus.analysis.DomainAnalysis;
 import multidiffplus.factories.IASTVisitorFactory;
 import multidiffplus.factories.ICFGFactory;
 import multidiffplus.factories.IDomainAnalysisFactory;
-import multidiffplus.mining.flow.analysis.MiningDomainAnalysis;
+import multidiffplus.mining.flow.analysis.MiningASTDomainAnalysis;
 
 public class MiningDomainAnalysisFactory implements IDomainAnalysisFactory {
 
@@ -20,7 +20,7 @@ public class MiningDomainAnalysisFactory implements IDomainAnalysisFactory {
 
 	@Override
 	public DomainAnalysis newInstance() {
-		return new MiningDomainAnalysis(astVisitorFactories, cfgFactory);
+		return new MiningASTDomainAnalysis(astVisitorFactories, cfgFactory);
 	}
 
 }
