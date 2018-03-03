@@ -1,4 +1,4 @@
-package multidiffplus.mining.ast.test;
+package multidiffplus.mining.cfg.test;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,7 +35,7 @@ public class AjaxDataTests {
 		SliceFactBase factBase = SliceFactBase.getInstance(sourceCodeFileChange);
 
 		/* Set up the analysis. */
-		ICommitAnalysisFactory commitFactory = new MiningCommitAnalysisFactory(Sensitivity.AST);
+		ICommitAnalysisFactory commitFactory = new MiningCommitAnalysisFactory(Sensitivity.INTRAPROC);
 		CommitAnalysis commitAnalysis = commitFactory.newInstance();
 
 		/* Run the analysis. */

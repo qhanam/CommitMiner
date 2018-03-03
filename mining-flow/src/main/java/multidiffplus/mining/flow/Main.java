@@ -75,7 +75,7 @@ public class Main {
 			
 			try {
 				/* Perform the analysis (this may take some time) */
-				CandidateAnalysis candidateAnalysis = new CandidateAnalysis(candidate, options.getOutFile());
+				CandidateAnalysis candidateAnalysis = new CandidateAnalysis(candidate, options.getOutFile(), options.getSensitivity());
 				executor.submit(new CandidateAnalysisTask(candidateAnalysis, latch));
 			} catch (Exception e) {
 				e.printStackTrace(System.err);

@@ -4,6 +4,8 @@ import java.io.File;
 
 import org.kohsuke.args4j.Option;
 
+import multidiffplus.mining.flow.factories.MiningCommitAnalysisFactory.Sensitivity;
+
 public class MiningOptions {
 
 	@Option(name="--help", usage="Display the help file.")
@@ -17,6 +19,10 @@ public class MiningOptions {
 	@Option(name="--candidates", usage="The path to the CSV file containing the transformation candidates.")
 	private String candidates = null;
 	public File getCandidatesFile() { return candidates == null ? null : new File(candidates); }
+
+	@Option(name="--sensitivity", usage="The context sensitivity setting for the analysis.")
+	private Sensitivity sensitivity = Sensitivity.AST;
+	public Sensitivity getSensitivity() { return sensitivity; }
 
 	@Option(name="--out", usage="The output file (json).")
 	private String outFile = null;

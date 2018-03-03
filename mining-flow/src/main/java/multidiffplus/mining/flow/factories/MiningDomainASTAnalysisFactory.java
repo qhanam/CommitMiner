@@ -8,12 +8,12 @@ import multidiffplus.factories.ICFGFactory;
 import multidiffplus.factories.IDomainAnalysisFactory;
 import multidiffplus.mining.flow.analysis.MiningASTDomainAnalysis;
 
-public class MiningDomainAnalysisFactory implements IDomainAnalysisFactory {
+public class MiningDomainASTAnalysisFactory implements IDomainAnalysisFactory {
 
 	private List<IASTVisitorFactory> astVisitorFactories;
 	private ICFGFactory cfgFactory;
 
-	public MiningDomainAnalysisFactory(List<IASTVisitorFactory> astVisitorFactories, ICFGFactory cfgFactory) {
+	public MiningDomainASTAnalysisFactory(List<IASTVisitorFactory> astVisitorFactories, ICFGFactory cfgFactory) {
 		this.astVisitorFactories = astVisitorFactories;
 		this.cfgFactory = cfgFactory;
 	}

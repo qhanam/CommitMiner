@@ -16,6 +16,7 @@ import multidiffplus.commit.Commit.Type;
 import multidiffplus.commit.SourceCodeFileChange;
 import multidiffplus.factories.ICommitAnalysisFactory;
 import multidiffplus.mining.flow.factories.MiningCommitAnalysisFactory;
+import multidiffplus.mining.flow.factories.MiningCommitAnalysisFactory.Sensitivity;
 import multidiffplus.mining.flow.facts.SliceFactBase;
 
 /**
@@ -25,10 +26,12 @@ public class CandidateAnalysis {
 	
 	private Candidate candidate;
 	private File jsonFile;
+	private Sensitivity sensitivity;
 	
-	public CandidateAnalysis(Candidate candidate, File jsonFile) {
+	public CandidateAnalysis(Candidate candidate, File jsonFile, Sensitivity sensitivity) {
 		this.candidate = candidate;
 		this.jsonFile = jsonFile;
+		this.sensitivity = sensitivity;
 	}
 
 	public void analyze() throws Exception {
@@ -47,7 +50,7 @@ public class CandidateAnalysis {
 		SliceFactBase factBase = SliceFactBase.getInstance(sourceCodeFileChange);
 
 		/* Set up the analysis. */
-		ICommitAnalysisFactory commitFactory = new MiningCommitAnalysisFactory();
+		ICommitAnalysisFactory commitFactory = new MiningCommitAnalysisFactory(sensitivity);
 		CommitAnalysis commitAnalysis = commitFactory.newInstance();
 
 		/* Run the analysis. */
