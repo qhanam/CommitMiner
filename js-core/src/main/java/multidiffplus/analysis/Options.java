@@ -7,22 +7,21 @@ public class Options {
 
 	private static Options instance;
 
-	private SymEx useSymEx;
+	private Sensitivity sensitivity;
 
 	private Options() {
-		this.useSymEx = SymEx.OFF;
+		this.sensitivity = Sensitivity.INTRAPROC;
 	}
 
-	private Options(SymEx useSymEx) {
-		this.useSymEx = useSymEx;
+	private Options(Sensitivity sensitivity) {
+		this.sensitivity = sensitivity;
 	}
-
+	
 	/**
-	 * @return {@code true} if symbolic execution should be used to check for
-	 * semantic equivalence during change impact analysis.
+	 * @return {@code true} if the analysis is intra-procedural.
 	 */
-	public boolean useSymEx() {
-		return useSymEx.equals(SymEx.ON);
+	public boolean intraProc() {
+		return sensitivity.equals(Sensitivity.INTRAPROC);
 	}
 
 	/**
@@ -36,19 +35,17 @@ public class Options {
 	/**
 	 * @return the singleton {@code Options}.
 	 */
-	public static Options createInstance(SymEx symex) {
-		if(instance == null) instance = new Options(symex);
+	public static Options createInstance(Sensitivity sensitivity) {
+		if(instance == null) instance = new Options(sensitivity);
 		return instance;
 	}
 	
 	/**
-	 * Controls the use of symbolic execution to eliminate false positives.
+	 * Controls the precision of the analysis.
 	 */
-	public enum SymEx {
-		/** Use symbolic execution. **/
-		ON,
-		/** Do not use symbolic execution. **/
-		OFF
+	public enum Sensitivity {
+		INTRAPROC,
+		INTERPROC
 	}
 	
 }

@@ -56,7 +56,7 @@ public class MultiDiffPlus {
 	protected void diff() throws Exception {
 		
 		/* Configure the analysis. */
-		Options.createInstance(options.useSymEx());
+//		Options.createInstance(options.useSymEx());
 		
 		/* Read the source files. */
 		String srcCode = new String(Files.readAllBytes(Paths.get(options.getOriginal())));

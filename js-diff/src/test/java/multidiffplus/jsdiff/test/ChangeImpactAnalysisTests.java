@@ -12,7 +12,7 @@ import org.junit.Test;
 import multidiff.js.factories.ChangeImpactCommitAnalysisFactory;
 import multidiffplus.analysis.CommitAnalysis;
 import multidiffplus.analysis.Options;
-import multidiffplus.analysis.Options.SymEx;
+//import multidiffplus.analysis.Options.SymEx;
 import multidiffplus.commit.Commit;
 import multidiffplus.commit.Commit.Type;
 import multidiffplus.commit.SourceCodeFileChange;
@@ -85,7 +85,7 @@ public class ChangeImpactAnalysisTests {
 		String src = "src/test/resources/input/pm2_old.js";
 		String dst = "src/test/resources/input/pm2_new.js";
 		String out = "out/pm2.html";
-		Options.createInstance(SymEx.OFF);
+//		Options.createInstance(SymEx.OFF);
 		this.runTest(src, dst, out);
 	}
 
@@ -94,7 +94,7 @@ public class ChangeImpactAnalysisTests {
 		String src = "src/test/resources/input/pm2_old.js";
 		String dst = "src/test/resources/input/pm2_new.js";
 		String out = "out/pm2.html";
-		Options.createInstance(SymEx.ON);
+//		Options.createInstance(SymEx.ON);
 		this.runTest(src, dst, out);
 	}
 

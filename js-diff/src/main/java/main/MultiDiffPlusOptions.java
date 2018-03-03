@@ -15,8 +15,8 @@ public class MultiDiffPlusOptions {
 	@Option(name="-m", aliases={"--modified"}, usage="The modified file.")
 	private String modified = null;
 	
-	@Option(name = "-s", aliases={"--symex"}, usage="Use symbolic exection (ON|OFF)")
-	private Options.SymEx symex = Options.SymEx.OFF;
+//	@Option(name = "-s", aliases={"--symex"}, usage="Use symbolic exection (ON|OFF)")
+//	private Options.SymEx symex = Options.SymEx.OFF;
 
 	@Option(name="-h", aliases={"--help"}, usage="Display the help file.")
 	private boolean help = false;
@@ -24,7 +24,7 @@ public class MultiDiffPlusOptions {
 	public String getOutputFile() { return outFile; }
 	public String getOriginal() { return original; }
 	public String getModified() { return modified; }
-	public Options.SymEx useSymEx() { return symex; }
+//	public Options.SymEx useSymEx() { return symex; }
 
 	public boolean getHelp() {
 		return help;
