@@ -13,8 +13,8 @@ import multidiffplus.commit.Commit;
 import multidiffplus.commit.Commit.Type;
 import multidiffplus.commit.SourceCodeFileChange;
 import multidiffplus.factories.ICommitAnalysisFactory;
-import multidiffplus.mining.flow.factories.MiningCommitAnalysisFactory;
-import multidiffplus.mining.flow.factories.MiningCommitAnalysisFactory.Sensitivity;
+import multidiffplus.mining.flow.analysis.CommitAnalysisFactory;
+import multidiffplus.mining.flow.analysis.CommitAnalysisFactory.Sensitivity;
 import multidiffplus.mining.flow.facts.SliceFactBase;
 
 public class AjaxDataTests {
@@ -35,7 +35,7 @@ public class AjaxDataTests {
 		SliceFactBase factBase = SliceFactBase.getInstance(sourceCodeFileChange);
 
 		/* Set up the analysis. */
-		ICommitAnalysisFactory commitFactory = new MiningCommitAnalysisFactory(Sensitivity.AST);
+		ICommitAnalysisFactory commitFactory = new CommitAnalysisFactory(Sensitivity.AST);
 		CommitAnalysis commitAnalysis = commitFactory.newInstance();
 
 		/* Run the analysis. */

@@ -1,4 +1,4 @@
-package multidiffplus.mining.flow.analysis;
+package multidiffplus.mining.astvisitor.ajax;
 
 import org.mozilla.javascript.Token;
 import org.mozilla.javascript.ast.AstNode;

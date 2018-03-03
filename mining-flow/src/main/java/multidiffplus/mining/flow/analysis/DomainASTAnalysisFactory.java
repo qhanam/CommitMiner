@@ -1,4 +1,4 @@
-package multidiffplus.mining.flow.factories;
+package multidiffplus.mining.flow.analysis;
 
 import java.util.List;
 
@@ -6,14 +6,13 @@ import multidiffplus.analysis.DomainAnalysis;
 import multidiffplus.factories.IASTVisitorFactory;
 import multidiffplus.factories.ICFGFactory;
 import multidiffplus.factories.IDomainAnalysisFactory;
-import multidiffplus.mining.flow.analysis.MiningASTDomainAnalysis;
 
-public class MiningDomainASTAnalysisFactory implements IDomainAnalysisFactory {
+public class DomainASTAnalysisFactory implements IDomainAnalysisFactory {
 
 	private List<IASTVisitorFactory> astVisitorFactories;
 	private ICFGFactory cfgFactory;
 
-	public MiningDomainASTAnalysisFactory(List<IASTVisitorFactory> astVisitorFactories, ICFGFactory cfgFactory) {
+	public DomainASTAnalysisFactory(List<IASTVisitorFactory> astVisitorFactories, ICFGFactory cfgFactory) {
 		this.astVisitorFactories = astVisitorFactories;
 		this.cfgFactory = cfgFactory;
 	}

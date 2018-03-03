@@ -4,7 +4,7 @@ import java.io.File;
 
 import org.kohsuke.args4j.Option;
 
-import multidiffplus.mining.flow.factories.MiningCommitAnalysisFactory.Sensitivity;
+import multidiffplus.mining.flow.analysis.CommitAnalysisFactory.Sensitivity;
 
 public class MiningOptions {
 

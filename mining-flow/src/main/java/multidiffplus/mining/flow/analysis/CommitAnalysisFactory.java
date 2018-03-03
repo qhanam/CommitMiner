@@ -1,4 +1,4 @@
-package multidiffplus.mining.flow.factories;
+package multidiffplus.mining.flow.analysis;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -9,12 +9,13 @@ import multidiffplus.factories.ICFGVisitorFactory;
 import multidiffplus.factories.ICommitAnalysisFactory;
 import multidiffplus.factories.IDomainAnalysisFactory;
 import multidiffplus.jsanalysis.factories.JavaScriptCFGFactory;
+import multidiffplus.mining.astvisitor.ajax.AjaxDataASTAnalysisFactory;
 
-public class MiningCommitAnalysisFactory implements ICommitAnalysisFactory {
+public class CommitAnalysisFactory implements ICommitAnalysisFactory {
 	
 	private Sensitivity sensitivity;
 	
-	public MiningCommitAnalysisFactory(Sensitivity sensitivity) {
+	public CommitAnalysisFactory(Sensitivity sensitivity) {
 		this.sensitivity = sensitivity;
 	}
 
@@ -27,13 +28,13 @@ public class MiningCommitAnalysisFactory implements ICommitAnalysisFactory {
 		switch(sensitivity) {
 		case INTRAPROC:
 			List<ICFGVisitorFactory> cfgVisitorFactories = new LinkedList<ICFGVisitorFactory>();
-			domainFactories.add(new MiningDomainIntraAnalysisFactory(cfgVisitorFactories, new JavaScriptCFGFactory()));
+			domainFactories.add(new DomainIntraAnalysisFactory(cfgVisitorFactories, new JavaScriptCFGFactory()));
 			break;
 		case AST:
 		default:
 			List<IASTVisitorFactory> astVisitorFactories = new LinkedList<IASTVisitorFactory>();
 			astVisitorFactories.add(new AjaxDataASTAnalysisFactory());
-			domainFactories.add(new MiningDomainASTAnalysisFactory(astVisitorFactories, new JavaScriptCFGFactory()));
+			domainFactories.add(new DomainASTAnalysisFactory(astVisitorFactories, new JavaScriptCFGFactory()));
 		}
 
 		return new CommitAnalysis(domainFactories);
