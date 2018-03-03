@@ -47,8 +47,6 @@ public class InterleavedIntraCIA {
 			else this.srcAnalysis= Analysis.build(srcCFGNode.getStatement(), diffContext.srcCFGs);
 			this.dstAnalysis = Analysis.build(dstCFGNode.getStatement(), diffContext.dstCFGs);
 		}
-		
-		this.generateFacts(diffContext.dstCFGs);
 
 	}
 

@@ -29,7 +29,6 @@ import org.mozilla.javascript.ast.WithStatement;
 
 import multidiffplus.commit.DependencyIdentifier;
 import multidiffplus.commit.GenericDependencyIdentifier;
-import multidiffplus.facts.Annotation;
 import multidiffplus.jsanalysis.abstractdomain.Address;
 import multidiffplus.jsanalysis.abstractdomain.BValue;
 import multidiffplus.jsanalysis.abstractdomain.Obj;
@@ -42,21 +41,21 @@ public class DefValueASTVisitor implements NodeVisitor {
 	/**
 	 * The set of changed variable annotations found in the statement.
 	 **/
-	public Set<Annotation> annotations;
+	public Set<Definition> definitions;
 	
 	/** The abstract state. **/
 	private State state;
 
 	/**
-	 * Detects uses of the identifier.
-	 * @return the set of nodes where the identifier is used.
+	 * Detects definitions of identifiers.
+	 * @return the set of identifier definitions and values
 	 */
-	public static Set<Annotation> getAnnotations(State state, AstNode statement) {
+	public static Set<Definition> getDefinitions(State state, AstNode statement) {
 		DefValueASTVisitor visitor = new DefValueASTVisitor(state);
 		
 		if(statement instanceof AstRoot) {
 			/* This is the root. Nothing should be flagged. */
-			return visitor.annotations;
+			return visitor.definitions;
 		}
 		else if(statement instanceof FunctionNode) {
 			/* This is a function declaration, so only check the parameters
@@ -71,20 +70,19 @@ public class DefValueASTVisitor implements NodeVisitor {
 			if(name != null) name.visit(visitor);
 
 			/* Register a value-def for all functions. */
-			List<DependencyIdentifier> ids = new LinkedList<DependencyIdentifier>();
-			ids.add(new GenericDependencyIdentifier(function.getID()));
-			visitor.annotations.add(new Annotation("DVAL-DEF", ids, function.getLineno(), function.getFixedPosition(), 8));
+			DependencyIdentifier identifier = new GenericDependencyIdentifier(function.getID());
+			visitor.definitions.add(new Definition(identifier, function, function.getLineno(), function.getFixedPosition(), function.getLength()));
 
 		}
 		else if(statement != null){
 			statement.visit(visitor);
 		}
 
-		return visitor.annotations;
+		return visitor.definitions;
 	}
 
 	public DefValueASTVisitor(State state) {
-		this.annotations = new HashSet<Annotation>();
+		this.definitions = new HashSet<Definition>();
 		this.state = state;
 	}
 
@@ -94,10 +92,8 @@ public class DefValueASTVisitor implements NodeVisitor {
 		/* If this node is a dummy definer, register an annotation. */
 		if(node.isDummy()) {
 
-			List<DependencyIdentifier> ids = new LinkedList<DependencyIdentifier>();
-			ids.add(new GenericDependencyIdentifier(node.getID()));
-
-			this.annotations.add(new Annotation("DVAL-DEF", ids, node.getLineno(), node.getFixedPosition(), node.getLength()));
+			DependencyIdentifier identifier = new GenericDependencyIdentifier(node.getID());
+			this.definitions.add(new Definition(identifier, node, node.getLineno(), node.getFixedPosition(), node.getLength()));
 
 		}
 		
@@ -107,11 +103,9 @@ public class DefValueASTVisitor implements NodeVisitor {
 			Variable var = state.env.environment.get(node.toSource());
 			if(var != null) {
 				
+				@SuppressWarnings("unused")
 				BValue val = state.store.apply(var.addresses);
-				List<DependencyIdentifier> ids = new LinkedList<DependencyIdentifier>();
-				ids.add(val);
-
-				this.annotations.add(new Annotation("DVAL-USE", ids, node.getLineno(), node.getFixedPosition(), node.getLength()));
+				// TODO: Move this to a lookup and replace visitor
 				
 			}
 
@@ -129,10 +123,7 @@ public class DefValueASTVisitor implements NodeVisitor {
 			}
 
 			if(ids.size() > 0) {
-				this.annotations.add(new Annotation("DVAL-USE", ids, 
-						pg.getRight().getLineno(), 
-						pg.getRight().getFixedPosition(), 
-						pg.getRight().getLength()));
+				// TODO: Move this to a lookup and replace visitor
 			}
 			
 			/* Visit the left hand side in case any objects have changed. */
@@ -154,10 +145,7 @@ public class DefValueASTVisitor implements NodeVisitor {
 			}
 
 			if(ids.size() > 0) {
-				this.annotations.add(new Annotation("DVAL-USE", ids, 
-						pg.getLineno(), 
-						pg.getFixedPosition(), 
-						pg.getLength()));
+				// TODO: Move this to a lookup and replace visitor
 			}
 			
 			/* Visit the left hand side in case any objects have changed. */
@@ -183,14 +171,10 @@ public class DefValueASTVisitor implements NodeVisitor {
 			Obj obj = state.store.getObj(objAddr);
 			
 			Address propAddr = obj.apply(propName);
+			@SuppressWarnings("unused")
 			BValue val = state.store.apply(propAddr);
 
-			List<DependencyIdentifier> ids = new LinkedList<DependencyIdentifier>();
-			ids.add(val);
-			this.annotations.add(new Annotation("DVAL-USE", ids, 
-					prop.getLineno(), 
-					prop.getFixedPosition(), 
-					prop.getLength()));
+			// TODO: Move this to a lookup and replace visitor
 			
 			op.getRight().visit(this);
 			
@@ -205,24 +189,20 @@ public class DefValueASTVisitor implements NodeVisitor {
 			case Token.NULL:
 			case Token.TRUE:
 			case Token.FALSE:
-				List<DependencyIdentifier> ids = new LinkedList<DependencyIdentifier>();
-				ids.add(new GenericDependencyIdentifier(kwl.getID()));
-				this.annotations.add(new Annotation("DVAL-DEF", ids, kwl.getLineno(), kwl.getFixedPosition(), kwl.getLength()));
+				DependencyIdentifier identifier = new GenericDependencyIdentifier(kwl.getID());
+				this.definitions.add(new Definition(identifier, node, kwl.getLineno(), kwl.getFixedPosition(), kwl.getLength()));
 			}
 				
 		}
 		else if(node instanceof NumberLiteral 
 				|| node instanceof StringLiteral) {
-			List<DependencyIdentifier> ids = new LinkedList<DependencyIdentifier>();
-			ids.add(new GenericDependencyIdentifier(node.getID()));
-			this.annotations.add(new Annotation("DVAL-DEF", ids, node.getLineno(), node.getFixedPosition(), node.getLength()));
+			DependencyIdentifier identifier = new GenericDependencyIdentifier(node.getID());
+			this.definitions.add(new Definition(identifier, node, node.getLineno(), node.getFixedPosition(), node.getLength()));
 		}
 		else if(node instanceof ObjectLiteral
 				|| node instanceof ArrayLiteral) {
-			List<DependencyIdentifier> ids = new LinkedList<DependencyIdentifier>();
-			ids.add(new GenericDependencyIdentifier(node.getID()));
-			this.annotations.add(new Annotation("DVAL-DEF", ids, node.getLineno(), node.getFixedPosition(), 1));
-			this.annotations.add(new Annotation("DVAL-DEF", ids, node.getLineno(), node.getFixedPosition() + node.getLength() - 1, 1));
+			DependencyIdentifier identifier = new GenericDependencyIdentifier(node.getID());
+			this.definitions.add(new Definition(identifier, node, node.getLineno(), node.getFixedPosition(), node.getLength()));
 		}
 		/* Ignore the body of loops, ifs and functions. */
 		else if(node instanceof IfStatement) {

@@ -1,5 +1,6 @@
 package multidiffplus.mining.cfgvisitor.ajax;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import org.mozilla.javascript.ast.AstNode;
@@ -7,20 +8,38 @@ import org.mozilla.javascript.ast.AstNode;
 import multidiffplus.cfg.CFGEdge;
 import multidiffplus.cfg.CFGNode;
 import multidiffplus.cfg.ICFGVisitor;
-import multidiffplus.facts.Annotation;
-import multidiffplus.facts.AnnotationFactBase;
+import multidiffplus.commit.SourceCodeFileChange;
 import multidiffplus.jsanalysis.abstractdomain.State;
 
 /**
- * Extracts facts from a flow analysis.
+ * Search for the repair pattern where a JSON object is incorrectly passed as an
+ * object literal instead of a stringified JSON object.
+ * 
+ * From http://api.jquery.com/jquery.ajax/:
+ * """
+ * The data option can contain either a query string of the form
+ * key1=value1&key2=value2, or an object of the form {key1: 'value1', key2:
+ * 'value2'}. If the latter form is used, the data is converted into a query
+ * string using jQuery.param() before it is sent. ... The processing might be
+ * undesirable... in this case, change the contentType option from
+ * application/x-www-form-urlencoded to a more appropriate MIME type.
+ * """
  */
 public class AjaxCFGVisitor implements ICFGVisitor {
+	
+	/** Keep track of literal definitions. */
+	Set<Definition> definitions;
 
-	/* The fact database we will populate. */
-	private AnnotationFactBase factBase;
-
-	public AjaxCFGVisitor(AnnotationFactBase factBase) {
-		this.factBase = factBase;
+	/** We need this for getting the SliceFactBase. */
+	SourceCodeFileChange sourceCodeFileChange;
+	
+	/**
+	 * @param sourceCodeFileChange used to look up the correct dataset for
+	 * storing facts.
+	 */
+	public AjaxCFGVisitor(SourceCodeFileChange sourceCodeFileChange) {
+		this.definitions = new HashSet<Definition>();
+		this.sourceCodeFileChange = sourceCodeFileChange;
 	}
 
 	@Override
@@ -34,13 +53,12 @@ public class AjaxCFGVisitor implements ICFGVisitor {
 	}
 
 	/**
-	 * Visit an AstNode (a statement or condition) and extract facts about
-	 * value changes.
+	 * Visit an AstNode (a statement or condition) and extract facts.
 	 */
-	private void visit(AstNode node, State state) {
-		if(state != null) {
-			Set<Annotation> annotations = DefValueASTVisitor.getAnnotations(state, node);
-			factBase.registerAnnotationFacts(annotations);
+	private void visit(AstNode statement, State state) {
+		if(statement != null && state != null) {
+			AjaxDataASTVisitor.generateFacts(sourceCodeFileChange, statement);
+			definitions.addAll(DefValueASTVisitor.getDefinitions(state, statement));
 		}
 	}
 

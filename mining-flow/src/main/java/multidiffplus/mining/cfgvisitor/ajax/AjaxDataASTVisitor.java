@@ -30,7 +30,7 @@ import multidiffplus.mining.flow.mutations.MutateStringify;
  * application/x-www-form-urlencoded to a more appropriate MIME type.
  * """
  */
-public class AjaxDataASTAnalysis implements NodeVisitor {
+public class AjaxDataASTVisitor implements NodeVisitor {
 	
 	/** The root node being visited. **/
 	AstNode root;
@@ -39,10 +39,18 @@ public class AjaxDataASTAnalysis implements NodeVisitor {
 	SliceFactBase factBase;
 	
 	/**
+	 * Add Ajax facts to the {@code SliceFactBase} for the {@code SourceCodeFileChange}.
+	 */
+	public static void generateFacts(SourceCodeFileChange sourceCodeFileChange, AstNode root) {
+		AjaxDataASTVisitor visitor = new AjaxDataASTVisitor(sourceCodeFileChange, root);
+		root.visit(visitor);
+	}
+	
+	/**
 	 * @param sourceCodeFileChange used to look up the correct dataset for
 	 * storing facts.
 	 */
-	public AjaxDataASTAnalysis(SourceCodeFileChange sourceCodeFileChange, AstNode root) {
+	public AjaxDataASTVisitor(SourceCodeFileChange sourceCodeFileChange, AstNode root) {
 		this.factBase = SliceFactBase.getInstance(sourceCodeFileChange);
 		this.root = root;
 	}
@@ -52,9 +60,9 @@ public class AjaxDataASTAnalysis implements NodeVisitor {
 		
 		/* Stop on function declarations & investigate call sites. */
 		switch(node.getType()) {
+		case Token.SCRIPT:
 		case Token.FUNCTION:
-			if(node != root) return false;
-			break;
+			return false;
 		case Token.CALL:
 			visitFunctionCall((FunctionCall)node);
 			break;
