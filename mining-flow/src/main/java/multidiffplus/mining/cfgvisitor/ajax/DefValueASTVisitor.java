@@ -1,9 +1,9 @@
 package multidiffplus.mining.cfgvisitor.ajax;
 
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 import org.mozilla.javascript.Token;
 import org.mozilla.javascript.ast.ArrayLiteral;
@@ -41,7 +41,7 @@ public class DefValueASTVisitor implements NodeVisitor {
 	/**
 	 * The set of changed variable annotations found in the statement.
 	 **/
-	public Set<Definition> definitions;
+	public Map<String, Definition> definitions;
 	
 	/** The abstract state. **/
 	private State state;
@@ -50,7 +50,7 @@ public class DefValueASTVisitor implements NodeVisitor {
 	 * Detects definitions of identifiers.
 	 * @return the set of identifier definitions and values
 	 */
-	public static Set<Definition> getDefinitions(State state, AstNode statement) {
+	public static Map<String, Definition> getDefinitions(State state, AstNode statement) {
 		DefValueASTVisitor visitor = new DefValueASTVisitor(state);
 		
 		if(statement instanceof AstRoot) {
@@ -71,7 +71,7 @@ public class DefValueASTVisitor implements NodeVisitor {
 
 			/* Register a value-def for all functions. */
 			DependencyIdentifier identifier = new GenericDependencyIdentifier(function.getID());
-			visitor.definitions.add(new Definition(identifier, function, function.getLineno(), function.getFixedPosition(), function.getLength()));
+			visitor.definitions.put(identifier.getAddress(), new Definition(identifier, function, function.getLineno(), function.getFixedPosition(), function.getLength()));
 
 		}
 		else if(statement != null){
@@ -82,7 +82,7 @@ public class DefValueASTVisitor implements NodeVisitor {
 	}
 
 	public DefValueASTVisitor(State state) {
-		this.definitions = new HashSet<Definition>();
+		this.definitions = new HashMap<String, Definition>();
 		this.state = state;
 	}
 
@@ -93,7 +93,7 @@ public class DefValueASTVisitor implements NodeVisitor {
 		if(node.isDummy()) {
 
 			DependencyIdentifier identifier = new GenericDependencyIdentifier(node.getID());
-			this.definitions.add(new Definition(identifier, node, node.getLineno(), node.getFixedPosition(), node.getLength()));
+			this.definitions.put(identifier.getAddress(), new Definition(identifier, node, node.getLineno(), node.getFixedPosition(), node.getLength()));
 
 		}
 		
@@ -190,19 +190,19 @@ public class DefValueASTVisitor implements NodeVisitor {
 			case Token.TRUE:
 			case Token.FALSE:
 				DependencyIdentifier identifier = new GenericDependencyIdentifier(kwl.getID());
-				this.definitions.add(new Definition(identifier, node, kwl.getLineno(), kwl.getFixedPosition(), kwl.getLength()));
+				this.definitions.put(identifier.getAddress(), new Definition(identifier, node, kwl.getLineno(), kwl.getFixedPosition(), kwl.getLength()));
 			}
 				
 		}
 		else if(node instanceof NumberLiteral 
 				|| node instanceof StringLiteral) {
 			DependencyIdentifier identifier = new GenericDependencyIdentifier(node.getID());
-			this.definitions.add(new Definition(identifier, node, node.getLineno(), node.getFixedPosition(), node.getLength()));
+			this.definitions.put(identifier.getAddress(), new Definition(identifier, node, node.getLineno(), node.getFixedPosition(), node.getLength()));
 		}
 		else if(node instanceof ObjectLiteral
 				|| node instanceof ArrayLiteral) {
 			DependencyIdentifier identifier = new GenericDependencyIdentifier(node.getID());
-			this.definitions.add(new Definition(identifier, node, node.getLineno(), node.getFixedPosition(), node.getLength()));
+			this.definitions.put(identifier.getAddress(), new Definition(identifier, node, node.getLineno(), node.getFixedPosition(), node.getLength()));
 		}
 		/* Ignore the body of loops, ifs and functions. */
 		else if(node instanceof IfStatement) {

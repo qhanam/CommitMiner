@@ -1,6 +1,8 @@
 package multidiffplus.mining.cfgvisitor.ajax;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.mozilla.javascript.ast.AstNode;
@@ -8,6 +10,7 @@ import org.mozilla.javascript.ast.AstNode;
 import multidiffplus.cfg.CFGEdge;
 import multidiffplus.cfg.CFGNode;
 import multidiffplus.cfg.ICFGVisitor;
+import multidiffplus.commit.DependencyIdentifier;
 import multidiffplus.commit.SourceCodeFileChange;
 import multidiffplus.jsanalysis.abstractdomain.State;
 
@@ -28,7 +31,7 @@ import multidiffplus.jsanalysis.abstractdomain.State;
 public class AjaxCFGVisitor implements ICFGVisitor {
 	
 	/** Keep track of literal definitions. */
-	Set<Definition> definitions;
+	Map<String, Definition> definitions;
 
 	/** We need this for getting the SliceFactBase. */
 	SourceCodeFileChange sourceCodeFileChange;
@@ -38,7 +41,7 @@ public class AjaxCFGVisitor implements ICFGVisitor {
 	 * storing facts.
 	 */
 	public AjaxCFGVisitor(SourceCodeFileChange sourceCodeFileChange) {
-		this.definitions = new HashSet<Definition>();
+		this.definitions = new HashMap<String, Definition>();
 		this.sourceCodeFileChange = sourceCodeFileChange;
 	}
 
@@ -55,10 +58,15 @@ public class AjaxCFGVisitor implements ICFGVisitor {
 	/**
 	 * Visit an AstNode (a statement or condition) and extract facts.
 	 */
-	private void visit(AstNode statement, State state) {
+	private void visit(AstNode statement, State state) { 
 		if(statement != null && state != null) {
-			AjaxDataASTVisitor.generateFacts(sourceCodeFileChange, statement);
-			definitions.addAll(DefValueASTVisitor.getDefinitions(state, statement));
+			
+			/* Look for modified Ajax calls. */
+			AjaxDataASTVisitor.generateFacts(definitions, state, sourceCodeFileChange, statement);
+			
+			/* Look for definitons that we may use to inject AST nodes with. */
+			definitions.putAll(DefValueASTVisitor.getDefinitions(state, statement));
+
 		}
 	}
 

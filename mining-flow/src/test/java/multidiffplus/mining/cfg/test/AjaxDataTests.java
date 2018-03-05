@@ -61,6 +61,13 @@ public class AjaxDataTests {
 	}
 
 	@Test
+	public void testIntraprocMutate() throws Exception {
+		String src = "src/test/resources/ajax_stringify/intraproc_mutate_old.js";
+		String dst = "src/test/resources/ajax_stringify/intraproc_mutate_new.js";
+		this.runTest(src, dst);
+	}
+
+	@Test
 	public void testStrider() throws Exception {
 		String src = "src/test/resources/ajax_stringify/strider_old.js";
 		String dst = "src/test/resources/ajax_stringify/strider_new.js";

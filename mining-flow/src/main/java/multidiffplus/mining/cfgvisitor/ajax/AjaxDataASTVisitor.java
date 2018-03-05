@@ -1,7 +1,11 @@
 package multidiffplus.mining.cfgvisitor.ajax;
 
+import java.util.List;
+import java.util.Map;
+
 import org.mozilla.javascript.Token;
 import org.mozilla.javascript.ast.AstNode;
+import org.mozilla.javascript.ast.ExpressionStatement;
 import org.mozilla.javascript.ast.FunctionCall;
 import org.mozilla.javascript.ast.NodeVisitor;
 import org.mozilla.javascript.ast.ObjectLiteral;
@@ -9,12 +13,15 @@ import org.mozilla.javascript.ast.ObjectProperty;
 import org.mozilla.javascript.ast.StringLiteral;
 
 import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode.ChangeType;
+import multidiffplus.commit.DependencyIdentifier;
 import multidiffplus.commit.SourceCodeFileChange;
 import multidiffplus.mining.flow.facts.Slice;
 import multidiffplus.mining.flow.facts.SliceChange;
 import multidiffplus.mining.flow.facts.SliceFactBase;
 import multidiffplus.mining.flow.facts.Statement;
 import multidiffplus.mining.flow.mutations.MutateStringify;
+import multidiffplus.jsanalysis.abstractdomain.State;
+import multidiffplus.jsanalysis.utilities.Utilities;
 
 /**
  * Search for the repair pattern where a JSON object is incorrectly passed as an
@@ -32,27 +39,38 @@ import multidiffplus.mining.flow.mutations.MutateStringify;
  */
 public class AjaxDataASTVisitor implements NodeVisitor {
 	
-	/** The root node being visited. **/
-	AstNode root;
+	/** The program state at the current statement. */
+	State state;
+	
+	/** The statement being visited. */
+	AstNode statement;
 
 	/** Register facts here. */
 	SliceFactBase factBase;
 	
+	/** Look up definitions for the data field. **/
+	Map<String, Definition> definitions;
+	
 	/**
 	 * Add Ajax facts to the {@code SliceFactBase} for the {@code SourceCodeFileChange}.
 	 */
-	public static void generateFacts(SourceCodeFileChange sourceCodeFileChange, AstNode root) {
-		AjaxDataASTVisitor visitor = new AjaxDataASTVisitor(sourceCodeFileChange, root);
-		root.visit(visitor);
+	public static void generateFacts(Map<String, Definition> definitions, State state, SourceCodeFileChange sourceCodeFileChange, AstNode statement) {
+		AjaxDataASTVisitor visitor = new AjaxDataASTVisitor(definitions, state, sourceCodeFileChange, statement);
+		statement.visit(visitor);
 	}
 	
 	/**
 	 * @param sourceCodeFileChange used to look up the correct dataset for
 	 * storing facts.
 	 */
-	public AjaxDataASTVisitor(SourceCodeFileChange sourceCodeFileChange, AstNode root) {
+	public AjaxDataASTVisitor(Map<String, Definition> definitions, 
+			State state,
+			SourceCodeFileChange sourceCodeFileChange, 
+			AstNode statement) {
+		this.definitions = definitions;
+		this.state = state;
 		this.factBase = SliceFactBase.getInstance(sourceCodeFileChange);
-		this.root = root;
+		this.statement = statement;
 	}
 
 	@Override
@@ -77,7 +95,12 @@ public class AjaxDataASTVisitor implements NodeVisitor {
 	 * Register annotations for updated calls to $.ajax()
 	 */
 	public void visitFunctionCall(FunctionCall call) {
-
+		
+		/* Make a clone so we don't change anything. */
+		ExpressionStatement dummy = new ExpressionStatement();
+		call = (FunctionCall)call.clone(dummy);
+		dummy.setExpression(call);
+		
 		/* Is this a call to $.ajax? */
 		AstNode target = call.getTarget();
 		if(!target.toSource().equals("$.ajax") 
@@ -119,6 +142,10 @@ public class AjaxDataASTVisitor implements NodeVisitor {
 		if(call.getChangeType() == ChangeType.UPDATED
 				&& dataProperty.getChangeType() == ChangeType.UPDATED
 				&& stringify.getChangeType() == ChangeType.INSERTED) {
+			
+			/* Attempt to resolve variables to literals. */
+//			resolveVarInData((ObjectProperty)dataProperty.getMapping());
+//			resolveVarInStringify(stringify);
 
 			/* After the repair is applied, the code is nominal. */
 			registerSliceChange(call, call, SliceChange.Type.NOMINAL);
@@ -131,6 +158,9 @@ public class AjaxDataASTVisitor implements NodeVisitor {
 		}
 		else if(call.getChangeType() == ChangeType.UPDATED
 				|| call.getChangeType() == ChangeType.INSERTED) {
+			
+			/* Attempt to resolve variables to literals. */
+			resolveVarInStringify(stringify);
 
 			/* JSON.stringify is already used, so no repair should be applied. */
 			registerSliceChange(call, call, SliceChange.Type.NOMINAL);
@@ -216,6 +246,60 @@ public class AjaxDataASTVisitor implements NodeVisitor {
 					node.getLineno(),
 					node.getAbsolutePosition(),
 					node.getLength()));
+	}
+	
+	private void resolveVarInStringify(FunctionCall stringify) {
+		
+		List<AstNode> args = stringify.getArguments();
+	
+		if(args.size() == 1) {
+			
+			AstNode arg = args.get(0);
+			AstNode literal = resolveToAST(arg);
+			
+			if(literal == null) return;
+			
+			literal = literal.clone();
+			literal.setParent(stringify);
+			
+			args.remove(0);
+			args.add(literal);
+			
+		}
+		
+		return;
+		
+	}
+	
+	private void resolveVarInData(ObjectProperty dataProperty) {
+		
+		AstNode value = dataProperty.getRight();
+		AstNode literal = resolveToAST(value);
+		
+		if(literal == null) return;
+		
+		dataProperty.setRight(literal);
+		
+	}
+
+	/**
+	 * @param node a variable or field
+	 * @return the definition of the literal pointed to by the variable or
+	 * 		   field, or {@code null} if it cannot be resolved to a literal.
+	 */
+	private AstNode resolveToAST(AstNode node) {
+		
+		/* Resolve the node to a set of def/use IDs. */
+		List<DependencyIdentifier> ids = Utilities.resolveDefinerIDs(state, node);
+		
+		/* Look up the def/use IDs in the list of literal definitions. */
+		for(DependencyIdentifier id : ids) {
+			Definition definition = definitions.get(id.getAddress());
+			if(definition != null) return definition.getAstNode();
+		}
+		
+		return null;
+		
 	}
 
 }
