@@ -33,6 +33,7 @@ import multidiffplus.commit.SourceCodeFileChange;
 import multidiffplus.factories.ICommitAnalysisFactory;
 import multidiffplus.facts.Annotation;
 import multidiffplus.facts.AnnotationFactBase;
+import multidiffplus.facts.MiningFactBase;
 import multidiffplus.analysis.CommitAnalysis;
 
 /**
@@ -184,6 +185,12 @@ public class GitProjectAnalysis extends GitProject {
 				continue;
 			}
 
+			/* Skip gulp files. */
+			if (diff.getNewPath().matches("^.*gulpfile.js$")) {
+				logger.info("[SKIP_FILE] gulp file: " + diff.getNewPath());
+				continue;
+			}
+
 			/* Skip minified files. */
 			if (diff.getNewPath().endsWith(".min.js") || diff.getNewPath().endsWith(".min.js")) {
 				logger.info("[SKIP_FILE] Skipping minifed file: " + diff.getNewPath());
@@ -291,10 +298,15 @@ public class GitProjectAnalysis extends GitProject {
 			SourceCodeFileChange sourceCodeFileChange, 
 			File sourceDir, File csvFile) throws IOException {
 
-		AnnotationFactBase factBase = AnnotationFactBase.getInstance(sourceCodeFileChange);
-		
-		if(csvFile == null || factBase.getAnnotations().isEmpty()) return;
-	
+		MiningFactBase factBase = MiningFactBase.getInstance(sourceCodeFileChange);
+
+		if(csvFile == null 
+				|| commit.sourceCodeFileChanges.size() > 1 
+				|| factBase.getUpdatedStatements() > 6
+				|| factBase.getInsertedStatements() > 0 
+				|| factBase.getRemovedStatements() > 0 
+				|| factBase.getAnnotations().isEmpty()) return;
+
 		/* Write the src/dst files to disk so that we can run a flow analysis on
 		* them later. */
 		File srcFile = new File(sourceDir, sourceCodeFileChange.getID() + "_old.js");

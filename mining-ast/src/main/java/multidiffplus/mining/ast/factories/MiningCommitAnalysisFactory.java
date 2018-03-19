@@ -10,15 +10,22 @@ import multidiffplus.factories.IDomainAnalysisFactory;
 import multidiffplus.jsanalysis.factories.JavaScriptCFGFactory;
 
 public class MiningCommitAnalysisFactory implements ICommitAnalysisFactory {
-
+	
 	@Override
 	public CommitAnalysis newInstance() {
 
-		List<IASTVisitorFactory> astVisitorFactories = new LinkedList<IASTVisitorFactory>();
-		astVisitorFactories.add(new AjaxDataASTAnalysisFactory());
+		List<IASTVisitorFactory> srcVisitorFactories = new LinkedList<IASTVisitorFactory>();
+		srcVisitorFactories.add(new ModifiedStatementASTAnalysisFactory());
+
+		List<IASTVisitorFactory> dstVisitorFactories = new LinkedList<IASTVisitorFactory>();
+//		dstVisitorFactories.add(new AjaxDataASTAnalysisFactory());
+		dstVisitorFactories.add(new TryASTAnalysisFactory());
+//		dstVisitorFactories.add(new JQueryASTAnalysisFactory());
+//		dstVisitorFactories.add(new ConfigASTAnalysisFactory());
+		dstVisitorFactories.add(new ModifiedStatementASTAnalysisFactory());
 
 		List<IDomainAnalysisFactory> domainFactories = new LinkedList<IDomainAnalysisFactory>();
-		domainFactories.add(new MiningDomainAnalysisFactory(astVisitorFactories, new JavaScriptCFGFactory()));
+		domainFactories.add(new MiningDomainAnalysisFactory(srcVisitorFactories, dstVisitorFactories, new JavaScriptCFGFactory()));
 
 		return new CommitAnalysis(domainFactories);
 	}

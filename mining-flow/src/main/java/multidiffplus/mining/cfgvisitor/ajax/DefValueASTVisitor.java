@@ -1,8 +1,6 @@
 package multidiffplus.mining.cfgvisitor.ajax;
 
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
 import org.mozilla.javascript.Token;
@@ -10,7 +8,6 @@ import org.mozilla.javascript.ast.ArrayLiteral;
 import org.mozilla.javascript.ast.AstNode;
 import org.mozilla.javascript.ast.AstRoot;
 import org.mozilla.javascript.ast.DoLoop;
-import org.mozilla.javascript.ast.ElementGet;
 import org.mozilla.javascript.ast.ForInLoop;
 import org.mozilla.javascript.ast.ForLoop;
 import org.mozilla.javascript.ast.FunctionNode;
@@ -20,8 +17,6 @@ import org.mozilla.javascript.ast.Name;
 import org.mozilla.javascript.ast.NodeVisitor;
 import org.mozilla.javascript.ast.NumberLiteral;
 import org.mozilla.javascript.ast.ObjectLiteral;
-import org.mozilla.javascript.ast.ObjectProperty;
-import org.mozilla.javascript.ast.PropertyGet;
 import org.mozilla.javascript.ast.StringLiteral;
 import org.mozilla.javascript.ast.TryStatement;
 import org.mozilla.javascript.ast.WhileLoop;
@@ -29,12 +24,7 @@ import org.mozilla.javascript.ast.WithStatement;
 
 import multidiffplus.commit.DependencyIdentifier;
 import multidiffplus.commit.GenericDependencyIdentifier;
-import multidiffplus.jsanalysis.abstractdomain.Address;
-import multidiffplus.jsanalysis.abstractdomain.BValue;
-import multidiffplus.jsanalysis.abstractdomain.Obj;
 import multidiffplus.jsanalysis.abstractdomain.State;
-import multidiffplus.jsanalysis.abstractdomain.Variable;
-import multidiffplus.jsanalysis.transfer.ExpEval;
 
 public class DefValueASTVisitor implements NodeVisitor {
 
@@ -44,6 +34,7 @@ public class DefValueASTVisitor implements NodeVisitor {
 	public Map<String, Definition> definitions;
 	
 	/** The abstract state. **/
+	@SuppressWarnings("unused")
 	private State state;
 
 	/**
@@ -97,92 +88,8 @@ public class DefValueASTVisitor implements NodeVisitor {
 
 		}
 		
-		/* Inspect variables and properties that use changed values. */
-		if(node instanceof Name) {
-
-			Variable var = state.env.environment.get(node.toSource());
-			if(var != null) {
-				
-				@SuppressWarnings("unused")
-				BValue val = state.store.apply(var.addresses);
-				// TODO: Move this to a lookup and replace visitor
-				
-			}
-
-		}
-		else if(node instanceof PropertyGet) {
-			
-			PropertyGet pg = (PropertyGet) node;
-			
-			/* Try to resolve the full property get. */
-			ExpEval expEval = new ExpEval(state);
-			List<DependencyIdentifier> ids = new LinkedList<DependencyIdentifier>();
-			for(Address addr : expEval.resolveOrCreate(node)) {
-				BValue val = state.store.apply(addr);
-				ids.add(val);
-			}
-
-			if(ids.size() > 0) {
-				// TODO: Move this to a lookup and replace visitor
-			}
-			
-			/* Visit the left hand side in case any objects have changed. */
-			pg.getLeft().visit(this);
-
-			return false;
-
-		}
-		else if(node instanceof ElementGet) {
-			
-			ElementGet pg = (ElementGet) node;
-			
-			/* Try to resolve the full property get. */
-			ExpEval expEval = new ExpEval(state);
-			List<DependencyIdentifier> ids = new LinkedList<DependencyIdentifier>();
-			for(Address addr : expEval.resolveOrCreate(node)) {
-				BValue val = state.store.apply(addr);
-				ids.add(val);
-			}
-
-			if(ids.size() > 0) {
-				// TODO: Move this to a lookup and replace visitor
-			}
-			
-			/* Visit the left hand side in case any objects have changed. */
-			pg.getTarget().visit(this);
-			pg.getElement().visit(this);
-
-			return false;
-
-		}
-		else if(node instanceof ObjectProperty) {
-			
-			ObjectProperty op = (ObjectProperty)node;
-			ObjectLiteral ol = (ObjectLiteral)op.getParent();
-			
-			String propName = null;
-			AstNode prop = op.getLeft();
-			if(!(prop instanceof Name)) return true;
-			propName = prop.toSource();
-			
-			/* Get the object from the store, using the  address re-constructed from
-			* Trace. */
-			Address objAddr = state.trace.makeAddr(ol.getID(), "");
-			Obj obj = state.store.getObj(objAddr);
-			
-			Address propAddr = obj.apply(propName);
-			@SuppressWarnings("unused")
-			BValue val = state.store.apply(propAddr);
-
-			// TODO: Move this to a lookup and replace visitor
-			
-			op.getRight().visit(this);
-			
-			return false;
-			
-		}
 		/* Register DVAL-DEF annotations for  literals. */
-		else if(node instanceof KeywordLiteral) {
+		if(node instanceof KeywordLiteral) {
 			KeywordLiteral kwl = (KeywordLiteral)node;
 
 			switch(kwl.getType()) {
@@ -204,6 +111,7 @@ public class DefValueASTVisitor implements NodeVisitor {
 			DependencyIdentifier identifier = new GenericDependencyIdentifier(node.getID());
 			this.definitions.put(identifier.getAddress(), new Definition(identifier, node, node.getLineno(), node.getFixedPosition(), node.getLength()));
 		}
+
 		/* Ignore the body of loops, ifs and functions. */
 		else if(node instanceof IfStatement) {
 			IfStatement ifStatement = (IfStatement) node;

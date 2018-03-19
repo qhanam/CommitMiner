@@ -10,17 +10,19 @@ import multidiffplus.mining.ast.analysis.MiningDomainAnalysis;
 
 public class MiningDomainAnalysisFactory implements IDomainAnalysisFactory {
 
-	private List<IASTVisitorFactory> astVisitorFactories;
+	private List<IASTVisitorFactory> srcVisitorFactories;
+	private List<IASTVisitorFactory> dstVisitorFactories;
 	private ICFGFactory cfgFactory;
 
-	public MiningDomainAnalysisFactory(List<IASTVisitorFactory> astVisitorFactories, ICFGFactory cfgFactory) {
-		this.astVisitorFactories = astVisitorFactories;
+	public MiningDomainAnalysisFactory(List<IASTVisitorFactory> srcVisitorFactories, List<IASTVisitorFactory> dstVisitorFactories, ICFGFactory cfgFactory) {
+		this.srcVisitorFactories = srcVisitorFactories;
+		this.dstVisitorFactories = dstVisitorFactories;
 		this.cfgFactory = cfgFactory;
 	}
 
 	@Override
 	public DomainAnalysis newInstance() {
-		return new MiningDomainAnalysis(astVisitorFactories, cfgFactory);
+		return new MiningDomainAnalysis(srcVisitorFactories, dstVisitorFactories, cfgFactory);
 	}
 
 }

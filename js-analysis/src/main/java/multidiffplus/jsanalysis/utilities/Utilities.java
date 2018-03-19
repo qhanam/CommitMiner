@@ -11,7 +11,6 @@ import org.mozilla.javascript.ast.PropertyGet;
 import multidiffplus.commit.DependencyIdentifier;
 import multidiffplus.jsanalysis.abstractdomain.Address;
 import multidiffplus.jsanalysis.abstractdomain.BValue;
-import multidiffplus.jsanalysis.abstractdomain.Obj;
 import multidiffplus.jsanalysis.abstractdomain.State;
 import multidiffplus.jsanalysis.abstractdomain.Variable;
 import multidiffplus.jsanalysis.transfer.ExpEval;

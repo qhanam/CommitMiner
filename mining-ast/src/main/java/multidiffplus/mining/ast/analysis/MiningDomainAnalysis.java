@@ -18,12 +18,16 @@ import multidiffplus.factories.ICFGFactory;
  */
 public class MiningDomainAnalysis extends DomainAnalysis {
 
-	public List<IASTVisitorFactory> astVisitorFactories;
+	public List<IASTVisitorFactory> srcVisitorFactories;
+	public List<IASTVisitorFactory> dstVisitorFactories;
 
-	public MiningDomainAnalysis(List<IASTVisitorFactory> astVisitorFactories,
+	public MiningDomainAnalysis(
+			List<IASTVisitorFactory> srcVisitorFactories,
+			List<IASTVisitorFactory> dstVisitorFactories,
 			ICFGFactory cfgFactory) {
 		super(null, null, cfgFactory, false, true);
-		this.astVisitorFactories = astVisitorFactories;
+		this.srcVisitorFactories = srcVisitorFactories;
+		this.dstVisitorFactories = dstVisitorFactories;
 	}
 
 	/**
@@ -76,8 +80,6 @@ public class MiningDomainAnalysis extends DomainAnalysis {
 			 * and CFGs. */
 			DiffContext diffContext = diff.getContext();
 			
-			/* TODO: Hook up the flow analysis here if needed (use InterleavedChangeImpactAnalysis). */
-			
 			/* Run the AST visitors. */
 			analyzeAST(sourceCodeFileChange, diffContext);
 
@@ -90,12 +92,18 @@ public class MiningDomainAnalysis extends DomainAnalysis {
 	 * Generate facts by accepting visitors to the ASTs.
 	 */
 	private void analyzeAST(SourceCodeFileChange sourceCodeFileChange, DiffContext diffContext) {
-		
-		/* TODO: Generate facts by analyzing the source functions? */
 
+		/* Generate facts by analyzing the source functions. */
+		for(CFG cfg : diffContext.srcCFGs) {
+			for(IASTVisitorFactory astVF : srcVisitorFactories) {
+				AstNode root = (AstNode)cfg.getEntryNode().getStatement();
+				root.visit(astVF.newInstance(sourceCodeFileChange, root));
+			}
+		}
+		
 		/* Generate facts by analyzing the destination functions. */
 		for(CFG cfg : diffContext.dstCFGs) {
-			for(IASTVisitorFactory astVF : astVisitorFactories) {
+			for(IASTVisitorFactory astVF : dstVisitorFactories) {
 				AstNode root = (AstNode)cfg.getEntryNode().getStatement();
 				root.visit(astVF.newInstance(sourceCodeFileChange, root));
 			}
