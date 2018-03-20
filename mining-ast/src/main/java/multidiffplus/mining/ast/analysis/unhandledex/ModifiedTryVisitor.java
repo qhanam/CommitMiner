@@ -1,9 +1,8 @@
-package multidiffplus.mining.utilities;
+package multidiffplus.mining.ast.analysis.unhandledex;
 
 import org.mozilla.javascript.Token;
 import org.mozilla.javascript.ast.AstNode;
-import org.mozilla.javascript.ast.CatchClause;
-import org.mozilla.javascript.ast.FunctionNode;
+import org.mozilla.javascript.ast.IfStatement;
 import org.mozilla.javascript.ast.Loop;
 import org.mozilla.javascript.ast.NodeVisitor;
 import org.mozilla.javascript.ast.TryStatement;
@@ -13,23 +12,24 @@ import org.mozilla.javascript.ast.WithStatement;
 import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode.ChangeType;
 
 /**
- * Use to determine whether or node a statement inside a block has structural changes.
+ * Use to count the number of statements which were modified without recursively exploring functions or try statements.
  */
-public class ModifiedStatementVisitor implements NodeVisitor {
+public class ModifiedTryVisitor implements NodeVisitor {
 	
 	AstNode root;
 	int numModified;
 	
 	/**
-	 * @param node The structure which contains the statements to inspect (a function or try/catch/finally block).
+	 * @param node The try which contains the statements to inspect.
+	 * @return {@code true} if one or more non-function-nested statements have been modified.
 	 */
 	public static boolean hasStructuralModifications(AstNode root) {
-		ModifiedStatementVisitor visitor = new ModifiedStatementVisitor(root);
+		ModifiedTryVisitor visitor = new ModifiedTryVisitor(root);
 		root.visit(visitor);
 		return visitor.numModified > 0;
 	}
 
-	private ModifiedStatementVisitor(AstNode root) {
+	private ModifiedTryVisitor(AstNode root) {
 		this.root = root;
 		this.numModified = 0;
 	}
@@ -39,19 +39,16 @@ public class ModifiedStatementVisitor implements NodeVisitor {
 		
 		switch(node.getType()) {
 		case Token.FUNCTION:
-			if(node != root) return false;
-			if(isModified(node)) numModified++;
-			((FunctionNode)node).getBody().visit(this);
 			return false;
 		case Token.TRY:
 			if(node != root) return false;
-			if(isInserted(node)) numModified++;
+			if(isModified(node)) numModified++;
 			((TryStatement)node).getTryBlock().visit(this);;
 			return false;
-		case Token.CATCH:
-			if(node != root) return false;
+		case Token.IF:
 			if(isModified(node)) numModified++;
-			((CatchClause)node).getBody().visit(this);
+			((IfStatement)node).getThenPart().visit(this);
+			((IfStatement)node).getElsePart().visit(this);
 			return false;
 		case Token.FOR:
 			if(isModified(node)) numModified++;
@@ -65,6 +62,8 @@ public class ModifiedStatementVisitor implements NodeVisitor {
 			if(isModified(node)) numModified++;
 			((WithStatement)node).getEnclosingScope().visit(this);
 			return false;
+		case Token.BLOCK:
+			return true;
 		}
 		
 		if(isModified(node)) numModified++;
@@ -84,6 +83,7 @@ public class ModifiedStatementVisitor implements NodeVisitor {
 	/**
 	 * @return {@code true} if the statement is inserted
 	 */
+	@SuppressWarnings("unused")
 	private static boolean isInserted(AstNode node) {
 		return node.getChangeType() == ChangeType.INSERTED;
 	}

@@ -1,3 +1,7 @@
+function print(message) {
+	console.log("Hello " + message);
+}
+
 function gaf() {
 	for(var i = 0; i < 10; i++) {
 		try {
@@ -20,6 +24,7 @@ function bar() {
 
 function foo() {
 	try {
+		bar();
 		bar();
 	} catch (e) { }
 }

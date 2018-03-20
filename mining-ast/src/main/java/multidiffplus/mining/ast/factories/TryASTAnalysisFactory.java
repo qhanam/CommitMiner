@@ -5,7 +5,7 @@ import org.mozilla.javascript.ast.NodeVisitor;
 
 import multidiffplus.commit.SourceCodeFileChange;
 import multidiffplus.factories.IASTVisitorFactory;
-import multidiffplus.mining.ast.analysis.TryASTAnalysis;
+import multidiffplus.mining.ast.analysis.unhandledex.TryASTAnalysis;
 
 public class TryASTAnalysisFactory implements IASTVisitorFactory {
 
