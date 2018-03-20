@@ -61,6 +61,14 @@ public class TryTests {
 		this.runTest(src, dst, expected);
 	}
 
+	@Test
+	public void testShellJS() throws Exception {
+		String src = "src/test/resources/try/shelljs_old.js";
+		String dst = "src/test/resources/try/shelljs_new.js";
+		String expected = "TRY";
+		this.runTest(src, dst, expected);
+	}
+
 	/**
 	 * @return A dummy commit for testing.
 	 */

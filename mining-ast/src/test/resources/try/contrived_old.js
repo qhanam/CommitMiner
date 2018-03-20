@@ -7,7 +7,9 @@ function gaf() {
 function bar() {
 	try {
 		console.log("Hello World!");
-	} catch (e) { }
+	} catch (e) { 
+		console.log("Oh no!");	
+	}
 	gaf();
 	console.log("Goodbye World!");
 }

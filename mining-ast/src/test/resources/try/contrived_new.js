@@ -9,7 +9,9 @@ function gaf() {
 function bar() {
 	try {
 		console.log("Hello World!");
-	} catch (e) { }
+	} catch (e) { 
+		console.log(e);	
+	}
 	gaf();
 	try {
 		console.log("Goodbye World!");

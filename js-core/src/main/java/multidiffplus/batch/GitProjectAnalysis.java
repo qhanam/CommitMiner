@@ -32,7 +32,6 @@ import multidiffplus.commit.Commit.Type;
 import multidiffplus.commit.SourceCodeFileChange;
 import multidiffplus.factories.ICommitAnalysisFactory;
 import multidiffplus.facts.Annotation;
-import multidiffplus.facts.AnnotationFactBase;
 import multidiffplus.facts.MiningFactBase;
 import multidiffplus.analysis.CommitAnalysis;
 
@@ -84,7 +83,12 @@ public class GitProjectAnalysis extends GitProject {
 		List<Triple<String, String, Type>> commits = this.getCommitPairs();
 
 		logger.info(" [ANALYZING] {} bug fixing commits", commits.size());
-
+		
+		/* Inspect the commit list for debugging. */
+//		for(Triple<String, String, Type> commit : commits) {
+//			System.out.println(commit.getLeft() + " - " + commit.getMiddle() + " - " + commit.getRight());
+//		}
+		
 		/* Analyze the changes made in each bug fixing commit. */
 		for(Triple<String, String, Type> commit : commits) {
 			
@@ -301,10 +305,10 @@ public class GitProjectAnalysis extends GitProject {
 		MiningFactBase factBase = MiningFactBase.getInstance(sourceCodeFileChange);
 
 		if(csvFile == null 
-				|| commit.sourceCodeFileChanges.size() > 1 
-				|| factBase.getUpdatedStatements() > 6
-				|| factBase.getInsertedStatements() > 0 
-				|| factBase.getRemovedStatements() > 0 
+//				|| commit.sourceCodeFileChanges.size() > 1 
+//				|| factBase.getUpdatedStatements() > 6
+//				|| factBase.getInsertedStatements() > 0 
+//				|| factBase.getRemovedStatements() > 0 
 				|| factBase.getAnnotations().isEmpty()) return;
 
 		/* Write the src/dst files to disk so that we can run a flow analysis on
@@ -343,7 +347,7 @@ public class GitProjectAnalysis extends GitProject {
 		}
 		
 		/* We are done with the factbase and can recover the memory. */
-		AnnotationFactBase.removeInstance(sourceCodeFileChange);
+		MiningFactBase.removeInstance(sourceCodeFileChange);
 
 	}
 
