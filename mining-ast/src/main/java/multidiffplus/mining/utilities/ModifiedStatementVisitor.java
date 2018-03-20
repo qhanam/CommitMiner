@@ -45,7 +45,7 @@ public class ModifiedStatementVisitor implements NodeVisitor {
 			return false;
 		case Token.TRY:
 			if(node != root) return false;
-			if(isModified(node)) numModified++;
+			if(isInserted(node)) numModified++;
 			((TryStatement)node).getTryBlock().visit(this);;
 			return false;
 		case Token.CATCH:
@@ -79,6 +79,13 @@ public class ModifiedStatementVisitor implements NodeVisitor {
 	 */
 	private static boolean isModified(AstNode node) {
 		return node.getChangeType() != ChangeType.UNCHANGED;
+	}
+	
+	/**
+	 * @return {@code true} if the statement is inserted
+	 */
+	private static boolean isInserted(AstNode node) {
+		return node.getChangeType() == ChangeType.INSERTED;
 	}
 
 }
