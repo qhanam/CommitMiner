@@ -57,7 +57,7 @@ public class TryASTAnalysis implements NodeVisitor {
 	/**
 	 * Register annotations for modified functions.
 	 */
-	public void visitFunctionNode(FunctionNode functionNode) {
+	private void visitFunctionNode(FunctionNode functionNode) {
 		
 		/* Has this function, or its contents, changed in some way? */
 		if(ModifiedFunctionVisitor.hasStructuralModifications(functionNode)) {
@@ -81,7 +81,7 @@ public class TryASTAnalysis implements NodeVisitor {
 	 * Register annotations for new or modified try statements that do not wrap
 	 * a set of moved statements and are therefore mutation candidates.
 	 */
-	public void visitTryStatement(TryStatement tryStatement) {
+	private void visitTryStatement(TryStatement tryStatement) {
 		
 		/* Does this try statement repair an uncaught exception? */
 		if(repairsUncaughtException(tryStatement)) {

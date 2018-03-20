@@ -10,6 +10,7 @@ import multidiffplus.factories.ICommitAnalysisFactory;
 import multidiffplus.factories.IDomainAnalysisFactory;
 import multidiffplus.jsanalysis.factories.JavaScriptCFGFactory;
 import multidiffplus.mining.astvisitor.ajax.AjaxDataASTAnalysisFactory;
+import multidiffplus.mining.astvisitor.unhandledex.TryASTAnalysisFactory;
 import multidiffplus.mining.cfgvisitor.ajax.AjaxCFGVisitorFactory;
 
 public class CommitAnalysisFactory implements ICommitAnalysisFactory {
@@ -35,7 +36,8 @@ public class CommitAnalysisFactory implements ICommitAnalysisFactory {
 		case AST:
 		default:
 			List<IASTVisitorFactory> astVisitorFactories = new LinkedList<IASTVisitorFactory>();
-			astVisitorFactories.add(new AjaxDataASTAnalysisFactory());
+//			astVisitorFactories.add(new AjaxDataASTAnalysisFactory());
+			astVisitorFactories.add(new TryASTAnalysisFactory());
 			domainFactories.add(new DomainASTAnalysisFactory(astVisitorFactories, new JavaScriptCFGFactory()));
 		}
 
