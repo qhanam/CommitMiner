@@ -16,8 +16,9 @@ const CSV = './output/try.csv',
  * DO NOT MODIFY BELOW HERE
  * ************************/
 
+const TMP_REPOS = 'repo_set_tmp';
 const fs = require('fs');
-const data = fs.readFileSync('./repo_set_tmp', 'utf8')
+const data = fs.readFileSync(REPOS, 'utf8')
 const lines = data.split('\n');
 
 lines.pop(); // Because there is a newline character at the end of the repo list.
@@ -60,7 +61,7 @@ function runCommitMiner() {
 	var args = ['-Xmx50g', '-Xss20m', '-jar', 'CommitMinerAST.jar', 
 		'--source', SOURCE_DIR, 
 		'--out', CSV,
-		'--repositories', REPOS,
+		'--repositories', TMP_REPOS,
 		'--threads', THREADS];
 	var timeout = TIMEOUT;
 
@@ -85,7 +86,7 @@ async function batchAnalysis() {
 				index++) {
 			repos = repos + lines[index] + '\n';
 		}
-		fs.writeFileSync(REPOS, repos.trim());
+		fs.writeFileSync(TMP_REPOS, repos.trim());
 
 		/* Run CommitMiner. */
 		console.log("Analyzing batch #" + batch + "...");
