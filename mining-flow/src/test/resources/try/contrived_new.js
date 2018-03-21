@@ -13,8 +13,11 @@ function gaf() {
 function bar() {
 	try {
 		console.log("Hello World!");
+		console.log("Hello Console!");
 	} catch (e) { 
 		console.log(e);	
+	} finally {
+		close();
 	}
 	gaf();
 	try {

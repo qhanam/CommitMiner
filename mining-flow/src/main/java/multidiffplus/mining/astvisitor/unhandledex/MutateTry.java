@@ -1,5 +1,9 @@
 package multidiffplus.mining.astvisitor.unhandledex;
 
+import java.util.LinkedList;
+import java.util.List;
+
+import org.mozilla.javascript.Node;
 import org.mozilla.javascript.Token;
 import org.mozilla.javascript.ast.AstNode;
 import org.mozilla.javascript.ast.ScriptNode;
@@ -49,10 +53,17 @@ public class MutateTry {
 		
 		/* Find the try block in the cloned function. */
 		TryStatement tryClone = MatchingTryVisitor.findClone(functClone, tryStmt);
+		AstNode tryBlock = tryClone.getTryBlock();
 		
 		/* Pull up the contents of the try block. */
 		AstNode tryParent = tryClone.getParent();
-		tryParent.addChildBefore(tryClone.getTryBlock(), tryClone);
+		for(Node childNode : tryBlock) {
+			AstNode child = (AstNode)childNode;
+			child.setParent(tryParent);
+			child.resetNext();
+			tryParent.addChildBefore((AstNode)child, tryClone);
+		}
+
 		tryParent.removeChild(tryClone);
 		
 		return functClone;
