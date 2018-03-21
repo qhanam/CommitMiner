@@ -14,7 +14,7 @@ public class SourceCodeFileChange {
 	private static int unique = 1;
 	
 	/** The unique id for the {@code SourceCodeFileChange}. **/
-	private int id;
+	private long id;
 
 	/** The path to the source file before the commit. **/
 	public String buggyFile;
@@ -50,7 +50,7 @@ public class SourceCodeFileChange {
 	/**
 	 * @return the unique ID for the {@code SourceCodeFileChange}
 	 */
-	public int getID() {
+	public long getID() {
 		return id;
 	}
 
@@ -77,7 +77,7 @@ public class SourceCodeFileChange {
 
 	@Override
 	public int hashCode() {
-		return Integer.valueOf(id).hashCode();
+		return Long.valueOf(id).hashCode();
 	}
 	
 	@Override
@@ -85,7 +85,7 @@ public class SourceCodeFileChange {
 		return repairedFile;
 	}
 	
-	private static synchronized int getUniqueID() {
+	private static synchronized long getUniqueID() {
 		int unique = SourceCodeFileChange.unique;
 		SourceCodeFileChange.unique++;
 		return unique;
