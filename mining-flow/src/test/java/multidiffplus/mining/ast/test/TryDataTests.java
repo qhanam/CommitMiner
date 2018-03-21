@@ -53,6 +53,13 @@ public class TryDataTests {
 		this.runTest(src, dst);
 	}
 
+	@Test
+	public void testShellJS() throws Exception {
+		String src = "src/test/resources/try/shelljs_old.js";
+		String dst = "src/test/resources/try/shelljs_new.js";
+		this.runTest(src, dst);
+	}
+
 	/**
 	 * @return A dummy commit for testing.
 	 */

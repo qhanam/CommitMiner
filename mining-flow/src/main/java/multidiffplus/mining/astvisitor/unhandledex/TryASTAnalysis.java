@@ -109,7 +109,7 @@ public class TryASTAnalysis implements NodeVisitor {
 			* mutating the function to remove the try statement and use this repair
 			* for training. Add it as a mutated repair sequence. */
 			
-			/* TODO: Mutate a repair (remove the try block). */
+			/* Mutate a repair (remove the try block). */
 			MutateTry mutation = new MutateTry(tryStatement);
 			ScriptNode mutant = mutation.mutate();
 			if(mutant != null)

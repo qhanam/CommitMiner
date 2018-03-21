@@ -1,8 +1,5 @@
 package multidiffplus.mining.astvisitor.unhandledex;
 
-import java.util.LinkedList;
-import java.util.List;
-
 import org.mozilla.javascript.Node;
 import org.mozilla.javascript.Token;
 import org.mozilla.javascript.ast.AstNode;

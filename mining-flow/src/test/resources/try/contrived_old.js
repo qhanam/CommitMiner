@@ -6,6 +6,10 @@ function gaf() {
 	for(var i = 0; i < 10; i++) {
 		console.log(i);
 	}
+
+	function noise() {
+		var a = "I'm in the way";
+	}
 }
 
 function bar() {

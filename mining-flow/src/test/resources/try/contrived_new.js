@@ -8,6 +8,10 @@ function gaf() {
 			console.log(i);
 		} catch (e) { }
 	}
+
+	function noise() {
+		var a = "I'm in the way";
+	}
 }
 
 function bar() {
