@@ -54,6 +54,7 @@ public class MutateTry {
 		/* Find the try block in the cloned function. */
 		TryStatement tryClone = MatchingTryVisitor.findClone(functClone, tryStmt);
 		AstNode tryBlock = tryClone.getTryBlock();
+		AstNode finallyBlock = tryClone.getFinallyBlock();
 		
 		/* Pull up the contents of the try block. */
 		AstNode tryParent = tryClone.getParent();
@@ -62,6 +63,16 @@ public class MutateTry {
 			child.setParent(tryParent);
 			child.resetNext();
 			tryParent.addChildBefore((AstNode)child, tryClone);
+		}
+		
+		/* Pull up the contents of the finally block. */
+		if(finallyBlock != null) {
+			for(Node childNode : finallyBlock) {
+				AstNode child = (AstNode)childNode;
+				child.setParent(tryParent);
+				child.resetNext();
+				tryParent.addChildBefore((AstNode)child, tryClone);
+			}
 		}
 
 		tryParent.removeChild(tryClone);
