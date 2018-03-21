@@ -48,7 +48,8 @@ public class ModifiedTryVisitor implements NodeVisitor {
 		case Token.IF:
 			if(isModified(node)) numModified++;
 			((IfStatement)node).getThenPart().visit(this);
-			((IfStatement)node).getElsePart().visit(this);
+			if(((IfStatement)node).getElsePart() != null)
+				((IfStatement)node).getElsePart().visit(this);
 			return false;
 		case Token.FOR:
 			if(isModified(node)) numModified++;

@@ -1,5 +1,11 @@
 package multidiffplus.commit;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.PrintStream;
 import java.util.regex.Matcher;
 
 /**
@@ -11,7 +17,7 @@ import java.util.regex.Matcher;
 public class SourceCodeFileChange {
 	
 	/** Used for generating unique SourceCodeFileChange IDs. **/
-	private static int unique = 1;
+	private static long unique = initUniqueID();
 	
 	/** The unique id for the {@code SourceCodeFileChange}. **/
 	private long id;
@@ -86,9 +92,49 @@ public class SourceCodeFileChange {
 	}
 	
 	private static synchronized long getUniqueID() {
-		int unique = SourceCodeFileChange.unique;
+
+		long unique = SourceCodeFileChange.unique;
 		SourceCodeFileChange.unique++;
+
+		File file = new File("./", ".scfcid");
+		try(PrintStream stream = new PrintStream(new FileOutputStream(file, false))) {
+			stream.print(String.valueOf(unique));
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+
 		return unique;
+
+	}
+	
+	/**
+	 * @return the lowest ID guaranteed to be unique (based on the last stored ID)
+	 */
+	private static long initUniqueID() {
+
+		File file = new File("./", ".scfcid");
+		long unique = 1;
+		
+		if(file.exists()) {
+
+			try(BufferedReader br = new BufferedReader(new FileReader(file))) {
+				
+				try {
+					unique = Long.parseLong(br.readLine()) + 1;
+				}
+				catch(NumberFormatException e) {
+					e.printStackTrace();
+				}
+				
+			}
+			catch(Exception e) {
+				System.err.println("Error while reading URI file: " + e.getMessage());
+			}
+			
+		}
+		
+		return unique;
+		
 	}
 
 }
