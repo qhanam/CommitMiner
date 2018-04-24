@@ -47,6 +47,13 @@ public class TryDataTests {
 	}
 
 	@Test
+	public void testEsprima() throws Exception {
+		String src = "src/test/resources/try/esprima_old.js";
+		String dst = "src/test/resources/try/esprima_new.js";
+		this.runTest(src, dst);
+	}
+
+	@Test
 	public void testContrived() throws Exception {
 		String src = "src/test/resources/try/contrived_old.js";
 		String dst = "src/test/resources/try/contrived_new.js";

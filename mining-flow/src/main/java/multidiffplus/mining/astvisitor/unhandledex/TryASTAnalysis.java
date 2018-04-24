@@ -1,5 +1,8 @@
 package multidiffplus.mining.astvisitor.unhandledex;
 
+import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
+
 import org.mozilla.javascript.Node;
 import org.mozilla.javascript.Token;
 import org.mozilla.javascript.ast.AstNode;
@@ -7,6 +10,11 @@ import org.mozilla.javascript.ast.FunctionNode;
 import org.mozilla.javascript.ast.NodeVisitor;
 import org.mozilla.javascript.ast.ScriptNode;
 import org.mozilla.javascript.ast.TryStatement;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.stream.JsonWriter;
 
 import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode.ChangeType;
 import multidiffplus.commit.SourceCodeFileChange;
@@ -96,6 +104,7 @@ public class TryASTAnalysis implements NodeVisitor {
 		}
 		
 		/* Has this try statement, or its contents, changed in some way? */
+		/* TODO: Has this try statement been inserted? */
 		else if(ModifiedTryVisitor.hasStructuralModifications(tryStatement)) {
 			
 			/* Since the try or its contents has changed, it is a new
@@ -172,6 +181,7 @@ public class TryASTAnalysis implements NodeVisitor {
 	private void registerSliceChange(ScriptNode functA, ScriptNode functB, SliceChange.Type type) {
 		Slice before = functA == null ? null : buildSlice(functA);
 		Slice after = functB == null ? null : buildSlice(functB);
+		
 		factBase.registerSliceFact(new SliceChange(before, after, type));
 	}
 

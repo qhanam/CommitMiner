@@ -2,7 +2,9 @@ package multidiffplus.mining.flow;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -48,6 +50,8 @@ public class Main {
 		try(BufferedReader br = new BufferedReader(new FileReader(options.getCandidatesFile()))) {
 			for(String line; (line = br.readLine()) != null; ) {
 				
+				System.out.println(line);;
+				
 				/* Parse the line into a Candidate object. */
 				String[] values = line.split(",");
 				Candidate candidate = new Candidate(values[0], values[1], 
@@ -60,9 +64,12 @@ public class Main {
 
 			}
 		}
-		catch(Exception e) {
-			System.err.println("Error while reading URI file: " + e.getMessage());
-			return;
+		 catch (FileNotFoundException e) {
+			System.err.println("FileNotFoundException while reading candidate file: " + e.getMessage());
+			e.printStackTrace();
+		} catch (IOException e) {
+			System.err.println("IOException while reading candidate file: " + e.getMessage());
+			e.printStackTrace();
 		}
 
 		/* Create a pool of threads and use a CountDownLatch to check when
