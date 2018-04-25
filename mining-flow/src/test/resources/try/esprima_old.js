@@ -1,3 +1,1 @@
-function foo() {
-	yield;
-}
+var regex = /[/\\][^/\\]*\*.*$/;

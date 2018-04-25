@@ -1,5 +1,7 @@
 package multidiffplus.mining.flow.analysis;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 
 import org.mozilla.javascript.EvaluatorException;
@@ -83,8 +85,9 @@ public class MiningASTDomainAnalysis extends DomainAnalysis {
 			
 			/* Print the esprima AST (json object) */
 			Gson gson = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
-			String pretty = gson.toJson(((AstNode)diffContext.dstScript).getJsonObject());//functB.getJsonObject());
-			System.out.println(pretty);
+			String pretty = gson.toJson(((AstNode)diffContext.dstScript).getJsonObject());
+			Files.write(Paths.get("/Users/qhanam/Utilities/esprima/json"), pretty.getBytes());
+			//System.out.println(pretty);
 			
 			/* Run the AST visitors. */
 			analyzeAST(sourceCodeFileChange, diffContext);
