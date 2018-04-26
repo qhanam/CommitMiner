@@ -205,6 +205,7 @@ public class AjaxDataASTAnalysis implements NodeVisitor {
 		return new Slice(
 			new Statement(
 					node.toSource(),
+					node.getJsonObject(),
 					node.getLineno(),
 					node.getAbsolutePosition(),
 					node.getLength()));

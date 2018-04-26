@@ -42,7 +42,8 @@ public class TryDataTests {
 		commitAnalysis.analyze(commit);
 		
         /* Print the data set. */
-		System.out.println(new GsonBuilder().setPrettyPrinting().create().toJson(factBase.getJsonObject()));
+		//System.out.println(new GsonBuilder().setPrettyPrinting().create().toJson(factBase.getJsonObject()));
+		System.out.println(new GsonBuilder().create().toJson(factBase.getJsonObject()));
 	
 	}
 

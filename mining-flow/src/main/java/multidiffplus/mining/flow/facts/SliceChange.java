@@ -48,20 +48,10 @@ public class SliceChange {
 		
 		JsonObject json = new JsonObject();
 		json.addProperty("type", type.toString());
-
-		switch(type) {
-		case MUTANT_REPAIR: // Train the DL model to apply this fix to before code.
-		case REPAIR:
-			json.addProperty("before", before.toString());
-			json.addProperty("after", after.toString());
-			break;
-		case NOMINAL: // Train the DL model to leave after code unchanged.
-		default:
-			json.addProperty("before", after.toString());
-			json.addProperty("after", after.toString());
-			break;
-		}
-		
+		json.addProperty("before", before.toString());
+		json.add("before-ast", before.getStatementAST());
+		json.addProperty("after", after.toString());
+		json.add("after-ast", after.getStatementAST());
 		return json;
 		
 	}

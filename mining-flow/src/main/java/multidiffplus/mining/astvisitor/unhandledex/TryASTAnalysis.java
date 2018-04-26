@@ -1,8 +1,5 @@
 package multidiffplus.mining.astvisitor.unhandledex;
 
-import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
-
 import org.mozilla.javascript.Node;
 import org.mozilla.javascript.Token;
 import org.mozilla.javascript.ast.AstNode;
@@ -10,11 +7,6 @@ import org.mozilla.javascript.ast.FunctionNode;
 import org.mozilla.javascript.ast.NodeVisitor;
 import org.mozilla.javascript.ast.ScriptNode;
 import org.mozilla.javascript.ast.TryStatement;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
-import com.google.gson.stream.JsonWriter;
 
 import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode.ChangeType;
 import multidiffplus.commit.SourceCodeFileChange;
@@ -119,10 +111,10 @@ public class TryASTAnalysis implements NodeVisitor {
 			* for training. Add it as a mutated repair sequence. */
 			
 			/* Mutate a repair (remove the try block). */
-			MutateTry mutation = new MutateTry(tryStatement);
-			ScriptNode mutant = mutation.mutate();
-			if(mutant != null)
-				registerSliceChange(mutant, dstFunct, SliceChange.Type.MUTANT_REPAIR);
+//			MutateTry mutation = new MutateTry(tryStatement);
+//			ScriptNode mutant = mutation.mutate();
+//			if(mutant != null)
+//				registerSliceChange(mutant, dstFunct, SliceChange.Type.MUTANT_REPAIR);
 			
 		}
 		
@@ -194,6 +186,7 @@ public class TryASTAnalysis implements NodeVisitor {
 		return new Slice(
 			new Statement(
 					node.toSource(),
+					node.getJsonObject(),
 					node.getLineno(),
 					node.getAbsolutePosition(),
 					node.getLength()));
