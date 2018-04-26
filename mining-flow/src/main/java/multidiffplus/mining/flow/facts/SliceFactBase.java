@@ -1,9 +1,8 @@
 package multidiffplus.mining.flow.facts;
 
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -15,11 +14,11 @@ import multidiffplus.facts.FactBase;
  * Registers and stores facts related to annotating the source code file.
  */
 public class SliceFactBase extends FactBase {
-	
+
 	private static Map<SourceCodeFileChange, SliceFactBase> instances = new HashMap<SourceCodeFileChange, SliceFactBase>();
-	
-	private Set<SliceChange> slices;
-	
+
+	private Map<Integer, SliceChange> slices;
+
 	/**
 	 * @return The AnnotationFactBase for the given {@code SourceCodeFileChange}.
 	 */
@@ -31,26 +30,26 @@ public class SliceFactBase extends FactBase {
 		}
 		return instance;
 	}
-	
+
 	/**
 	 * Removes the {@code AnnotationFactBase} for the given {@code SourceCodeFileChange}.
 	 */
 	public static void removeInstance(SourceCodeFileChange sourceCodeFileChange) {
 		instances.remove(sourceCodeFileChange);
 	}
-	
+
 	private SliceFactBase(SourceCodeFileChange sourceCodeFileChange) {
 		super(sourceCodeFileChange);
-		slices = new HashSet<SliceChange>();
+		slices = new HashMap<Integer, SliceChange>();
 	}
 
 	/**
-	 * Register an slice with the fact database.
+	 * Register a slice with the fact database.
 	 * 
-	 * The slice is assumed to be on the destination file.
+	 * @param id The identifier of the slice (eliminates redundant slices).
 	 */
-	public void registerSliceFact(SliceChange slice) {
-		this.slices.add(slice);
+	public void registerSliceFact(Integer id, SliceChange slice) {
+		this.slices.put(id, slice);
 	}
 	
 	/**
@@ -58,15 +57,22 @@ public class SliceFactBase extends FactBase {
 	 * 
 	 * The slice is assumed to be on the destination file.
 	 */
-	public void registerSliceFacts(Set<SliceChange> slices) {
-		this.slices.addAll(slices);
+	public void registerSliceFacts(Map<Integer, SliceChange> slices) {
+		this.slices.putAll(slices);
 	}
 	
 	/**
 	 * @return The ordered set of slices in the fact base.
 	 */
-	public Set<SliceChange> getSlices() {
-		return this.slices;
+	public Collection<SliceChange> getSlices() {
+		return this.slices.values();
+	}
+	
+	/**
+	 * @return The slice with identifier {@code id}.
+	 */
+	public SliceChange getSlice(Integer id) {
+		return slices.get(id);
 	}
 	
 	/**
@@ -88,7 +94,7 @@ public class SliceFactBase extends FactBase {
 		JsonArray jsonArray = new JsonArray();
 		json.add("sliceChangePair", jsonArray);
 
-		for(SliceChange slice : slices) {
+		for(SliceChange slice : slices.values()) {
 			jsonArray.add(slice.getJsonObject());
 		}
 		
@@ -97,7 +103,7 @@ public class SliceFactBase extends FactBase {
 	}
 	
 	public void printDataSet() {
-		for(SliceChange slice : slices) {
+		for(SliceChange slice : slices.values()) {
 			System.out.println(slice.toString());
 		}
 	}

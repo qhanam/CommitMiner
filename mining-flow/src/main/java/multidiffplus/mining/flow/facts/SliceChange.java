@@ -1,5 +1,12 @@
 package multidiffplus.mining.flow.facts;
 
+import java.util.EnumSet;
+import java.util.Set;
+
+import org.apache.commons.lang.StringUtils;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 
 /**
@@ -11,19 +18,26 @@ public class SliceChange {
 	 * Classification scheme for types of changes made to slices.
 	 */
 	public enum Type {
-		REPAIR, // Implies before is buggy and after is fixed
-		MUTANT_REPAIR, // Mutated such that before is buggy and after is fixed
-		NOMINAL // Implies both versions are correct
+		REPAIR, // Shows a repair. The 'before' AST is buggy and the 'after' AST is correct.
+		MUTATION_CANDIDATE // Function AST is correct, but can be mutated to be buggy
 	}
 	
 	private Slice before;
 	private Slice after;
-	private Type type; 
+	private Set<Type> labels; 
 	
-	public SliceChange(Slice before, Slice after, Type type) {
+	public SliceChange(Slice before, Slice after) {
 		this.before = before;
 		this.after = after;
-		this.type = type;
+		this.labels = EnumSet.noneOf(Type.class);
+	}
+	
+	/**
+	 * Adds a label to this slice change.
+	 * @param type The label.
+	 */
+	public void addLabel(Type type) {
+		labels.add(type);
 	}
 	
 	/** @return the slice before the commit. */
@@ -37,8 +51,8 @@ public class SliceChange {
 	}
 	
 	/** @return the type of behaviour changed by the commit. */
-	public Type getChangeType() {
-		return type;
+	public Set<Type> getLabels() {
+		return labels;
 	}
 	
 	/**
@@ -47,9 +61,21 @@ public class SliceChange {
 	public JsonObject getJsonObject() {
 		
 		JsonObject json = new JsonObject();
-		json.addProperty("type", type.toString());
-		json.addProperty("before", before.toString());
-		json.add("before-ast", before.getStatementAST());
+		
+		JsonArray array = new JsonArray();
+		for(Type type : labels) {
+			array.add(type.toString());
+		}
+		
+		json.add("labels", array);
+		if(before != null) {
+			json.addProperty("before", before.toString());
+			json.add("before-ast", before.getStatementAST());
+		}
+		else {
+			json.add("before", JsonNull.INSTANCE);
+			json.add("before-ast", JsonNull.INSTANCE);
+		}
 		json.addProperty("after", after.toString());
 		json.add("after-ast", after.getStatementAST());
 		return json;
@@ -58,13 +84,7 @@ public class SliceChange {
 	
 	@Override
 	public String toString() {
-		if(before != null && after != null)
-			return type.name() + "\n" + before + "\n--------\n" + after;
-		if(before != null)
-			return type.name() + "\n" + before;
-		if(after != null)
-			return type.name() + "\n" + after;
-		return "";
+		return "labels=[" + StringUtils.join(labels.toArray(), ",") + "]";
 	}
 	
 }

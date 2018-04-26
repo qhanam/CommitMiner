@@ -3,6 +3,7 @@ package multidiffplus.mining.astvisitor.unhandledex;
 import org.mozilla.javascript.Node;
 import org.mozilla.javascript.Token;
 import org.mozilla.javascript.ast.AstNode;
+import org.mozilla.javascript.ast.AstRoot;
 import org.mozilla.javascript.ast.FunctionNode;
 import org.mozilla.javascript.ast.NodeVisitor;
 import org.mozilla.javascript.ast.ScriptNode;
@@ -12,6 +13,7 @@ import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode.ChangeType;
 import multidiffplus.commit.SourceCodeFileChange;
 import multidiffplus.mining.flow.facts.Slice;
 import multidiffplus.mining.flow.facts.SliceChange;
+import multidiffplus.mining.flow.facts.SliceChange.Type;
 import multidiffplus.mining.flow.facts.SliceFactBase;
 import multidiffplus.mining.flow.facts.Statement;
 
@@ -41,10 +43,12 @@ public class TryASTAnalysis implements NodeVisitor {
 		
 		/* Stop on function declarations & investigate try/catch statements. */
 		switch(node.getType()) {
+		case Token.SCRIPT:
+			if(node != root) return false;
+			return visitScriptNode((AstRoot) node);
 		case Token.FUNCTION:
 			if(node != root) return false;
-			visitFunctionNode((FunctionNode) node);
-			break;
+			return visitFunctionNode((FunctionNode) node);
 		case Token.TRY:
 			visitTryStatement((TryStatement)node);
 			break;
@@ -54,22 +58,39 @@ public class TryASTAnalysis implements NodeVisitor {
 
 	}
 	
+	/**
+	 * Register annotations for modified scripts.
+	 */
+	private boolean visitScriptNode(AstRoot rootNode) {
+		
+		/* Has this function, or its contents, changed in some way? */
+		if(!ModifiedFunctionVisitor.hasStructuralModifications(rootNode)) return false;
+
+		/* Since the function or its contents has changed, it is a new
+		* example that we can use for training. Add it as a nominal
+		* sequence, which means the sequence should remain unchanged. */
+
+		registerSliceChange((ScriptNode)rootNode.getMapping(), rootNode);
+		
+		return true;
+			
+	}
 	
 	/**
 	 * Register annotations for modified functions.
 	 */
-	private void visitFunctionNode(FunctionNode functionNode) {
+	private boolean visitFunctionNode(FunctionNode functionNode) {
 		
 		/* Has this function, or its contents, changed in some way? */
-		if(ModifiedFunctionVisitor.hasStructuralModifications(functionNode)) {
+		if(!ModifiedFunctionVisitor.hasStructuralModifications(functionNode)) return false;
 
-			/* Since the function or its contents has changed, it is a new
-			* example that we can use for training. Add it as a nominal
-			* sequence, which means the sequence should remain unchanged. */
+		/* Since the function or its contents has changed, it is a new
+		* example that we can use for training. Add it as a nominal
+		* sequence, which means the sequence should remain unchanged. */
 
-			registerSliceChange(functionNode, functionNode, SliceChange.Type.NOMINAL);
+		registerSliceChange((ScriptNode)functionNode.getMapping(), functionNode);
 			
-		}
+		return true;
 		
 	}
 	
@@ -87,34 +108,22 @@ public class TryASTAnalysis implements NodeVisitor {
 			* Add it as a concrete repair sequence. */
 			
 			ScriptNode dstFunct = getEnclosingFunction(tryStatement);
-			ScriptNode srcFunct = (ScriptNode)dstFunct.getMapping();
 			
-			if(srcFunct == null) return; // Avoid case where there is no mapping
-
-			registerSliceChange(srcFunct, dstFunct, SliceChange.Type.REPAIR);
+			SliceChange slice = factBase.getSlice(dstFunct.getID());
+			slice.addLabel(Type.REPAIR);
 
 		}
 		
-		/* Has this try statement, or its contents, changed in some way? */
-		/* TODO: Has this try statement been inserted? */
-		else if(ModifiedTryVisitor.hasStructuralModifications(tryStatement)) {
+		/* Has this try statement been inserted? */
+		else if(tryStatement.getChangeType() == ChangeType.INSERTED) {
 			
-			/* Since the try or its contents has changed, it is a new
-			* example that we can use for training. Add it as a nominal
-			* sequence, which means the sequence should remain unchanged. */
+			/* Since the try has been inserted, we can use it as an example of a
+			* missing try by removing the try statement. */
 
 			ScriptNode dstFunct = getEnclosingFunction(tryStatement);
-			registerSliceChange(dstFunct, dstFunct, SliceChange.Type.NOMINAL);
 
-			/* Since this is a try statement, we can create a repair example by
-			* mutating the function to remove the try statement and use this repair
-			* for training. Add it as a mutated repair sequence. */
-			
-			/* Mutate a repair (remove the try block). */
-//			MutateTry mutation = new MutateTry(tryStatement);
-//			ScriptNode mutant = mutation.mutate();
-//			if(mutant != null)
-//				registerSliceChange(mutant, dstFunct, SliceChange.Type.MUTANT_REPAIR);
+			SliceChange slice = factBase.getSlice(dstFunct.getID());
+			slice.addLabel(Type.MUTATION_CANDIDATE);
 			
 		}
 		
@@ -170,11 +179,11 @@ public class TryASTAnalysis implements NodeVisitor {
 	/**
 	 * Registers the change to the function's slice.
 	 */
-	private void registerSliceChange(ScriptNode functA, ScriptNode functB, SliceChange.Type type) {
+	private void registerSliceChange(ScriptNode functA, ScriptNode functB) {
 		Slice before = functA == null ? null : buildSlice(functA);
 		Slice after = functB == null ? null : buildSlice(functB);
 		
-		factBase.registerSliceFact(new SliceChange(before, after, type));
+		factBase.registerSliceFact(functB.getID(), new SliceChange(before, after));
 	}
 
 	/**

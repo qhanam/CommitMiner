@@ -92,7 +92,7 @@ public class AjaxDataASTAnalysis implements NodeVisitor {
 		if(dataProperty == null) {
 
 			/* There is no data being sent, so no repair should be applied. */
-			this.registerSliceChange(call, call, SliceChange.Type.NOMINAL);
+			this.registerSliceChange(call, call);
 			return;
 
 		}
@@ -103,7 +103,7 @@ public class AjaxDataASTAnalysis implements NodeVisitor {
 		if(stringify == null) {
 
 			/* JSON.stringify is not used, so no repair should be applied. */
-			registerSliceChange(call, call, SliceChange.Type.NOMINAL);
+			registerSliceChange(call, call);
 			return;
 
 		}
@@ -113,10 +113,10 @@ public class AjaxDataASTAnalysis implements NodeVisitor {
 				&& stringify.getChangeType() == ChangeType.INSERTED) {
 
 			/* After the repair is applied, the code is nominal. */
-			registerSliceChange(call, call, SliceChange.Type.NOMINAL);
+			registerSliceChange(call, call);
 
 			/* There is a concrete repair. */
-			registerSliceChange((FunctionCall)call.getMapping(), call, SliceChange.Type.REPAIR);
+			registerSliceChange((FunctionCall)call.getMapping(), call); // REPAIR
 
 			return;
 
@@ -125,13 +125,13 @@ public class AjaxDataASTAnalysis implements NodeVisitor {
 				|| call.getChangeType() == ChangeType.INSERTED) {
 
 			/* JSON.stringify is already used, so no repair should be applied. */
-			registerSliceChange(call, call, SliceChange.Type.NOMINAL);
+			registerSliceChange(call, call);
 			
 			/* Mutate a repair (delete JSON.stringify). */
 			MutateStringify mutation = new MutateStringify(call);
 			FunctionCall mutant = mutation.mutate();
 			if(mutant != null)
-				registerSliceChange(mutant, call, SliceChange.Type.MUTANT_REPAIR);
+				registerSliceChange(mutant, call); // MUTATION CANDIDATE
 
 			return;
 
@@ -190,10 +190,10 @@ public class AjaxDataASTAnalysis implements NodeVisitor {
 	/**
 	 * Registers the change to the call's slice.
 	 */
-	private void registerSliceChange(FunctionCall callA, FunctionCall callB, SliceChange.Type type) {
+	private void registerSliceChange(FunctionCall callA, FunctionCall callB) {
 		Slice before = callA == null ? null : buildSlice(callA);
 		Slice after = callB == null ? null : buildSlice(callB);
-		factBase.registerSliceFact(new SliceChange(before, after, type));
+		factBase.registerSliceFact(callB.getID(), new SliceChange(before, after));
 	}
 
 	/**
