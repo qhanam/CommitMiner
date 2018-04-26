@@ -68,15 +68,8 @@ public class SliceChange {
 		}
 		
 		json.add("labels", array);
-		if(before != null) {
-			json.addProperty("before", before.toString());
-			json.add("before-ast", before.getStatementAST());
-		}
-		else {
-			json.add("before", JsonNull.INSTANCE);
-			json.add("before-ast", JsonNull.INSTANCE);
-		}
-		json.addProperty("after", after.toString());
+		if(before != null) json.add("before-ast", before.getStatementAST());
+		else json.add("before-ast", JsonNull.INSTANCE);
 		json.add("after-ast", after.getStatementAST());
 		return json;
 		

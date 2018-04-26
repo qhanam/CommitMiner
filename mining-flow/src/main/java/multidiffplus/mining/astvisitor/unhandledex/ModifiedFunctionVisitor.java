@@ -28,7 +28,7 @@ public class ModifiedFunctionVisitor implements NodeVisitor {
 	public static boolean hasStructuralModifications(AstNode root) {
 		ModifiedFunctionVisitor visitor = new ModifiedFunctionVisitor(root);
 		root.visit(visitor);
-		return visitor.numModified > 0 && !visitor.containsTry;
+		return visitor.numModified > 0;
 	}
 
 	private ModifiedFunctionVisitor(AstNode root) {

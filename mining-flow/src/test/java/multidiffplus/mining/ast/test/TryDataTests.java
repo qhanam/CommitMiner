@@ -42,8 +42,7 @@ public class TryDataTests {
 		commitAnalysis.analyze(commit);
 		
         /* Print the data set. */
-		//System.out.println(new GsonBuilder().setPrettyPrinting().create().toJson(factBase.getJsonObject()));
-		System.out.println(new GsonBuilder().create().toJson(factBase.getJsonObject()));
+		System.out.println(new GsonBuilder().setPrettyPrinting().create().toJson(factBase.getJsonObject()));
 	
 	}
 
@@ -65,6 +64,13 @@ public class TryDataTests {
 	public void testShellJS() throws Exception {
 		String src = "src/test/resources/try/shelljs_old.js";
 		String dst = "src/test/resources/try/shelljs_new.js";
+		this.runTest(src, dst);
+	}
+
+	@Test
+	public void testShellJS2() throws Exception {
+		String src = "output/source/1683_old.js";
+		String dst = "output/source/1683_new.js";
 		this.runTest(src, dst);
 	}
 
