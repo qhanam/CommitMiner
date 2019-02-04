@@ -15,9 +15,6 @@ import multidiffplus.jsanalysis.abstractdomain.State;
  */
 public class StackFrame {
 	
-	/** Flag for deciding when the function execution is being interleaved. **/
-	boolean interleaved;
-	
 	/** Flag for figuring out where to restart when analysis is paused. **/
 	Progress progress;
 	
@@ -59,25 +56,7 @@ public class StackFrame {
 		/* Update the function's initial state. */
 		cfg.getEntryNode().setBeforeState(absState);
 		cfg.getEntryNode().setAfterState(absState);
-		
-		/* Assume no interleaving. */
-		this.interleaved = false;
 
-	}
-	
-	/**
-	 * Set the interleaving flag.
-	 */
-	public void setInterleaved() {
-		this.interleaved = true;
-	}
-	
-	/**
-	 * @return {@code true} if the exection of the stack frame is being
-	 * interleaved.
-	 */
-	public boolean isInterleaved() {
-		return this.interleaved;
 	}
 	
 	/**
