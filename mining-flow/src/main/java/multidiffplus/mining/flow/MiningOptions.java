@@ -4,6 +4,7 @@ import java.io.File;
 
 import org.kohsuke.args4j.Option;
 
+import multidiffplus.analysis.Options;
 import multidiffplus.mining.flow.analysis.CommitAnalysisFactory.Sensitivity;
 
 public class MiningOptions {
@@ -31,5 +32,9 @@ public class MiningOptions {
 	@Option(name = "--threads", usage = "The number of threads to be used.")
 	private Integer nThreads = 6;
 	public Integer getNThreads() { return this.nThreads; }
+	
+	@Option(name = "--labels", usage = "The type of labels needed.")
+	private Options.Labels labels = Options.Labels.MUTABLE;
+	public Options.Labels getLabels() { return this.labels; }
 	
 }

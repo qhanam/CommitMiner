@@ -35,7 +35,7 @@ public class AjaxDataTests {
 		SliceFactBase factBase = SliceFactBase.getInstance(sourceCodeFileChange);
 
 		/* Set up the analysis. */
-		ICommitAnalysisFactory commitFactory = new CommitAnalysisFactory(Sensitivity.INTRAPROC);
+		ICommitAnalysisFactory commitFactory = new CommitAnalysisFactory(Sensitivity.INTERPROC);
 		CommitAnalysis commitAnalysis = commitFactory.newInstance();
 
 		/* Run the analysis. */

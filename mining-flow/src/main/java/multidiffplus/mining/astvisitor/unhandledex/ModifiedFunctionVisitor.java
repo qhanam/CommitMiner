@@ -87,7 +87,7 @@ public class ModifiedFunctionVisitor implements NodeVisitor {
 	 * @return {@code true} if the statement is modified.
 	 */
 	private static boolean isModified(AstNode node) {
-		return node.getChangeType() != ChangeType.UNCHANGED;
+		return node.getChangeType() != ChangeType.UNCHANGED && node.getChangeType() != ChangeType.MOVED;
 	}
 
 }

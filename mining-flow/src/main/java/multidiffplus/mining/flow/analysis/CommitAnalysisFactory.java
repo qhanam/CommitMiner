@@ -14,7 +14,7 @@ import multidiffplus.mining.astvisitor.unhandledex.TryASTAnalysisFactory;
 import multidiffplus.mining.cfgvisitor.ajax.AjaxCFGVisitorFactory;
 
 public class CommitAnalysisFactory implements ICommitAnalysisFactory {
-	
+
 	private Sensitivity sensitivity;
 	
 	public CommitAnalysisFactory(Sensitivity sensitivity) {
@@ -24,12 +24,15 @@ public class CommitAnalysisFactory implements ICommitAnalysisFactory {
 	@Override
 	public CommitAnalysis newInstance() {
 
-
 		List<IDomainAnalysisFactory> domainFactories = new LinkedList<IDomainAnalysisFactory>();
-		
+		List<ICFGVisitorFactory> cfgVisitorFactories = new LinkedList<ICFGVisitorFactory>();
+
 		switch(sensitivity) {
+		case INTERPROC:
+			cfgVisitorFactories.add(new AjaxCFGVisitorFactory());
+			domainFactories.add(new DomainInterAnalysisFactory(cfgVisitorFactories, new JavaScriptCFGFactory()));
+			break;
 		case INTRAPROC:
-			List<ICFGVisitorFactory> cfgVisitorFactories = new LinkedList<ICFGVisitorFactory>();
 			cfgVisitorFactories.add(new AjaxCFGVisitorFactory());
 			domainFactories.add(new DomainIntraAnalysisFactory(cfgVisitorFactories, new JavaScriptCFGFactory()));
 			break;
@@ -43,13 +46,14 @@ public class CommitAnalysisFactory implements ICommitAnalysisFactory {
 
 		return new CommitAnalysis(domainFactories);
 	}
-	
+
 	/**
 	 * The type of sensitivities the analysis can perform.
 	 */
 	public enum Sensitivity {
 		AST,
-		INTRAPROC
+		INTRAPROC,
+		INTERPROC
 	}
 
 }

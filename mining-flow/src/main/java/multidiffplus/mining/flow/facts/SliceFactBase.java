@@ -7,6 +7,7 @@ import java.util.Map;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import multidiffplus.analysis.Options;
 import multidiffplus.commit.SourceCodeFileChange;
 import multidiffplus.facts.FactBase;
 
@@ -81,6 +82,16 @@ public class SliceFactBase extends FactBase {
 	public boolean isEmpty() {
 		return this.slices.isEmpty();
 	}
+
+	/**
+	 * @return true if there are one or more slices with labels.
+	 */
+	public boolean hasLabels() {
+		for(SliceChange slice : slices.values()) {
+			if(!slice.getLabels().isEmpty()) return true;
+		}
+		return false;
+	}
 	
 	/**
 	 * @return the {@code SliceFactBase} as a {@code JsonObject}.
@@ -95,7 +106,15 @@ public class SliceFactBase extends FactBase {
 		json.add("sliceChangePair", jsonArray);
 
 		for(SliceChange slice : slices.values()) {
-			jsonArray.add(slice.getJsonObject());
+			Options options = Options.getInstance();
+			if(options.labels() == Options.Labels.MUTABLE) {
+				if(!slice.getLabels().isEmpty()) 
+					jsonArray.add(slice.getJsonObject()); // Only repair or mutable function changes
+			}
+			else if(options.labels() == Options.Labels.NOMINAL) {
+				if(slice.getLabels().isEmpty()) 
+					jsonArray.add(slice.getJsonObject()); // Only nominal function changes
+			}
 		}
 		
 		return json;

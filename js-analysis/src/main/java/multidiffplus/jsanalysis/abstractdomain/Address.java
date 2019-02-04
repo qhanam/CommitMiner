@@ -17,9 +17,18 @@ public class Address {
 
 	/** The variable or property being declared. */
 	public String prop;
+	
+	/**
+	 * @param bigInteger The abstract address.
+	 */
+	public Address(BigInteger bigInteger) {
+		this.addr = bigInteger;
+		this.prop = "";
+	}
 
 	/**
 	 * @param bigInteger The abstract address.
+	 * @param prop The property of the object.
 	 */
 	public Address(BigInteger bigInteger, String prop) {
 		this.addr = bigInteger;

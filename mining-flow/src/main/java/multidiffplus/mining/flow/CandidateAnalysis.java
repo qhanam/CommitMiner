@@ -8,9 +8,11 @@ import java.io.PrintStream;
 import org.apache.commons.io.FileUtils;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 
 import multidiffplus.analysis.CommitAnalysis;
+import multidiffplus.analysis.Options;
 import multidiffplus.commit.Commit;
 import multidiffplus.commit.Commit.Type;
 import multidiffplus.commit.SourceCodeFileChange;
@@ -64,9 +66,18 @@ public class CandidateAnalysis {
 		json.addProperty("url", commit.url);
 		json.addProperty("projectID", commit.projectID);
 		json.addProperty("commitID", commit.repairedCommitID);
-		
+
 		/* Write the data set to the json output file. */
-		if(!factBase.isEmpty()) flushToFile(json, jsonFile);
+
+		Options options = Options.getInstance();
+		if(options.labels() == Options.Labels.MUTABLE) {
+			if(!factBase.isEmpty() && factBase.hasLabels()) 
+				flushToFile(json, jsonFile); // Only repair or mutable function changes
+		}
+		else if (options.labels() == Options.Labels.NOMINAL){
+			if(!factBase.isEmpty() && !factBase.hasLabels()) 
+				flushToFile(json, jsonFile); // Only nominal function changes
+		}
 
 		/* We are done with the factbase and can recover the memory. */
 		SliceFactBase.removeInstance(sourceCodeFileChange);
@@ -102,7 +113,7 @@ public class CandidateAnalysis {
 		jsonFile.createNewFile();
 
 		try (PrintStream stream = new PrintStream(new FileOutputStream(jsonFile, true))) {
-			stream.println(new Gson().toJson(json));
+			stream.println(new GsonBuilder().serializeNulls().create().toJson(json));
 		}
 
 	}

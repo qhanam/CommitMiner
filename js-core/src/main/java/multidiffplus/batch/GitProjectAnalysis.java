@@ -165,11 +165,13 @@ public class GitProjectAnalysis extends GitProject {
 				continue;
 			}
 
-			/* Skip files in lib folder. */
-			if (diff.getNewPath().matches("^lib/.*$") || diff.getNewPath().matches("^.*/lib/.*$")) {
-				logger.info("[SKIP_FILE] lib file: " + diff.getNewPath());
-				continue;
-			}
+			/* Skip files in lib folder.
+			 * TODO: Projects often store their own code in the lib folder, so
+			 * skipping everything is bad. Maybe a heuristic? */
+//			if (diff.getNewPath().matches("^lib/.*$") || diff.getNewPath().matches("^.*/lib/.*$")) {
+//				logger.info("[SKIP_FILE] lib file: " + diff.getNewPath());
+//				continue;
+//			}
 
 			/* Skip files in bin folder. */
 			if (diff.getNewPath().matches("^bin/.*$") || diff.getNewPath().matches("^.*/bin/.*$")) {
@@ -180,6 +182,12 @@ public class GitProjectAnalysis extends GitProject {
 			/* Skip test files. */
 			if (diff.getNewPath().matches("^.*test.*$") || diff.getNewPath().matches("^.*test.*$")) {
 				logger.info("[SKIP_FILE] test file: " + diff.getNewPath());
+				continue;
+			}
+
+			/* Skip files inside node modules. */
+			if (diff.getNewPath().matches("^.*node_modules/.*$")) {
+				logger.info("[SKIP_FILE] node module or plugin file: " + diff.getNewPath());
 				continue;
 			}
 

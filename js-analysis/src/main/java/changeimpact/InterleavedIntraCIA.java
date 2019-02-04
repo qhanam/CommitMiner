@@ -31,7 +31,7 @@ public class InterleavedIntraCIA {
 		
 		/* Make sure the intra-proc analysis option is turned on so that
 		* functions are never added to the stack. */
-		Options.createInstance(Options.Sensitivity.INTRAPROC);
+		Options.createInstance(Options.Sensitivity.INTRAPROC, Options.Labels.NOMINAL);
 		
 		/* Build and run an analysis for each source function. */
 		for(CFG cfg : diffContext.srcCFGs ) {

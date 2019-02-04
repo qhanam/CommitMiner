@@ -45,7 +45,7 @@ public class EnvironmentFactory {
 	/**
 	 * @return The global environment of builtins, without user defined variables.
 	 */
-	private static Environment createBaseEnvironment() {
+	public static Environment createBaseEnvironment() {
 		Environment env = new Environment();
 		env = env.strongUpdate("this", new Variable(GLOBAL_DEFINER_ID, "this", Change.u(), new Addresses(StoreFactory.global_binding_Addr)));
 		return env;

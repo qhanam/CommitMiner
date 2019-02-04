@@ -18,7 +18,10 @@ public class ChangeImpactDomainAnalysisFactory implements IDomainAnalysisFactory
 
 	@Override
 	public DomainAnalysis newInstance() {
-		return new ChangeImpactDomainAnalysis(cfgVisitorFactories, new JavaScriptCFGFactory(), /*Do AST pre-processing:*/true, true);
+		return new ChangeImpactDomainAnalysis(cfgVisitorFactories, 
+				new JavaScriptCFGFactory(), 
+				/*preProcess=*/true, 
+				/*measureRuntime=*/true);
 	}
 
 }

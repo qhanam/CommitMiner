@@ -22,7 +22,7 @@ import multidiffplus.jsdiff.view.HTMLMultiDiffViewer;
 import multidiffplus.jsdiff.view.HTMLUnixDiffViewer;
 
 public class MultiDiffPlus {
-	
+
 	public static void main(String[] args) {
 
 		/* The test files. */
@@ -35,7 +35,7 @@ public class MultiDiffPlus {
 			MultiDiffPlus.printUsage(e.getMessage(), parser);
 			return;
 		}
-		
+
 		/* Run the analysis. */
 		MultiDiffPlus main = new MultiDiffPlus(options);
 		try {
@@ -45,16 +45,16 @@ public class MultiDiffPlus {
 		}
 
 	}
-	
+
 	/** The analysis options. **/
 	private MultiDiffPlusOptions options;
-	
+
 	public MultiDiffPlus(MultiDiffPlusOptions options) {
 		this.options = options;
 	}
 
 	protected void diff() throws Exception {
-		
+
 		/* Configure the analysis. */
 //		Options.createInstance(options.useSymEx());
 		
@@ -67,7 +67,7 @@ public class MultiDiffPlus {
 
 		/* Build the dummy commit. */
 		Commit commit = getCommit();
-		commit.addSourceCodeFileChange(getSourceCodeFileChange(options.getOriginal(), options.getModified()));
+		commit.addSourceCodeFileChange(sourceCodeFileChange);
 
 		/* Builds the data set with our custom queries. */
 		AnnotationFactBase factBase = AnnotationFactBase.getInstance(sourceCodeFileChange);
