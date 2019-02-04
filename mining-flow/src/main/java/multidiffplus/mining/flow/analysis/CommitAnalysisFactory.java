@@ -32,10 +32,6 @@ public class CommitAnalysisFactory implements ICommitAnalysisFactory {
 			cfgVisitorFactories.add(new AjaxCFGVisitorFactory());
 			domainFactories.add(new DomainInterAnalysisFactory(cfgVisitorFactories, new JavaScriptCFGFactory()));
 			break;
-		case INTRAPROC:
-			cfgVisitorFactories.add(new AjaxCFGVisitorFactory());
-			domainFactories.add(new DomainIntraAnalysisFactory(cfgVisitorFactories, new JavaScriptCFGFactory()));
-			break;
 		case AST:
 		default:
 			List<IASTVisitorFactory> astVisitorFactories = new LinkedList<IASTVisitorFactory>();
