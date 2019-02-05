@@ -9,61 +9,63 @@ import multidiffplus.factories.ICFGVisitorFactory;
 import multidiffplus.jsanalysis.flow.Analysis;
 
 /**
- * Performs an inter-procedural analysis of a script (file).
- * Synchronizes the change impact analysis of the original and new files.
+ * Performs an inter-procedural analysis of a script (file). Synchronizes the
+ * change impact analysis of the original and new files.
  */
 public class InterleavedInterCIA {
 
-	List<ICFGVisitorFactory> cfgVisitorFactories;
-	SourceCodeFileChange sourceCodeFileChange;
-	DiffContext diffContext;
-	
-	Analysis srcAnalysis;
-	Analysis dstAnalysis;
+    List<ICFGVisitorFactory> cfgVisitorFactories;
+    SourceCodeFileChange sourceCodeFileChange;
+    DiffContext diffContext;
 
-	public InterleavedInterCIA(List<ICFGVisitorFactory> cfgVisitorFactories, 
-			SourceCodeFileChange sourceCodeFileChange, DiffContext diffContext) {
-		this.cfgVisitorFactories = cfgVisitorFactories;
-		this.sourceCodeFileChange = sourceCodeFileChange;
-		this.diffContext = diffContext;
-		this.srcAnalysis = Analysis.build(diffContext.srcScript, diffContext.srcCFGs);
-		this.dstAnalysis = Analysis.build(diffContext.dstScript, diffContext.dstCFGs);
-	}
+    Analysis srcAnalysis;
+    Analysis dstAnalysis;
 
-	/**
-	 * Run the analysis.
+    public InterleavedInterCIA(List<ICFGVisitorFactory> cfgVisitorFactories,
+	    SourceCodeFileChange sourceCodeFileChange, DiffContext diffContext) {
+	this.cfgVisitorFactories = cfgVisitorFactories;
+	this.sourceCodeFileChange = sourceCodeFileChange;
+	this.diffContext = diffContext;
+	this.srcAnalysis = Analysis.build(diffContext.srcScript, diffContext.srcCFGs);
+	this.dstAnalysis = Analysis.build(diffContext.dstScript, diffContext.dstCFGs);
+    }
+
+    /**
+     * Run the analysis.
+     */
+    public void analyze() throws Exception {
+
+	/*
+	 * Run the src analysis to completion. The analysis data will be available to
+	 * the dst analysis.
 	 */
-	public void analyze() throws Exception {
-		
-		/* Run the src analysis to completion. The analysis data will be
-		* available to the dst analysis. */
-		while(!srcAnalysis.isFinished()) srcAnalysis.advance();
-		
-		/* Run the dst analysis. */
-		while(!dstAnalysis.isFinished()) {
+	// while(!srcAnalysis.isFinished()) srcAnalysis.advance();
 
-			/* Advance dst to the next common instruction. */
-			dstAnalysis.advance();
+	/* Run the dst analysis. */
+	while (!dstAnalysis.isFinished()) {
 
-		}
-	
-		/* Generate desired facts for post-analysis processing. */
-		this.generateFacts(diffContext.dstCFGs);
+	    /* Advance dst to the next common instruction. */
+	    dstAnalysis.advance();
 
 	}
-	
-	/**
-	 * Generate facts by accepting visitors to the CFGs.
-	 */
-	private void generateFacts(List<CFG> cfgs) {
 
-		/* Generate facts from the results of the analysis. */
-		for(CFG cfg : cfgs) {
-			for(ICFGVisitorFactory cfgVF : cfgVisitorFactories) {
-				cfg.accept(cfgVF.newInstance(sourceCodeFileChange));
-			}
-		}
-		
+	/* Generate desired facts for post-analysis processing. */
+	this.generateFacts(diffContext.dstCFGs);
+
+    }
+
+    /**
+     * Generate facts by accepting visitors to the CFGs.
+     */
+    private void generateFacts(List<CFG> cfgs) {
+
+	/* Generate facts from the results of the analysis. */
+	for (CFG cfg : cfgs) {
+	    for (ICFGVisitorFactory cfgVF : cfgVisitorFactories) {
+		cfg.accept(cfgVF.newInstance(sourceCodeFileChange));
+	    }
 	}
-	
+
+    }
+
 }
