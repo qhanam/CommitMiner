@@ -13,7 +13,7 @@ public abstract class Instruction {
      */
     public void transfer(CallStack callStack) {
 	StackFrame stackFrame = callStack.peek();
-	initPreTransferState(callStack, stackFrame.state);
+	initPreTransferState(callStack, stackFrame.getState());
 
 	/* Transfer the abstract state over the node. */
 	State postTransferState = getPreTransferState().clone();
@@ -26,6 +26,7 @@ public abstract class Instruction {
 	    // Remove it from the kontinuation stack so that the next
 	    // instruction can be analyzed.
 	    stackFrame.popInstruction();
+	    stackFrame.setState(postTransferState);
 	    setPostTransferState(postTransferState);
 	    addInstructionsToKontinuation(callStack);
 	} else {
@@ -63,7 +64,7 @@ public abstract class Instruction {
 	else
 	    preTransferState = incomingState.join(getPreTransferState());
 	setPreTransferState(preTransferState);
-	callStack.peek().state = preTransferState;
+	callStack.peek().setState(preTransferState);
     }
 
 }

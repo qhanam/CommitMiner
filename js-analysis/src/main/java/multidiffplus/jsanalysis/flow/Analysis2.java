@@ -64,6 +64,7 @@ public class Analysis2 {
 	/* Setup the analysis with the root script and an initial state. */
 	State state = StateFactory.createInitialState((ScriptNode) root, cfgMap);
 	return new Analysis2(new StackFrame(cfgMap.get(root), state), cfgMap);
+
     }
 
     /**

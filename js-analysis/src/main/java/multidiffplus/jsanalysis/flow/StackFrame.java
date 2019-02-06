@@ -35,7 +35,7 @@ public class StackFrame {
     /**
      * The current state of the stack frame.
      */
-    State state;
+    private State state;
 
     /**
      * Stack of instructions to traverse.
@@ -134,6 +134,20 @@ public class StackFrame {
      */
     public Instruction peekInstruction() {
 	return kontinuation.peek();
+    }
+
+    /**
+     * @return The state of the abstract machine.
+     */
+    public State getState() {
+	return state;
+    }
+
+    /**
+     * Set the state of the abstract machine.
+     */
+    public void setState(State state) {
+	this.state = state;
     }
 
 }
