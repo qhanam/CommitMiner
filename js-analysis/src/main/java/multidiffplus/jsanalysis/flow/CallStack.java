@@ -1,6 +1,8 @@
 package multidiffplus.jsanalysis.flow;
 
+import java.util.ArrayDeque;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Stack;
 
 import org.mozilla.javascript.ast.AstNode;
@@ -13,14 +15,18 @@ import multidiffplus.cfg.CFG;
 public class CallStack {
 
     /** The CFGs of every function. */
-    public Map<AstNode, CFG> cfgs;
+    private Map<AstNode, CFG> cfgs;
 
     /** The virtual call stack. */
-    public Stack<StackFrame> callStack;
+    private Stack<StackFrame> callStack;
+
+    /** Reachable functions that have not been analyzed. */
+    private Queue<ReachableFunction> reachables;
 
     public CallStack(Map<AstNode, CFG> cfgs) {
 	this.cfgs = cfgs;
 	this.callStack = new Stack<StackFrame>();
+	this.reachables = new ArrayDeque<ReachableFunction>();
     }
 
     public boolean isEmpty() {
@@ -41,6 +47,18 @@ public class CallStack {
 
     public StackFrame pop() {
 	return callStack.pop();
+    }
+
+    public void addReachableFunction(ReachableFunction rf) {
+	reachables.add(rf);
+    }
+
+    public boolean hasReachableFunction() {
+	return !reachables.isEmpty();
+    }
+
+    public ReachableFunction removeReachableFunction() {
+	return reachables.poll();
     }
 
 }

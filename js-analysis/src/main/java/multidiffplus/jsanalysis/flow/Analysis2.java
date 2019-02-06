@@ -11,6 +11,7 @@ import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode;
 import multidiffplus.cfg.CFG;
 import multidiffplus.jsanalysis.abstractdomain.State;
 import multidiffplus.jsanalysis.factories.StateFactory;
+import multidiffplus.jsanalysis.transfer.Helpers;
 
 /**
  * An analysis of a JavaScript file.
@@ -28,11 +29,25 @@ public class Analysis2 {
     public void run() {
 	while (!callStack.isEmpty()) {
 	    StackFrame stackFrame = callStack.peek();
-	    if (stackFrame.hasInstruction())
+	    if (stackFrame.hasInstruction()) {
 		stackFrame.peekInstruction().transfer(callStack);
-	    else
+	    } else {
+		Helpers.findReachableFunctions(callStack);
 		callStack.pop();
+	    }
 	}
+    }
+
+    /**
+     * 
+     * @return {@code true} when a new reachable function frame has been added to
+     *         the call stack.
+     */
+    public boolean pushReachableFunction() {
+	if (!callStack.hasReachableFunction())
+	    return false;
+	Helpers.runNextReachable(callStack);
+	return true;
     }
 
     /**
@@ -49,7 +64,6 @@ public class Analysis2 {
 	/* Setup the analysis with the root script and an initial state. */
 	State state = StateFactory.createInitialState((ScriptNode) root, cfgMap);
 	return new Analysis2(new StackFrame(cfgMap.get(root), state), cfgMap);
-
     }
 
     /**

@@ -46,6 +46,10 @@ public class InterleavedInterCIA {
 	/* Run the dst analysis. */
 	dstAnalysis.run();
 
+	/* Run reachable but un-analyzed functions. */
+	while (dstAnalysis.pushReachableFunction())
+	    dstAnalysis.run();
+
 	/* Generate desired facts for post-analysis processing. */
 	this.generateFacts(diffContext.dstCFGs);
 

@@ -1,6 +1,7 @@
 package multidiffplus.jsanalysis.transfer;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -34,6 +35,8 @@ import multidiffplus.jsanalysis.abstractdomain.Undefined;
 import multidiffplus.jsanalysis.abstractdomain.Variable;
 import multidiffplus.jsanalysis.factories.StoreFactory;
 import multidiffplus.jsanalysis.flow.CallStack;
+import multidiffplus.jsanalysis.flow.ReachableFunction;
+import multidiffplus.jsanalysis.flow.StackFrame;
 import multidiffplus.jsanalysis.trace.Trace;
 import multidiffplus.jsanalysis.visitors.FunctionLiftVisitor;
 import multidiffplus.jsanalysis.visitors.VariableLiftVisitor;
@@ -224,6 +227,35 @@ public class Helpers {
     }
 
     /**
+     * Finds functions which are reachable from the current scope and have not yet
+     * been analyzed and adds them to a set to be analyzed later.
+     */
+    public static void findReachableFunctions(CallStack callStack) {
+	StackFrame stackFrame = callStack.peek();
+
+	/* Get the set of local vars to search for unanalyzed functions. */
+	Set<String> localVars = new HashSet<String>();
+	List<Name> localVarNames = VariableLiftVisitor.getVariableDeclarations(
+		(ScriptNode) stackFrame.getCFG().getEntryNode().getStatement());
+	for (Name localVarName : localVarNames)
+	    localVars.add(localVarName.toSource());
+
+	/* Get the set of local functions to search for unanalyzed functions. */
+	List<FunctionNode> localFunctions = FunctionLiftVisitor.getFunctionDeclarations(
+		(ScriptNode) stackFrame.getCFG().getEntryNode().getStatement());
+	for (FunctionNode localFunction : localFunctions) {
+	    Name name = localFunction.getFunctionName();
+	    if (name != null)
+		localVars.add(name.toSource());
+	}
+
+	/* Analyze reachable functions. */
+	State exitState = Helpers.getMergedExitState(stackFrame.getCFG());
+	Helpers.analyzeEnvReachable(exitState, exitState.env.environment, exitState.selfAddr,
+		new HashSet<Address>(), localVars, callStack);
+    }
+
+    /**
      * Analyze functions which are reachable from the environment and that have not
      * already been analyzed.
      * 
@@ -232,13 +264,12 @@ public class Helpers {
      * @param visited
      *            Prevent circular lookups.
      */
-    public static boolean analyzeEnvReachable(State state, Map<String, Variable> vars,
-	    Address selfAddr, Map<AstNode, CFG> cfgMap, Set<Address> visited, Set<String> localvars,
-	    CallStack callStack) {
+    private static boolean analyzeEnvReachable(State state, Map<String, Variable> vars,
+	    Address selfAddr, Set<Address> visited, Set<String> localvars, CallStack callStack) {
 
 	for (Map.Entry<String, Variable> entry : vars.entrySet()) {
 	    for (Address addr : entry.getValue().addresses.addresses) {
-		if (analyzePublic(state, entry.getKey(), addr, selfAddr, cfgMap, visited, localvars,
+		if (analyzePublic(state, entry.getKey(), addr, selfAddr, visited, localvars,
 			callStack))
 		    return true;
 	    }
@@ -258,17 +289,44 @@ public class Helpers {
      *            Prevent circular lookups.
      */
     private static boolean analyzeObjReachable(State state, Map<String, Property> props,
-	    Address selfAddr, Map<AstNode, CFG> cfgMap, Set<Address> visited, Set<String> localvars,
-	    CallStack callStack) {
+	    Address selfAddr, Set<Address> visited, Set<String> localvars, CallStack callStack) {
 
 	for (Map.Entry<String, Property> entry : props.entrySet()) {
-	    if (analyzePublic(state, entry.getKey(), entry.getValue().address, selfAddr, cfgMap,
-		    visited, localvars, callStack))
+	    if (analyzePublic(state, entry.getKey(), entry.getValue().address, selfAddr, visited,
+		    localvars, callStack))
 		return true;
 	}
 
 	return false;
 
+    }
+
+    /**
+     * Analyze the reachable function using the given state information.
+     */
+    public static void runNextReachable(CallStack callStack) {
+	ReachableFunction reachable = callStack.removeReachableFunction();
+
+	if (reachable.functionClosure.cfg.getEntryNode().getBeforeState() == null) {
+
+	    /* Create the control domain. */
+	    Control control = new Control();
+
+	    /* Create the argument object. */
+	    Scratchpad scratch = new Scratchpad(null, new BValue[0]);
+
+	    /*
+	     * Analyze the function. Use a fresh call stack because we don't have any
+	     * knowledge of it.
+	     */
+	    reachable.functionClosure.run(reachable.selfAddr, reachable.store, scratch,
+		    reachable.trace, control, callStack);
+
+	    /* Check the function object. */
+	    // TODO: We ignore this for now. We would have to assume the function is being
+	    // run as a constructor.
+
+	}
     }
 
     /**
@@ -286,8 +344,7 @@ public class Helpers {
      * @return {@code true} when a reachable frame has been added to the call stack.
      */
     private static boolean analyzePublic(State state, String name, Address addr, Address selfAddr,
-	    Map<AstNode, CFG> cfgMap, Set<Address> visited, Set<String> localvars,
-	    CallStack callStack) {
+	    Set<Address> visited, Set<String> localvars, CallStack callStack) {
 
 	BValue val = state.store.apply(addr);
 
@@ -304,6 +361,7 @@ public class Helpers {
 	    return false;
 	visited.add(addr);
 
+	// Identify all reachable functions. If a function has not yet been analyzed
 	for (Address objAddr : val.addressAD.addresses) {
 	    Obj obj = state.store.getObj(objAddr);
 
@@ -313,39 +371,14 @@ public class Helpers {
 		InternalFunctionProperties ifp = (InternalFunctionProperties) obj.internalProperties;
 		FunctionClosure fc = (FunctionClosure) ifp.closure;
 
-		if (ifp.closure instanceof FunctionClosure
-			&& fc.cfg.getEntryNode().getBeforeState() == null) {
-
-		    /* Create the control domain. */
-		    Control control = new Control();
-
-		    /* Create the argument object. */
-		    Scratchpad scratch = new Scratchpad(null, new BValue[0]);
-
-		    /*
-		     * Analyze the function. Use a fresh call stack because we don't have any
-		     * knowledge of it.
-		     */
-		    ifp.closure.run(selfAddr, state.store, scratch, state.trace, control,
-			    callStack);
-
-		    /*
-		     * We can only request one frame be pushed onto the call stack at once. After
-		     * the function is analyzed, we will get back to this function and analyze the
-		     * rest.
-		     */
-		    return true;
-
-		    /* Check the function object. */
-		    // TODO: We ignore this for now. We would have to assume the function is being
-		    // run as a constructor.
-
+		if (fc.cfg.getEntryNode().getBeforeState() == null) {
+		    callStack.addReachableFunction(
+			    new ReachableFunction(fc, selfAddr, state.store, state.trace));
 		}
 	    }
 
 	    /* Recursively look for object properties that are functions. */
-	    analyzeObjReachable(state, obj.externalProperties, addr, cfgMap, visited, null,
-		    callStack);
+	    analyzeObjReachable(state, obj.externalProperties, addr, visited, null, callStack);
 
 	}
 
