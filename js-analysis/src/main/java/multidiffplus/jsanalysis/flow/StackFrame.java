@@ -3,87 +3,95 @@ package multidiffplus.jsanalysis.flow;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.Stack;
 
 import multidiffplus.cfg.CFG;
-import multidiffplus.cfg.CFGEdge;
 import multidiffplus.cfg.CFGNode;
 import multidiffplus.jsanalysis.abstractdomain.State;
 
 /**
- * The analysis state for a function.
+ * A frame in a call stack.
  */
 public class StackFrame {
 
-    /** Flag for figuring out where to restart when analysis is paused. **/
-    Progress progress;
+    /**
+     * The set of edges (instructions) that have been visited within this stack
+     * frame.
+     */
+    private Set<Integer> visitedEdges;
 
     /**
-     * Keep track of how many edges we've visited for terminating a long running
-     * analysis.
-     **/
-    long edgesVisited;
+     * The set of nodes (instructions) that have been visited within this stack
+     * frame.
+     */
+    private Map<Integer, ExpressionInstruction> visitedNodes;
 
     /**
      * The CFG for the function being analyzed.
      */
-    CFG cfg;
+    private CFG cfg;
 
     /**
-     * Stores semaphores for tracking the number of incoming edges that have been
-     * traversed to a node. Stands for "I(ncoming) E(dges) S{emaphore} Map.
+     * The current state of the stack frame.
      */
-    Map<CFGNode, Integer> iesMap;
+    State state;
 
     /**
      * Stack of instructions to traverse.
      */
-    Stack<Instruction> instrStack;
+    private Stack<Instruction> kontinuation;
 
-    public StackFrame(CFG cfg, State absState) {
+    public StackFrame(CFG cfg, State initialState) {
 
-	/* Initialize member vars. */
-	this.progress = Progress.NONE;
+	// Initialize member vars.
 	this.cfg = cfg;
-	this.edgesVisited = 0;
-	this.iesMap = new HashMap<CFGNode, Integer>();
-	this.instrStack = new Stack<Instruction>();
+	this.kontinuation = new Stack<Instruction>();
+	this.visitedEdges = new HashSet<Integer>();
+	this.visitedNodes = new HashMap<Integer, ExpressionInstruction>();
+	this.state = initialState;
 
-	/* Initialize the stack for a depth-first traversal. */
-	for (CFGEdge edge : cfg.getEntryNode().getOutgoingEdges()) {
-	    this.instrStack.add(new Instruction(edge, new HashSet<CFGEdge>()));
+	// Add the first instruction for a depth-first traversal.
+	this.kontinuation.add(getInstructionForNode(cfg.getEntryNode()));
+	// for (CFGEdge edge : cfg.getEntryNode().getOutgoingEdges()) {
+	// this.kontinuation.add(new BranchInstruction(edge));
+	// }
+
+    }
+
+    /**
+     * @return The instruction for the control flow node.
+     */
+    public Instruction getInstructionForNode(CFGNode node) {
+	if (visitedNodes.containsKey(node.getId())) {
+	    return visitedNodes.get(node.getId());
 	}
+	ExpressionInstruction instruction = new ExpressionInstruction(node);
+	visitedNodes.put(node.getId(), instruction);
+	return instruction;
+    }
 
-	/* Update the function's initial state. */
-	cfg.getEntryNode().setBeforeState(absState);
-	cfg.getEntryNode().setAfterState(absState);
+    /**
+     * @return {@code true} if the edge has been visited by the analysis within the
+     *         stack frame.
+     */
+    public boolean visited(Integer edgeId) {
+	return visitedEdges.contains(edgeId);
+    }
 
+    /**
+     * Records that the edge has been visited by the analysis within the stack
+     * frame.
+     */
+    public void visit(Integer edgeId) {
+	visitedEdges.add(edgeId);
     }
 
     /**
      * @return {@code true} if the function analysis is complete.
      */
     public boolean isFinished() {
-	return instrStack.isEmpty();
-    }
-
-    /**
-     * Update the progress state to edge complete.
-     */
-    public void completeEdge() {
-	progress = Progress.EDGE;
-    }
-
-    /**
-     * Update the progress state to node complete (none for next instruction).
-     */
-    public void completeNode() {
-	progress = Progress.NONE;
-    }
-
-    /** Flag for figuring out where to restart when analysis is paused. **/
-    public enum Progress {
-	NONE, EDGE
+	return kontinuation.isEmpty();
     }
 
     /**
@@ -91,6 +99,41 @@ public class StackFrame {
      */
     public CFG getCFG() {
 	return cfg;
+    }
+
+    /**
+     * @return the number of edges visited by the analysis within the stack frame.
+     */
+    public int visitedEdges() {
+	return visitedEdges.size();
+    }
+
+    /**
+     * Pushes the instruction onto the stack frame.
+     */
+    public void pushInstruction(Instruction instruction) {
+	kontinuation.push(instruction);
+    }
+
+    /**
+     * @return {@code true} if the frame has more instructions to execute.
+     */
+    public boolean hasInstruction() {
+	return !kontinuation.isEmpty();
+    }
+
+    /**
+     * @return The next instruction in the stack frame.
+     */
+    public Instruction popInstruction() {
+	return kontinuation.pop();
+    }
+
+    /**
+     * @return The next instruction in the stack frame.
+     */
+    public Instruction peekInstruction() {
+	return kontinuation.peek();
     }
 
 }

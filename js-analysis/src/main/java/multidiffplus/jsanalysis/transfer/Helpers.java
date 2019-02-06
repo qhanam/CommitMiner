@@ -33,7 +33,7 @@ import multidiffplus.jsanalysis.abstractdomain.Store;
 import multidiffplus.jsanalysis.abstractdomain.Undefined;
 import multidiffplus.jsanalysis.abstractdomain.Variable;
 import multidiffplus.jsanalysis.factories.StoreFactory;
-import multidiffplus.jsanalysis.flow.Analysis;
+import multidiffplus.jsanalysis.flow.CallStack;
 import multidiffplus.jsanalysis.trace.Trace;
 import multidiffplus.jsanalysis.visitors.FunctionLiftVisitor;
 import multidiffplus.jsanalysis.visitors.VariableLiftVisitor;
@@ -110,7 +110,7 @@ public class Helpers {
      * @return The final state of the closure.
      */
     public static State applyClosure(BValue funVal, Address selfAddr, Store store, Scratchpad sp,
-	    Trace trace, Control control, Analysis analysis) {
+	    Trace trace, Control control, CallStack callStack) {
 
 	State state = null;
 
@@ -128,7 +128,7 @@ public class Helpers {
 	    InternalFunctionProperties ifp = (InternalFunctionProperties) functObj.internalProperties;
 
 	    /* Run the function. */
-	    State endState = ifp.closure.run(selfAddr, store, sp, trace, control, analysis);
+	    State endState = ifp.closure.run(selfAddr, store, sp, trace, control, callStack);
 
 	    if (state == null)
 		state = endState;
@@ -224,14 +224,6 @@ public class Helpers {
     }
 
     /**
-     * Analyze functions which are reachable from the current scope and that have
-     * not already been analyzed.
-     */
-    public static void analyzeReachable() {
-
-    }
-
-    /**
      * Analyze functions which are reachable from the environment and that have not
      * already been analyzed.
      * 
@@ -240,16 +232,19 @@ public class Helpers {
      * @param visited
      *            Prevent circular lookups.
      */
-    public static void analyzeEnvReachable(State state, Map<String, Variable> vars,
+    public static boolean analyzeEnvReachable(State state, Map<String, Variable> vars,
 	    Address selfAddr, Map<AstNode, CFG> cfgMap, Set<Address> visited, Set<String> localvars,
-	    Analysis analysis) {
+	    CallStack callStack) {
 
 	for (Map.Entry<String, Variable> entry : vars.entrySet()) {
 	    for (Address addr : entry.getValue().addresses.addresses) {
-		analyzePublic(state, entry.getKey(), addr, selfAddr, cfgMap, visited, localvars,
-			analysis);
+		if (analyzePublic(state, entry.getKey(), addr, selfAddr, cfgMap, visited, localvars,
+			callStack))
+		    return true;
 	    }
 	}
+
+	return false;
 
     }
 
@@ -262,14 +257,17 @@ public class Helpers {
      * @param visited
      *            Prevent circular lookups.
      */
-    private static void analyzeObjReachable(State state, Map<String, Property> props,
+    private static boolean analyzeObjReachable(State state, Map<String, Property> props,
 	    Address selfAddr, Map<AstNode, CFG> cfgMap, Set<Address> visited, Set<String> localvars,
-	    Analysis analysis) {
+	    CallStack callStack) {
 
 	for (Map.Entry<String, Property> entry : props.entrySet()) {
-	    analyzePublic(state, entry.getKey(), entry.getValue().address, selfAddr, cfgMap,
-		    visited, localvars, analysis);
+	    if (analyzePublic(state, entry.getKey(), entry.getValue().address, selfAddr, cfgMap,
+		    visited, localvars, callStack))
+		return true;
 	}
+
+	return false;
 
     }
 
@@ -285,10 +283,11 @@ public class Helpers {
      *            The address pointed to by the property or variable.
      * @param visited
      *            Prevent circular lookups.
+     * @return {@code true} when a reachable frame has been added to the call stack.
      */
-    private static void analyzePublic(State state, String name, Address addr, Address selfAddr,
+    private static boolean analyzePublic(State state, String name, Address addr, Address selfAddr,
 	    Map<AstNode, CFG> cfgMap, Set<Address> visited, Set<String> localvars,
-	    Analysis analysis) {
+	    CallStack callStack) {
 
 	BValue val = state.store.apply(addr);
 
@@ -298,11 +297,11 @@ public class Helpers {
 	 */
 	if (localvars != null && !localvars.contains(name) && !name.equals("~retval~")
 		&& !StringUtils.isNumeric(name))
-	    return;
+	    return false;
 
 	/* Avoid circular references. */
 	if (visited.contains(addr))
-	    return;
+	    return false;
 	visited.add(addr);
 
 	for (Address objAddr : val.addressAD.addresses) {
@@ -327,14 +326,15 @@ public class Helpers {
 		     * Analyze the function. Use a fresh call stack because we don't have any
 		     * knowledge of it.
 		     */
-		    ifp.closure.run(selfAddr, state.store, scratch, state.trace, control, analysis);
+		    ifp.closure.run(selfAddr, state.store, scratch, state.trace, control,
+			    callStack);
 
 		    /*
 		     * We can only request one frame be pushed onto the call stack at once. After
 		     * the function is analyzed, we will get back to this function and analyze the
 		     * rest.
 		     */
-		    break;
+		    return true;
 
 		    /* Check the function object. */
 		    // TODO: We ignore this for now. We would have to assume the function is being
@@ -345,10 +345,11 @@ public class Helpers {
 
 	    /* Recursively look for object properties that are functions. */
 	    analyzeObjReachable(state, obj.externalProperties, addr, cfgMap, visited, null,
-		    analysis);
+		    callStack);
 
 	}
 
+	return false;
     }
 
 }

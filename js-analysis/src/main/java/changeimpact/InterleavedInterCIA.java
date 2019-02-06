@@ -7,6 +7,7 @@ import multidiffplus.commit.SourceCodeFileChange;
 import multidiffplus.diff.DiffContext;
 import multidiffplus.factories.ICFGVisitorFactory;
 import multidiffplus.jsanalysis.flow.Analysis;
+import multidiffplus.jsanalysis.flow.Analysis2;
 
 /**
  * Performs an inter-procedural analysis of a script (file). Synchronizes the
@@ -19,15 +20,16 @@ public class InterleavedInterCIA {
     DiffContext diffContext;
 
     Analysis srcAnalysis;
-    Analysis dstAnalysis;
+    Analysis2 dstAnalysis;
 
     public InterleavedInterCIA(List<ICFGVisitorFactory> cfgVisitorFactories,
 	    SourceCodeFileChange sourceCodeFileChange, DiffContext diffContext) {
 	this.cfgVisitorFactories = cfgVisitorFactories;
 	this.sourceCodeFileChange = sourceCodeFileChange;
 	this.diffContext = diffContext;
-	this.srcAnalysis = Analysis.build(diffContext.srcScript, diffContext.srcCFGs);
-	this.dstAnalysis = Analysis.build(diffContext.dstScript, diffContext.dstCFGs);
+	// this.srcAnalysis = Analysis.build(diffContext.srcScript,
+	// diffContext.srcCFGs);
+	this.dstAnalysis = Analysis2.build(diffContext.dstScript, diffContext.dstCFGs);
     }
 
     /**
@@ -39,15 +41,10 @@ public class InterleavedInterCIA {
 	 * Run the src analysis to completion. The analysis data will be available to
 	 * the dst analysis.
 	 */
-	// while(!srcAnalysis.isFinished()) srcAnalysis.advance();
+	// srcAnalysis.run();
 
 	/* Run the dst analysis. */
-	while (!dstAnalysis.isFinished()) {
-
-	    /* Advance dst to the next common instruction. */
-	    dstAnalysis.advance();
-
-	}
+	dstAnalysis.run();
 
 	/* Generate desired facts for post-analysis processing. */
 	this.generateFacts(diffContext.dstCFGs);

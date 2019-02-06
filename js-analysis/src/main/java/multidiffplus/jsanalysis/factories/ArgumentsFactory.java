@@ -19,41 +19,42 @@ import multidiffplus.jsanalysis.abstractdomain.Property;
 import multidiffplus.jsanalysis.abstractdomain.Scratchpad;
 import multidiffplus.jsanalysis.abstractdomain.State;
 import multidiffplus.jsanalysis.abstractdomain.Store;
-import multidiffplus.jsanalysis.flow.Analysis;
+import multidiffplus.jsanalysis.flow.CallStack;
 import multidiffplus.jsanalysis.trace.Trace;
 
 public class ArgumentsFactory {
-	
-	private static final Integer ARG_DEFINER_ID = -2;
 
-	Store store;
+    private static final Integer ARG_DEFINER_ID = -2;
 
-	public ArgumentsFactory(Store store) {
-		this.store = store;
-	}
+    Store store;
 
-	public Obj Arguments_Obj() {
-		Map<String, Property> ext = new HashMap<String, Property>();
-		store = Utilities.addProp("prototype", ARG_DEFINER_ID, Address.inject(StoreFactory.Object_proto_Addr, Change.u(), DefinerIDs.bottom()), ext, store);
-		store = Utilities.addProp("length", ARG_DEFINER_ID, Num.inject(Num.top(), Change.u(), DefinerIDs.bottom()), ext, store);
+    public ArgumentsFactory(Store store) {
+	this.store = store;
+    }
 
-		NativeClosure closure = new NativeClosure() {
-				@Override
-				public State run(Address selfAddr, 
-								 Store store, Scratchpad scratchpad,
-								 Trace trace, Control control,
-								 Analysis analysis) {
-					return new State(store, null, scratchpad, trace, control,
-									 selfAddr);
-				}
-			};
+    public Obj Arguments_Obj() {
+	Map<String, Property> ext = new HashMap<String, Property>();
+	store = Utilities.addProp("prototype", ARG_DEFINER_ID,
+		Address.inject(StoreFactory.Object_proto_Addr, Change.u(), DefinerIDs.bottom()),
+		ext, store);
+	store = Utilities.addProp("length", ARG_DEFINER_ID,
+		Num.inject(Num.top(), Change.u(), DefinerIDs.bottom()), ext, store);
 
-		Stack<Closure> closures = new Stack<Closure>();
-		closures.push(closure);
+	NativeClosure closure = new NativeClosure() {
+	    @Override
+	    public State run(Address selfAddr, Store store, Scratchpad scratchpad, Trace trace,
+		    Control control, CallStack callStack) {
+		return new State(store, null, scratchpad, trace, control, selfAddr);
+	    }
+	};
 
-		InternalObjectProperties internal = new InternalFunctionProperties(closures, JSClass.CArguments);
+	Stack<Closure> closures = new Stack<Closure>();
+	closures.push(closure);
 
-		return new Obj(ext, internal);
-	}
+	InternalObjectProperties internal = new InternalFunctionProperties(closures,
+		JSClass.CArguments);
+
+	return new Obj(ext, internal);
+    }
 
 }

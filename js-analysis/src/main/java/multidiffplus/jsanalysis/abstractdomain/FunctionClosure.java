@@ -10,7 +10,7 @@ import org.mozilla.javascript.ast.ScriptNode;
 
 import multidiffplus.cfg.CFG;
 import multidiffplus.jsanalysis.factories.StoreFactory;
-import multidiffplus.jsanalysis.flow.Analysis;
+import multidiffplus.jsanalysis.flow.CallStack;
 import multidiffplus.jsanalysis.flow.StackFrame;
 import multidiffplus.jsanalysis.trace.Trace;
 import multidiffplus.jsanalysis.transfer.Helpers;
@@ -41,7 +41,7 @@ public class FunctionClosure extends Closure {
 
     @Override
     public State run(Address selfAddr, Store store, Scratchpad scratchpad, Trace trace,
-	    Control control, Analysis analysis) {
+	    Control control, CallStack callStack) {
 
 	/* Advance the trace. */
 	trace = trace.update(environment, store, selfAddr,
@@ -50,18 +50,8 @@ public class FunctionClosure extends Closure {
 	/* Create the initial state if needed. */
 	State newState = null;
 	State oldState = (State) cfg.getEntryNode().getBeforeState();
-	State primeState = initState(selfAddr, store, scratchpad, trace, control, analysis);
+	State primeState = initState(selfAddr, store, scratchpad, trace, control, callStack);
 	State exitState = null;
-
-	/*
-	 * Have we hit a timeout? Return the current exit state. This creates
-	 * unsoundness, but is better than running forever.
-	 */
-	if (cfg.hasTimedOut()) {
-	    System.err.println(
-		    "FunctionClosure::run -- WARNING -- aborting function analysis because of timeout.");
-	    return Helpers.getMergedExitState(cfg);
-	}
 
 	if (oldState == null) {
 	    /*
@@ -101,8 +91,10 @@ public class FunctionClosure extends Closure {
 
 	}
 
-	/* Perform the initial analysis and get the publicly accessible methods. */
-	analysis.pushFunctionCall(new StackFrame(cfg, newState));
+	/* Add a new frame to the call stack so that the callee is executed next. */
+	callStack.push(new StackFrame(cfg, newState));
+
+	// analysis.pushFunctionCall(new StackFrame(cfg, newState));
 	// exitState = Helpers.run(cfg, newState);
 
 	// /* Get the set of local vars to search for unanalyzed functions. */
@@ -142,7 +134,7 @@ public class FunctionClosure extends Closure {
      *         {@code this}.
      */
     private State initState(Address selfAddr, Store store, Scratchpad scratchpad, Trace trace,
-	    Control control, Analysis analysis) {
+	    Control control, CallStack callStack) {
 
 	Environment env = this.environment.clone();
 
@@ -208,7 +200,7 @@ public class FunctionClosure extends Closure {
 	 * function.
 	 */
 	store = Helpers.lift(env, store, (ScriptNode) cfg.getEntryNode().getStatement(),
-		analysis.cfgs, trace);
+		callStack.getCFGs(), trace);
 
 	/* Add 'this' to environment (points to caller's object or new object). */
 	env = env.strongUpdate("this", new Variable(cfg.getEntryNode().getId(), "this", Change.u(),

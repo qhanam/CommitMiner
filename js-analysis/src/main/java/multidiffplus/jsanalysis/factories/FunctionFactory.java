@@ -22,66 +22,78 @@ import multidiffplus.jsanalysis.abstractdomain.Scratchpad;
 import multidiffplus.jsanalysis.abstractdomain.State;
 import multidiffplus.jsanalysis.abstractdomain.Store;
 import multidiffplus.jsanalysis.abstractdomain.Str;
-import multidiffplus.jsanalysis.flow.Analysis;
+import multidiffplus.jsanalysis.flow.CallStack;
 import multidiffplus.jsanalysis.trace.Trace;
-
 
 public class FunctionFactory {
 
-	public Store store;
+    public Store store;
 
-	public FunctionFactory(Store store) {
-		this.store = store;
-	}
+    public FunctionFactory(Store store) {
+	this.store = store;
+    }
 
-	public Obj Function_proto_Obj() {
-		Map<String, Property> ext = new HashMap<String, Property>();
-		store = Utilities.addProp("external", -41, Num.inject(Num.top(), Change.u(), DefinerIDs.bottom()), ext, store);
-		store = Utilities.addProp("apply", -42, Address.inject(StoreFactory.Function_proto_apply_Addr, Change.u(), DefinerIDs.bottom()), ext, store);
-		store = Utilities.addProp("call", -43, Address.inject(StoreFactory.Function_proto_call_Addr, Change.u(), DefinerIDs.bottom()), ext, store);
-		store = Utilities.addProp("toString", -44, Address.inject(StoreFactory.Function_proto_toString_Addr, Change.u(), DefinerIDs.bottom()), ext, store);
+    public Obj Function_proto_Obj() {
+	Map<String, Property> ext = new HashMap<String, Property>();
+	store = Utilities.addProp("external", -41,
+		Num.inject(Num.top(), Change.u(), DefinerIDs.bottom()), ext, store);
+	store = Utilities.addProp("apply", -42, Address
+		.inject(StoreFactory.Function_proto_apply_Addr, Change.u(), DefinerIDs.bottom()),
+		ext, store);
+	store = Utilities.addProp("call", -43, Address.inject(StoreFactory.Function_proto_call_Addr,
+		Change.u(), DefinerIDs.bottom()), ext, store);
+	store = Utilities.addProp("toString", -44, Address
+		.inject(StoreFactory.Function_proto_toString_Addr, Change.u(), DefinerIDs.bottom()),
+		ext, store);
 
-		InternalObjectProperties internal = new InternalObjectProperties(
-				Address.inject(StoreFactory.Function_proto_Addr, Change.u(), DefinerIDs.bottom()),
-				JSClass.CFunction_prototype_Obj);
+	InternalObjectProperties internal = new InternalObjectProperties(
+		Address.inject(StoreFactory.Function_proto_Addr, Change.u(), DefinerIDs.bottom()),
+		JSClass.CFunction_prototype_Obj);
 
-		return new Obj(ext, internal);
-	}
+	return new Obj(ext, internal);
+    }
 
-	// TODO: apply and call need native closures because their behaviour
-	//		 affects the analysis.
-	public Obj Function_proto_toString_Obj() { return constFunctionObj(Str.inject(Str.top(), Change.u(), DefinerIDs.bottom())); }
-	public Obj Function_proto_apply_Obj() { return constFunctionObj(BValue.top(Change.u())); }
-	public Obj Function_proto_call_Obj() { return constFunctionObj(BValue.top(Change.u())); }
+    // TODO: apply and call need native closures because their behaviour
+    // affects the analysis.
+    public Obj Function_proto_toString_Obj() {
+	return constFunctionObj(Str.inject(Str.top(), Change.u(), DefinerIDs.bottom()));
+    }
 
-	/**
-	 * Approximate a function which is not modeled.
-	 * @return A function which has no side effects that that returns the
-	 * 		   BValue lattice element top.
-	 */
-	public Obj constFunctionObj(BValue retVal) {
+    public Obj Function_proto_apply_Obj() {
+	return constFunctionObj(BValue.top(Change.u()));
+    }
 
-		Map<String, Property> external = new HashMap<String, Property>();
+    public Obj Function_proto_call_Obj() {
+	return constFunctionObj(BValue.top(Change.u()));
+    }
 
-		Closure closure = new NativeClosure() {
-				@Override
-				public State run(Address selfAddr, 
-								 Store store, Scratchpad scratchpad,
-								 Trace trace, Control control,
-								 Analysis analysis) {
-					scratchpad.strongUpdate(retVal, null);
-					return new State(store, new Environment(), scratchpad,
-									 trace, control, selfAddr);
-				}
-			};
+    /**
+     * Approximate a function which is not modeled.
+     * 
+     * @return A function which has no side effects that that returns the BValue
+     *         lattice element top.
+     */
+    public Obj constFunctionObj(BValue retVal) {
 
-		Stack<Closure> closures = new Stack<Closure>();
-		closures.push(closure);
+	Map<String, Property> external = new HashMap<String, Property>();
 
-		InternalObjectProperties internal = new InternalFunctionProperties(closures, JSClass.CFunction);
+	Closure closure = new NativeClosure() {
+	    @Override
+	    public State run(Address selfAddr, Store store, Scratchpad scratchpad, Trace trace,
+		    Control control, CallStack callStack) {
+		scratchpad.strongUpdate(retVal, null);
+		return new State(store, new Environment(), scratchpad, trace, control, selfAddr);
+	    }
+	};
 
-		return new Obj(external, internal);
+	Stack<Closure> closures = new Stack<Closure>();
+	closures.push(closure);
 
-	}
+	InternalObjectProperties internal = new InternalFunctionProperties(closures,
+		JSClass.CFunction);
+
+	return new Obj(external, internal);
+
+    }
 
 }
