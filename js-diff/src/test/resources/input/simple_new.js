@@ -1,7 +1,13 @@
-var fs = require('fs');
-
 function foo() {
-	fs.existsSync('my_file.txt');
+	var x = 5;
+  try {
+		x;
+		return x;
+  } catch (e) { 
+		x;
+		return x;
+	} finally {
+		x = 7;
+	}
 }
-
-foo();
+var y = foo();
