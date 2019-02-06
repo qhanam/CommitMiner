@@ -23,7 +23,7 @@ public class ExpressionInstruction extends Instruction {
     }
 
     @Override
-    public void addInstructionsToKontinuation(CallStack callStack) {
+    public void addInstructionsToKontinuation(CallStack callStack, State incomingState) {
 	StackFrame stackFrame = callStack.peek();
 	for (CFGEdge edge : node.getOutgoingEdges()) {
 	    // Add an instruction (edge) to the stack frame if:
@@ -31,8 +31,11 @@ public class ExpressionInstruction extends Instruction {
 	    // (2) semaphore == 0 OR the edge is a loop edge
 	    // Loops are executed once.
 	    if (!stackFrame.visited(edge.getId()) && (semaphore == 0 || edge.isLoopEdge)) {
+		// TODO: Initialize the pre-transfer state.
+		Instruction instruction = new BranchInstruction(edge);
+		instruction.initPreTransferState(incomingState);
 		stackFrame.visit(edge.getId());
-		stackFrame.pushInstruction(new BranchInstruction(edge));
+		stackFrame.pushInstruction(instruction);
 	    }
 	}
     }

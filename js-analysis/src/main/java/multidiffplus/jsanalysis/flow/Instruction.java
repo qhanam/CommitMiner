@@ -13,7 +13,6 @@ public abstract class Instruction {
      */
     public void transfer(CallStack callStack) {
 	StackFrame stackFrame = callStack.peek();
-	initPreTransferState(callStack, stackFrame.getState());
 
 	/* Transfer the abstract state over the node. */
 	State postTransferState = getPreTransferState().clone();
@@ -26,9 +25,8 @@ public abstract class Instruction {
 	    // Remove it from the kontinuation stack so that the next
 	    // instruction can be analyzed.
 	    stackFrame.popInstruction();
-	    stackFrame.setState(postTransferState);
 	    setPostTransferState(postTransferState);
-	    addInstructionsToKontinuation(callStack);
+	    addInstructionsToKontinuation(callStack, postTransferState);
 	} else {
 	    // A new stack frame has been added to the call stack. We must
 	    // analyze it before continuing with the current instruction and
@@ -39,7 +37,7 @@ public abstract class Instruction {
     /**
      * Pushes the next instructions onto the frame's kontinuation.
      */
-    public abstract void addInstructionsToKontinuation(CallStack callStack);
+    public abstract void addInstructionsToKontinuation(CallStack callStack, State incomingState);
 
     protected abstract void transferOverInstruction(CallStack callStack, State postTransferState);
 
@@ -57,14 +55,13 @@ public abstract class Instruction {
      *            The post-transfer state of the previous instruction.
      * @return The pre-transfer state.
      */
-    private void initPreTransferState(CallStack callStack, State incomingState) {
+    protected void initPreTransferState(State incomingState) {
 	State preTransferState;
 	if (getPreTransferState() == null)
 	    preTransferState = incomingState;
 	else
 	    preTransferState = incomingState.join(getPreTransferState());
 	setPreTransferState(preTransferState);
-	callStack.peek().setState(preTransferState);
     }
 
 }

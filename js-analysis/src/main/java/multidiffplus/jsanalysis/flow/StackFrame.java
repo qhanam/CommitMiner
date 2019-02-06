@@ -33,11 +33,6 @@ public class StackFrame {
     private CFG cfg;
 
     /**
-     * The current state of the stack frame.
-     */
-    private State state;
-
-    /**
      * Stack of instructions to traverse.
      */
     private Stack<Instruction> kontinuation;
@@ -49,13 +44,11 @@ public class StackFrame {
 	this.kontinuation = new Stack<Instruction>();
 	this.visitedEdges = new HashSet<Integer>();
 	this.visitedNodes = new HashMap<Integer, ExpressionInstruction>();
-	this.state = initialState;
 
 	// Add the first instruction for a depth-first traversal.
-	this.kontinuation.add(getInstructionForNode(cfg.getEntryNode()));
-	// for (CFGEdge edge : cfg.getEntryNode().getOutgoingEdges()) {
-	// this.kontinuation.add(new BranchInstruction(edge));
-	// }
+	Instruction instruction = getInstructionForNode(cfg.getEntryNode());
+	instruction.initPreTransferState(initialState);
+	this.kontinuation.add(instruction);
 
     }
 
@@ -134,20 +127,6 @@ public class StackFrame {
      */
     public Instruction peekInstruction() {
 	return kontinuation.peek();
-    }
-
-    /**
-     * @return The state of the abstract machine.
-     */
-    public State getState() {
-	return state;
-    }
-
-    /**
-     * Set the state of the abstract machine.
-     */
-    public void setState(State state) {
-	this.state = state;
     }
 
 }

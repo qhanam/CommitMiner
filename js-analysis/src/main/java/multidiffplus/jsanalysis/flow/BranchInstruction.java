@@ -18,9 +18,11 @@ public class BranchInstruction extends Instruction {
     }
 
     @Override
-    public void addInstructionsToKontinuation(CallStack callStack) {
+    public void addInstructionsToKontinuation(CallStack callStack, State incomingState) {
 	StackFrame stackFrame = callStack.peek();
-	stackFrame.pushInstruction(stackFrame.getInstructionForNode(edge.getTo()));
+	Instruction instruction = stackFrame.getInstructionForNode(edge.getTo());
+	instruction.initPreTransferState(incomingState);
+	stackFrame.pushInstruction(instruction);
     }
 
     @Override
