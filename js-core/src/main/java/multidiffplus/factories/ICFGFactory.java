@@ -15,85 +15,84 @@ import multidiffplus.cfg.CFGNode;
 /**
  * Builds a CFG given some AST.
  *
- * Classes that implement this interface will use one specific parser and
- * will therefore have an implementation for a specific AST.
+ * Classes that implement this interface will use one specific parser and will
+ * therefore have an implementation for a specific AST.
  */
 public interface ICFGFactory {
 
-	/**
-	 * Builds intra-procedural control flow graphs for the given artifact.
-	 * @param root The class or script to build CFGs for.
-	 * @param astClassifier Generates unique IDs for AST nodes.
-	 * @return One CFG for each function in the class or script.
-	 */
-	List<CFG> createCFGs(ClassifiedASTNode root);
+    /**
+     * Builds intra-procedural control flow graphs for the given artifact.
+     * 
+     * @param root
+     *            The class or script to build CFGs for.
+     * @param astClassifier
+     *            Generates unique IDs for AST nodes.
+     * @return One CFG for each function in the class or script.
+     */
+    List<CFG> createCFGs(ClassifiedASTNode root);
 
-	/**
-	 * @param The file extension of the file that needs to be parsed.
-	 * @return The GumTree Tree generator (AST parser) for the file extension.
-	 */
-	TreeGenerator getTreeGenerator(String extension);
+    /**
+     * @param The
+     *            file extension of the file that needs to be parsed.
+     * @return The GumTree Tree generator (AST parser) for the file extension.
+     */
+    TreeGenerator getTreeGenerator(String extension);
 
-	/**
-	 * @param extension The source code file extension.
-	 * @return true if the CFGFactory accepts the type of source code file
-	 * specified by the extension.
-	 */
-	boolean acceptsExtension(String extension);
+    /**
+     * @param extension
+     *            The source code file extension.
+     * @return true if the CFGFactory accepts the type of source code file specified
+     *         by the extension.
+     */
+    boolean acceptsExtension(String extension);
 
-	/**
-	 * Helper function for counting the number of incoming edges for each
-	 * {@code CFGNode} and labeling outgoing edges that loop back to the
-	 * {@code CFGNode} which they exit from.
-	 * @param cfg The CFG to count and update. It should not have had its
-	 * 			  incoming edges counted yet.
-	 */
-	static void labelIncommingEdgesAndLoopEdges(CFG cfg) {
+    /**
+     * Helper function for counting the number of incoming edges for each
+     * {@code CFGNode} and labeling outgoing edges that loop back to the
+     * {@code CFGNode} which they exit from.
+     * 
+     * @param cfg
+     *            The CFG to count and update. It should not have had its incoming
+     *            edges counted yet.
+     */
+    static void addIncomingAndDetectLoops(CFG cfg) {
 
-		/* The nodes which have already visited in the graph traversal. */
-		Set<CFGNode> visited = new HashSet<CFGNode>();
+	/* The edges which have already been visited. */
+	Set<CFGEdge> visited = new HashSet<CFGEdge>();
 
-		/* The current path in the graph traversal. */
-		Stack<CFGNode> path = new Stack<CFGNode>();
+	/* The edges to visit in a depth-first traversal. */
+	Stack<CFGEdge> stack = new Stack<CFGEdge>();
 
-		/* The nodes that have yet to be visited. */
-		Stack<CFGNode> stack = new Stack<CFGNode>();
+	/* The edges in the current path. */
+	Set<CFGEdge> path = new HashSet<CFGEdge>();
 
-		/* Traverse the CFG. */
-		stack.push(cfg.getEntryNode());
-		while(!stack.isEmpty()) {
+	/* The first edge in the CFG. */
+	CFGEdge entryEdge = cfg.getEntryNode().getOutgoingEdges().get(0);
+	stack.push(cfg.getEntryNode().getOutgoingEdges().get(0));
 
-			CFGNode current = stack.pop();
-			path.push(current);
+	path.add(entryEdge);
+	addIncomingAndDetectLoops(visited, path, entryEdge);
+	path.remove(entryEdge);
+    }
 
-			/* Traverse each edge leaving the node. */
-			for(CFGEdge edge : current.getOutgoingEdges()) {
+    static void addIncomingAndDetectLoops(Set<CFGEdge> visited, Set<CFGEdge> path, CFGEdge edge) {
+	CFGNode node = edge.getTo();
 
-				edge.getTo().addIncommingEdge(edge);
+	// Add the incoming edge to the node it points to.
+	node.addIncommingEdge(edge);
 
-				if(!visited.contains(edge.getTo())) {
-					stack.push(edge.getTo());
-					visited.add(edge.getTo());
-				}
-				else {
-					/* Pop nodes off the current path until we get to the
-					 * parent of the next node. */
-					while(!path.isEmpty() && !stack.isEmpty()
-							&& !path.peek().getAdjacentNodes().contains(stack.peek())) {
-						path.pop();
-					}
-
-					/* Find the loop edge and label. */
-					CFGNode next = edge.getTo();
-					for(CFGEdge loopEdge : next.getOutgoingEdges()) {
-						if(path.contains(loopEdge.getTo())) loopEdge.isLoopEdge = true;
-					}
-				}
-
-			}
-
-		}
-
+	// Do a depth first traversal.
+	for (CFGEdge outEdge : node.getOutgoingEdges()) {
+	    if (!visited.contains(edge)) {
+		visited.add(edge);
+		path.add(edge);
+		addIncomingAndDetectLoops(visited, path, outEdge);
+		path.remove(edge);
+	    } else if (path.contains(edge)) {
+		edge.isLoopEdge = true;
+	    }
 	}
+
+    }
 
 }
