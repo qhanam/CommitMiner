@@ -43,6 +43,7 @@ import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode.ChangeType;
 import multidiffplus.cfg.CFG;
 import multidiffplus.cfg.CFGEdge;
 import multidiffplus.cfg.CFGNode;
+import multidiffplus.cfg.IDGen;
 import multidiffplus.factories.ICFGFactory;
 import multidiffplus.jsanalysis.visitors.FunctionNodeVisitor;
 
@@ -896,6 +897,9 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 		exitNode.addOutgoingEdge(null, empty, idgen.getUniqueID());
 	    }
 
+	    // TODO: Copy the finallyBlock into the try block right before the jump nodes.
+	    // How do we do this?
+
 	    /*
 	     * Move the jump nodes after the finally block and propagate them through the
 	     * CFG.
@@ -904,8 +908,10 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 		    moveJumpAfterFinally(finallyBlock, tryBlock.getBreakNodes(), null, idgen));
 	    cfg.addAllContinueNodes(
 		    moveJumpAfterFinally(finallyBlock, tryBlock.getContinueNodes(), null, idgen));
-	    cfg.addAllReturnNodes(
-		    moveJumpAfterFinally(finallyBlock, tryBlock.getReturnNodes(), null, idgen));
+
+	    List<CFGNode> returnNodes = moveJumpAfterFinally(finallyBlock,
+		    tryBlock.getReturnNodes(), null, idgen);
+	    cfg.addAllReturnNodes(returnNodes);
 
 	    /*
 	     * Throw nodes point to a catch block. We assume the first because to get the
@@ -917,15 +923,6 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 
 	    /* Exit nodes exit to the finally block. */
 	    for (CFGNode exitNode : tryBlock.getExitNodes()) {
-		exitNode.addOutgoingEdge(null, finallyBlock.getEntryNode(), idgen.getUniqueID());
-	    }
-	    for (CFGNode exitNode : tryBlock.getReturnNodes()) {
-		exitNode.addOutgoingEdge(null, finallyBlock.getEntryNode(), idgen.getUniqueID());
-	    }
-	    for (CFGNode exitNode : tryBlock.getBreakNodes()) {
-		exitNode.addOutgoingEdge(null, finallyBlock.getEntryNode(), idgen.getUniqueID());
-	    }
-	    for (CFGNode exitNode : tryBlock.getContinueNodes()) {
 		exitNode.addOutgoingEdge(null, finallyBlock.getEntryNode(), idgen.getUniqueID());
 	    }
 	}
@@ -989,18 +986,6 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 		    exitNode.addOutgoingEdge(null, finallyBlock.getEntryNode(),
 			    idgen.getUniqueID());
 		}
-		for (CFGNode exitNode : catchBlock.getReturnNodes()) {
-		    exitNode.addOutgoingEdge(null, finallyBlock.getEntryNode(),
-			    idgen.getUniqueID());
-		}
-		for (CFGNode exitNode : catchBlock.getBreakNodes()) {
-		    exitNode.addOutgoingEdge(null, finallyBlock.getEntryNode(),
-			    idgen.getUniqueID());
-		}
-		for (CFGNode exitNode : catchBlock.getContinueNodes()) {
-		    exitNode.addOutgoingEdge(null, finallyBlock.getEntryNode(),
-			    idgen.getUniqueID());
-		}
 
 	    }
 
@@ -1031,13 +1016,18 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 
 	for (CFGNode jumpNode : jumpNodes) {
 
+	    /* Copy the finally block so that the nodes are unique. */
+	    CFG copyOfFinallyBlock = finallyBlock.copy(idgen);
+
 	    /* Make a shallow copy of the node. */
 	    CFGNode newJumpNode = CFGNode.copy(jumpNode, idgen.getUniqueID());
 	    newJumpNodes.add(newJumpNode);
 
 	    /* Add an edge from the finally block to the return node. */
-	    for (CFGNode exitNode : finallyBlock.getExitNodes()) {
+	    for (CFGNode exitNode : copyOfFinallyBlock.getExitNodes()) {
+		exitNode.getOutgoingEdges().clear();
 		exitNode.addOutgoingEdge(condition, newJumpNode, idgen.getUniqueID());
+		exitNode.getId();
 	    }
 
 	    /* Change the original jump node to do nothing. */
@@ -1049,7 +1039,7 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	    /*
 	     * Add an edge from the original jump node to the start of the finally block.
 	     */
-	    jumpNode.addOutgoingEdge(null, finallyBlock.getEntryNode(), idgen.getUniqueID());
+	    jumpNode.addOutgoingEdge(null, copyOfFinallyBlock.getEntryNode(), idgen.getUniqueID());
 
 	}
 
@@ -1189,23 +1179,6 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	    return JavaScriptCFGFactory.build(node, idgen);
 	}
 
-    }
-
-    /**
-     * For creating unique IDs for CFGNodes and CFGEdges.
-     */
-    private class IDGen {
-	private int uniqueID;
-
-	public IDGen() {
-	    this.uniqueID = 0;
-	}
-
-	public int getUniqueID() {
-	    int id = uniqueID;
-	    uniqueID++;
-	    return id;
-	}
     }
 
 }

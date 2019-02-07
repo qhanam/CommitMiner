@@ -31,7 +31,6 @@ public class ExpressionInstruction extends Instruction {
 	    // (2) semaphore == 0 OR the edge is a loop edge
 	    // Loops are executed once.
 	    if (!stackFrame.visited(edge.getId()) && (semaphore == 0 || edge.isLoopEdge)) {
-		// TODO: Initialize the pre-transfer state.
 		Instruction instruction = new BranchInstruction(edge);
 		instruction.initPreTransferState(incomingState);
 		stackFrame.visit(edge.getId());

@@ -67,13 +67,13 @@ public class CFG {
     /**
      * @return a copy of the CFG.
      */
-    public CFG copy() {
+    public CFG copy(IDGen idgen) {
 
-	CFGNode entryNodeCopy = CFGNode.copy(this.entryNode);
+	CFGNode entryNodeCopy = CFGNode.copy(entryNode, idgen.getUniqueID());
 
 	/* Keep track of the nodes we have copied. */
-	Map<CFGNode, CFGNode> newNodes = new HashMap<CFGNode, CFGNode>();
-	newNodes.put(this.entryNode, entryNodeCopy);
+	Map<Integer, CFGNode> newNodes = new HashMap<Integer, CFGNode>();
+	newNodes.put(entryNode.getId(), entryNodeCopy);
 
 	/* Depth first traversal. */
 	Stack<CFGNode> stack = new Stack<CFGNode>();
@@ -85,16 +85,19 @@ public class CFG {
 
 	    /* Copy the list of edges. */
 	    List<CFGEdge> copiedEdges = new LinkedList<CFGEdge>(node.getOutgoingEdges());
+	    for (CFGEdge edge : node.getOutgoingEdges()) {
+		copiedEdges.add(edge.copy(idgen.getUniqueID()));
+	    }
 
 	    /*
 	     * Re-assign the 'to' part of the edge. Copy the node if it hasn't been copied
 	     * yet.
 	     */
 	    for (CFGEdge copiedEdge : copiedEdges) {
-		CFGNode nodeCopy = newNodes.get(copiedEdge.getTo());
+		CFGNode nodeCopy = newNodes.get(copiedEdge.getTo().getId());
 		if (nodeCopy == null) {
-		    nodeCopy = CFGNode.copy(copiedEdge.getTo());
-		    newNodes.put(copiedEdge.getTo(), nodeCopy);
+		    nodeCopy = CFGNode.copy(copiedEdge.getTo(), idgen.getUniqueID());
+		    newNodes.put(copiedEdge.getTo().getId(), nodeCopy);
 		    stack.push(nodeCopy);
 		}
 		copiedEdge.setTo(nodeCopy);
@@ -108,31 +111,31 @@ public class CFG {
 	CFG cfg = new CFG(entryNodeCopy);
 
 	for (CFGNode exitNode : this.exitNodes) {
-	    CFGNode node = newNodes.get(exitNode);
+	    CFGNode node = newNodes.get(exitNode.getId());
 	    if (node != null)
 		cfg.addExitNode(node);
 	}
 
 	for (CFGNode node : this.breakNodes) {
-	    CFGNode copy = newNodes.get(node);
+	    CFGNode copy = newNodes.get(node.getId());
 	    if (copy != null)
 		cfg.addExitNode(copy);
 	}
 
 	for (CFGNode node : this.continueNodes) {
-	    CFGNode copy = newNodes.get(node);
+	    CFGNode copy = newNodes.get(node.getId());
 	    if (copy != null)
 		cfg.addExitNode(copy);
 	}
 
 	for (CFGNode node : this.returnNodes) {
-	    CFGNode copy = newNodes.get(node);
+	    CFGNode copy = newNodes.get(node.getId());
 	    if (copy != null)
 		cfg.addExitNode(copy);
 	}
 
 	for (CFGNode node : this.throwNodes) {
-	    CFGNode copy = newNodes.get(node);
+	    CFGNode copy = newNodes.get(node.getId());
 	    if (copy != null)
 		cfg.addExitNode(copy);
 	}
@@ -157,6 +160,13 @@ public class CFG {
      */
     public void addExitNode(CFGNode node) {
 	this.exitNodes.add(node);
+    }
+
+    /**
+     * Remove all exit nodes from the CFG.
+     */
+    public void cleareExitNodes() {
+	this.exitNodes.clear();
     }
 
     /**
@@ -259,6 +269,13 @@ public class CFG {
      */
     public List<CFGNode> getThrowNodes() {
 	return this.throwNodes;
+    }
+
+    /**
+     * Removes all return nodes from the CFG.
+     */
+    public void clearnReturnNodes() {
+	this.returnNodes.clear();
     }
 
     /**
