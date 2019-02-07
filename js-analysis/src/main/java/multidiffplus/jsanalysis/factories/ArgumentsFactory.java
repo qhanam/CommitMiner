@@ -46,6 +46,12 @@ public class ArgumentsFactory {
 		    Control control, CallStack callStack) {
 		return new State(store, null, scratchpad, trace, control, selfAddr);
 	    }
+
+	    @Override
+	    public State run(Address selfAddr, Store store, Scratchpad scratchpad, Trace trace,
+		    Control control) {
+		return new State(store, null, scratchpad, trace, control, selfAddr);
+	    }
 	};
 
 	Stack<Closure> closures = new Stack<Closure>();

@@ -41,6 +41,12 @@ public class FunctionClosure extends Closure {
 
     @Override
     public State run(Address selfAddr, Store store, Scratchpad scratchpad, Trace trace,
+	    Control control) {
+	return Helpers.getMergedExitState(cfg);
+    }
+
+    @Override
+    public State run(Address selfAddr, Store store, Scratchpad scratchpad, Trace trace,
 	    Control control, CallStack callStack) {
 
 	/* Advance the trace. */

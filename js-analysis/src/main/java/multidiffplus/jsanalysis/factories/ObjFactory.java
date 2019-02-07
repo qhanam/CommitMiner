@@ -92,6 +92,13 @@ public class ObjFactory {
 		// TODO: Update the state
 		return null;
 	    }
+
+	    @Override
+	    public State run(Address selfAddr, Store store, Scratchpad scratchpad, Trace trace,
+		    Control control) {
+		// TODO: Update the state
+		return null;
+	    }
 	};
 
 	Stack<Closure> closures = new Stack<Closure>();

@@ -10,6 +10,13 @@ import multidiffplus.jsanalysis.trace.Trace;
 public abstract class Closure {
 
     /**
+     * Returns the end state of the function. This should be used only after the
+     * analysis has completed.
+     */
+    public abstract State run(Address selfAddr, Store store, Scratchpad scratchpad, Trace trace,
+	    Control control);
+
+    /**
      * @param selfAddr
      *            The value of the 'this' variable (a set of objects).
      * @param arbObj

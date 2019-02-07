@@ -131,7 +131,9 @@ public class Helpers {
 	    InternalFunctionProperties ifp = (InternalFunctionProperties) functObj.internalProperties;
 
 	    /* Run the function. */
-	    State endState = ifp.closure.run(selfAddr, store, sp, trace, control, callStack);
+	    State endState = callStack == null
+		    ? ifp.closure.run(selfAddr, store, sp, trace, control)
+		    : ifp.closure.run(selfAddr, store, sp, trace, control, callStack);
 
 	    if (state == null)
 		state = endState;

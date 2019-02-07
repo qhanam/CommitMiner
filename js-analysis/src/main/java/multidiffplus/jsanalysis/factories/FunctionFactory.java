@@ -84,6 +84,12 @@ public class FunctionFactory {
 		scratchpad.strongUpdate(retVal, null);
 		return new State(store, new Environment(), scratchpad, trace, control, selfAddr);
 	    }
+
+	    @Override
+	    public State run(Address selfAddr, Store store, Scratchpad scratchpad, Trace trace,
+		    Control control) {
+		return new State(store, null, scratchpad, trace, control, selfAddr);
+	    }
 	};
 
 	Stack<Closure> closures = new Stack<Closure>();
