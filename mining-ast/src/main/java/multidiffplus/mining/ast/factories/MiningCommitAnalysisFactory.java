@@ -8,26 +8,29 @@ import multidiffplus.factories.IASTVisitorFactory;
 import multidiffplus.factories.ICommitAnalysisFactory;
 import multidiffplus.factories.IDomainAnalysisFactory;
 import multidiffplus.jsanalysis.factories.JavaScriptCFGFactory;
+import multidiffplus.mining.ast.analysis.criterion.trycallsite.TryCallsiteAstAnalysisFactory;
 
 public class MiningCommitAnalysisFactory implements ICommitAnalysisFactory {
-	
-	@Override
-	public CommitAnalysis newInstance() {
 
-		List<IASTVisitorFactory> srcVisitorFactories = new LinkedList<IASTVisitorFactory>();
-		srcVisitorFactories.add(new ModifiedStatementASTAnalysisFactory());
+    @Override
+    public CommitAnalysis newInstance() {
 
-		List<IASTVisitorFactory> dstVisitorFactories = new LinkedList<IASTVisitorFactory>();
-//		dstVisitorFactories.add(new AjaxDataASTAnalysisFactory());
-		dstVisitorFactories.add(new TryASTAnalysisFactory());
-//		dstVisitorFactories.add(new JQueryASTAnalysisFactory());
-//		dstVisitorFactories.add(new ConfigASTAnalysisFactory());
-		dstVisitorFactories.add(new ModifiedStatementASTAnalysisFactory());
+	List<IASTVisitorFactory> srcVisitorFactories = new LinkedList<IASTVisitorFactory>();
+	srcVisitorFactories.add(new ModifiedStatementASTAnalysisFactory());
 
-		List<IDomainAnalysisFactory> domainFactories = new LinkedList<IDomainAnalysisFactory>();
-		domainFactories.add(new MiningDomainAnalysisFactory(srcVisitorFactories, dstVisitorFactories, new JavaScriptCFGFactory()));
+	List<IASTVisitorFactory> dstVisitorFactories = new LinkedList<IASTVisitorFactory>();
+	// dstVisitorFactories.add(new AjaxDataASTAnalysisFactory());
+	// dstVisitorFactories.add(new TryASTAnalysisFactory());
+	dstVisitorFactories.add(new TryCallsiteAstAnalysisFactory());
+	// dstVisitorFactories.add(new JQueryASTAnalysisFactory());
+	// dstVisitorFactories.add(new ConfigASTAnalysisFactory());
+	// dstVisitorFactories.add(new ModifiedStatementASTAnalysisFactory());
 
-		return new CommitAnalysis(domainFactories);
-	}
+	List<IDomainAnalysisFactory> domainFactories = new LinkedList<IDomainAnalysisFactory>();
+	domainFactories.add(new MiningDomainAnalysisFactory(srcVisitorFactories,
+		dstVisitorFactories, new JavaScriptCFGFactory()));
+
+	return new CommitAnalysis(domainFactories);
+    }
 
 }

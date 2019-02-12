@@ -1,456 +1,299 @@
-// Ignore warning about 'new String()'
-/* eslint no-new-wrappers: 0 */
-'use strict';
-
-var os = require('os');
 var fs = require('fs');
-var glob = require('glob');
-var shell = require('..');
+var path = require('path');
+var common = require('./common');
 
-var shellMethods = Object.create(shell);
+common.register('cp', _cp, {
+  cmdOptions: {
+    'f': '!no_force',
+    'n': 'no_force',
+    'u': 'update',
+    'R': 'recursive',
+    'r': 'recursive',
+    'L': 'followsymlink',
+    'P': 'noFollowsymlink',
+  },
+  wrapOutput: false,
+});
 
-exports.extend = Object.assign;
+// Buffered file copy, synchronous
+// (Using readFileSync() + writeFileSync() could easily cause a memory overflow
+//  with large files)
+function copyFileSync(srcFile, destFile, options) {
+  if (!fs.existsSync(srcFile)) {
+    common.error('copyFileSync: no such file or directory: ' + srcFile);
+  }
 
-// Check if we're running under electron
-var isElectron = Boolean(process.versions.electron);
+  var isWindows = process.platform === 'win32';
 
-// Module globals (assume no execPath by default)
-var DEFAULT_CONFIG = {
-  fatal: false,
-  globOptions: {},
-  maxdepth: 255,
-  noglob: false,
-  silent: false,
-  verbose: false,
-  execPath: null,
-  bufLength: 64 * 1024, // 64KB
-};
-
-var config = {
-  reset: function () {
-    Object.assign(this, DEFAULT_CONFIG);
-    if (!isElectron) {
-      this.execPath = process.execPath;
+  // Check the mtimes of the files if the '-u' flag is provided
+  try {
+    if (options.update && fs.statSync(srcFile).mtime < fs.statSync(destFile).mtime) {
+      return;
     }
-  },
-  resetForTesting: function () {
-    this.reset();
-    this.silent = true;
-  },
-};
+  } catch (e) {
+    // If we're here, destFile probably doesn't exist, so just do a normal copy
+  }
 
-config.reset();
-exports.config = config;
+  if (fs.lstatSync(srcFile).isSymbolicLink() && !options.followsymlink) {
+    try {
+      fs.lstatSync(destFile);
+      common.unlinkSync(destFile); // re-link it
+    } catch (e) {
+      // it doesn't exist, so no work needs to be done
+    }
 
-var state = {
-  error: null,
-  errorCode: 0,
-  currentCmd: 'shell.js',
-  tempDir: null,
-};
-exports.state = state;
+    var symlinkFull = fs.readlinkSync(srcFile);
+    fs.symlinkSync(symlinkFull, destFile, isWindows ? 'junction' : null);
+  } else {
+    var buf = common.buffer();
+    var bufLength = buf.length;
+    var bytesRead = bufLength;
+    var pos = 0;
+    var fdr = null;
+    var fdw = null;
 
-delete process.env.OLDPWD; // initially, there's no previous directory
+    try {
+      fdr = fs.openSync(srcFile, 'r');
+    } catch (e) {
+      /* istanbul ignore next */
+      common.error('copyFileSync: could not read src file (' + srcFile + ')');
+    }
 
-// This is populated by calls to commonl.wrap()
-var pipeMethods = [];
+    try {
+      fdw = fs.openSync(destFile, 'w');
+    } catch (e) {
+      /* istanbul ignore next */
+      common.error('copyFileSync: could not write to dest file (code=' + e.code + '):' + destFile);
+    }
 
-// Reliably test if something is any sort of javascript object
-function isObject(a) {
-  return typeof a === 'object' && a !== null;
-}
-exports.isObject = isObject;
+    while (bytesRead === bufLength) {
+      bytesRead = fs.readSync(fdr, buf, 0, bufLength, pos);
+      fs.writeSync(fdw, buf, 0, bytesRead);
+      pos += bytesRead;
+    }
 
-function log() {
-  /* istanbul ignore next */
-  if (!config.silent) {
-    console.error.apply(console, arguments);
+    fs.closeSync(fdr);
+    fs.closeSync(fdw);
+
+    fs.chmodSync(destFile, fs.statSync(srcFile).mode);
   }
 }
-exports.log = log;
 
-// Converts strings to be equivalent across all platforms. Primarily responsible
-// for making sure we use '/' instead of '\' as path separators, but this may be
-// expanded in the future if necessary
-function convertErrorOutput(msg) {
-  if (typeof msg !== 'string') {
-    throw new TypeError('input must be a string');
+// Recursively copies 'sourceDir' into 'destDir'
+// Adapted from https://github.com/ryanmcgrath/wrench-js
+//
+// Copyright (c) 2010 Ryan McGrath
+// Copyright (c) 2012 Artur Adib
+//
+// Licensed under the MIT License
+// http://www.opensource.org/licenses/mit-license.php
+function cpdirSyncRecursive(sourceDir, destDir, currentDepth, opts) {
+  if (!opts) opts = {};
+
+  // Ensure there is not a run away recursive copy
+  if (currentDepth >= common.config.maxdepth) return;
+  currentDepth++;
+
+  var isWindows = process.platform === 'win32';
+
+  // Create the directory where all our junk is moving to; read the mode of the
+  // source directory and mirror it
+  try {
+    var checkDir = fs.statSync(sourceDir);
+    fs.mkdirSync(destDir, checkDir.mode);
+  } catch (e) {
+    // if the directory already exists, that's okay
+    if (e.code !== 'EEXIST') throw e;
   }
-  return msg.replace(/\\/g, '/');
+
+  var files = fs.readdirSync(sourceDir);
+
+  for (var i = 0; i < files.length; i++) {
+    var srcFile = sourceDir + '/' + files[i];
+    var destFile = destDir + '/' + files[i];
+    var srcFileStat = fs.lstatSync(srcFile);
+
+    var symlinkFull;
+    if (opts.followsymlink) {
+      if (cpcheckcycle(sourceDir, srcFile)) {
+        // Cycle link found.
+        console.error('Cycle link found.');
+        symlinkFull = fs.readlinkSync(srcFile);
+        fs.symlinkSync(symlinkFull, destFile, isWindows ? 'junction' : null);
+        continue;
+      }
+    }
+    if (srcFileStat.isDirectory()) {
+      /* recursion this thing right on back. */
+      cpdirSyncRecursive(srcFile, destFile, currentDepth, opts);
+    } else if (srcFileStat.isSymbolicLink() && !opts.followsymlink) {
+      symlinkFull = fs.readlinkSync(srcFile);
+      try {
+        fs.lstatSync(destFile);
+        common.unlinkSync(destFile); // re-link it
+      } catch (e) {
+        // it doesn't exist, so no work needs to be done
+      }
+      fs.symlinkSync(symlinkFull, destFile, isWindows ? 'junction' : null);
+    } else if (srcFileStat.isSymbolicLink() && opts.followsymlink) {
+      srcFileStat = fs.statSync(srcFile);
+      if (srcFileStat.isDirectory()) {
+        cpdirSyncRecursive(srcFile, destFile, currentDepth, opts);
+      } else {
+        copyFileSync(srcFile, destFile, opts);
+      }
+    } else {
+      /* At this point, we've hit a file actually worth copying... so copy it on over. */
+      if (fs.existsSync(destFile) && opts.no_force) {
+        common.log('skipping existing file: ' + files[i]);
+      } else {
+        copyFileSync(srcFile, destFile, opts);
+      }
+    }
+  } // for files
+} // cpdirSyncRecursive
+
+// Checks if cureent file was created recently
+function checkRecentCreated(sources, index) {
+  var lookedSource = sources[index];
+  return sources.slice(0, index).some(function (src) {
+    return path.basename(src) === path.basename(lookedSource);
+  });
 }
-exports.convertErrorOutput = convertErrorOutput;
 
-// Shows error message. Throws if config.fatal is true
-function error(msg, _code, options) {
-  // Validate input
-  if (typeof msg !== 'string') throw new Error('msg must be a string');
-
-  var DEFAULT_OPTIONS = {
-    continue: false,
-    code: 1,
-    prefix: state.currentCmd + ': ',
-    silent: false,
-  };
-
-  if (typeof _code === 'number' && isObject(options)) {
-    options.code = _code;
-  } else if (isObject(_code)) { // no 'code'
-    options = _code;
-  } else if (typeof _code === 'number') { // no 'options'
-    options = { code: _code };
-  } else if (typeof _code !== 'number') { // only 'msg'
-    options = {};
+function cpcheckcycle(sourceDir, srcFile) {
+  var srcFileStat = fs.lstatSync(srcFile);
+  if (srcFileStat.isSymbolicLink()) {
+    // Do cycle check. For example:
+    //   $ mkdir -p 1/2/3/4
+    //   $ cd  1/2/3/4
+    //   $ ln -s ../../3 link
+    //   $ cd ../../../..
+    //   $ cp -RL 1 copy
+    var cyclecheck = fs.statSync(srcFile);
+    if (cyclecheck.isDirectory()) {
+      var sourcerealpath = fs.realpathSync(sourceDir);
+      var symlinkrealpath = fs.realpathSync(srcFile);
+      var re = new RegExp(symlinkrealpath);
+      if (re.test(sourcerealpath)) {
+        return true;
+      }
+    }
   }
-  options = Object.assign({}, DEFAULT_OPTIONS, options);
-
-  if (!state.errorCode) state.errorCode = options.code;
-
-  var logEntry = convertErrorOutput(options.prefix + msg);
-  state.error = state.error ? state.error + '\n' : '';
-  state.error += logEntry;
-
-  // Throw an error, or log the entry
-  if (config.fatal) throw new Error(logEntry);
-  if (msg.length > 0 && !options.silent) log(logEntry);
-
-  if (!options.continue) {
-    throw {
-      msg: 'earlyExit',
-      retValue: (new ShellString('', state.error, state.errorCode)),
-    };
-  }
+  return false;
 }
-exports.error = error;
 
 //@
-//@ ### ShellString(str)
+//@ ### cp([options,] source [, source ...], dest)
+//@ ### cp([options,] source_array, dest)
+//@ Available options:
+//@
+//@ + `-f`: force (default behavior)
+//@ + `-n`: no-clobber
+//@ + `-u`: only copy if source is newer than dest
+//@ + `-r`, `-R`: recursive
+//@ + `-L`: follow symlinks
+//@ + `-P`: don't follow symlinks
 //@
 //@ Examples:
 //@
 //@ ```javascript
-//@ var foo = ShellString('hello world');
+//@ cp('file1', 'dir1');
+//@ cp('-R', 'path/to/dir/', '~/newCopy/');
+//@ cp('-Rf', '/tmp/*', '/usr/local/*', '/home/tmp');
+//@ cp('-Rf', ['/tmp/*', '/usr/local/*'], '/home/tmp'); // same as above
 //@ ```
 //@
-//@ Turns a regular string into a string-like object similar to what each
-//@ command returns. This has special methods, like `.to()` and `.toEnd()`
-function ShellString(stdout, stderr, code) {
-  var that;
-  if (stdout instanceof Array) {
-    that = stdout;
-    that.stdout = stdout.join('\n');
-    if (stdout.length > 0) that.stdout += '\n';
+//@ Copies files.
+function _cp(options, sources, dest) {
+  // If we're missing -R, it actually implies -L (unless -P is explicit)
+  if (options.followsymlink) {
+    options.noFollowsymlink = false;
+  }
+  if (!options.recursive && !options.noFollowsymlink) {
+    options.followsymlink = true;
+  }
+
+  // Get sources, dest
+  if (arguments.length < 3) {
+    common.error('missing <source> and/or <dest>');
   } else {
-    that = new String(stdout);
-    that.stdout = stdout;
-  }
-  that.stderr = stderr;
-  that.code = code;
-  // A list of all commands that can appear on the right-hand side of a pipe
-  // (populated by calls to common.wrap())
-  pipeMethods.forEach(function (cmd) {
-    that[cmd] = shellMethods[cmd].bind(that);
-  });
-  return that;
-}
-
-exports.ShellString = ShellString;
-
-// Returns {'alice': true, 'bob': false} when passed a string and dictionary as follows:
-//   parseOptions('-a', {'a':'alice', 'b':'bob'});
-// Returns {'reference': 'string-value', 'bob': false} when passed two dictionaries of the form:
-//   parseOptions({'-r': 'string-value'}, {'r':'reference', 'b':'bob'});
-// Throws an error when passed a string that does not start with '-':
-//   parseOptions('a', {'a':'alice'}); // throws
-function parseOptions(opt, map, errorOptions) {
-  // Validate input
-  if (typeof opt !== 'string' && !isObject(opt)) {
-    throw new Error('options must be strings or key-value pairs');
-  } else if (!isObject(map)) {
-    throw new Error('parseOptions() internal error: map must be an object');
-  } else if (errorOptions && !isObject(errorOptions)) {
-    throw new Error('parseOptions() internal error: errorOptions must be object');
+    sources = [].slice.call(arguments, 1, arguments.length - 1);
+    dest = arguments[arguments.length - 1];
   }
 
-  if (opt === '--') {
-    // This means there are no options.
-    return {};
+  var destExists = fs.existsSync(dest);
+  var destStat = destExists && fs.statSync(dest);
+
+  // Dest is not existing dir, but multiple sources given
+  if ((!destExists || !destStat.isDirectory()) && sources.length > 1) {
+    common.error('dest is not a directory (too many sources)');
   }
 
-  // All options are false by default
-  var options = {};
-  Object.keys(map).forEach(function (letter) {
-    var optName = map[letter];
-    if (optName[0] !== '!') {
-      options[optName] = false;
+  // Dest is an existing file, but -n is given
+  if (destExists && destStat.isFile() && options.no_force) {
+    return new common.ShellString('', '', 0);
+  }
+
+  sources.forEach(function (src, srcIndex) {
+    if (!fs.existsSync(src)) {
+      if (src === '') src = "''"; // if src was empty string, display empty string
+      common.error('no such file or directory: ' + src, { continue: true });
+      return; // skip file
     }
-  });
-
-  if (opt === '') return options; // defaults
-
-  if (typeof opt === 'string') {
-    if (opt[0] !== '-') {
-      throw new Error("Options string must start with a '-'");
-    }
-
-    // e.g. chars = ['R', 'f']
-    var chars = opt.slice(1).split('');
-
-    chars.forEach(function (c) {
-      if (c in map) {
-        var optionName = map[c];
-        if (optionName[0] === '!') {
-          options[optionName.slice(1)] = false;
-        } else {
-          options[optionName] = true;
-        }
+    var srcStat = fs.statSync(src);
+    if (!options.noFollowsymlink && srcStat.isDirectory()) {
+      if (!options.recursive) {
+        // Non-Recursive
+        common.error("omitting directory '" + src + "'", { continue: true });
       } else {
-        error('option not recognized: ' + c, errorOptions || {});
-      }
-    });
-  } else { // opt is an Object
-    Object.keys(opt).forEach(function (key) {
-      // key is a string of the form '-r', '-d', etc.
-      var c = key[1];
-      if (c in map) {
-        var optionName = map[c];
-        options[optionName] = opt[key]; // assign the given value
-      } else {
-        error('option not recognized: ' + c, errorOptions || {});
-      }
-    });
-  }
-  return options;
-}
-exports.parseOptions = parseOptions;
-
-// Expands wildcards with matching (ie. existing) file names.
-// For example:
-//   expand(['file*.js']) = ['file1.js', 'file2.js', ...]
-//   (if the files 'file1.js', 'file2.js', etc, exist in the current dir)
-function expand(list) {
-  if (!Array.isArray(list)) {
-    throw new TypeError('must be an array');
-  }
-  var expanded = [];
-  list.forEach(function (listEl) {
-    // Don't expand non-strings
-    if (typeof listEl !== 'string') {
-      expanded.push(listEl);
-    } else {
-      var ret;
-      try {
-        ret = glob.sync(listEl, config.globOptions);
-        // if nothing matched, interpret the string literally
-        ret = ret.length > 0 ? ret : [listEl];
-      } catch (e) {
-        // if glob fails, interpret the string literally
-        ret = [listEl];
-      }
-      expanded = expanded.concat(ret);
-    }
-  });
-  return expanded;
-}
-exports.expand = expand;
-
-// Normalizes Buffer creation, using Buffer.alloc if possible.
-// Also provides a good default buffer length for most use cases.
-var buffer = typeof Buffer.alloc === 'function' ?
-  function (len) {
-    return Buffer.alloc(len || config.bufLength);
-  } :
-  function (len) {
-    return new Buffer(len || config.bufLength);
-  };
-exports.buffer = buffer;
-
-// Normalizes _unlinkSync() across platforms to match Unix behavior, i.e.
-// file can be unlinked even if it's read-only, see https://github.com/joyent/node/issues/3006
-function unlinkSync(file) {
-  try {
-    fs.unlinkSync(file);
-  } catch (e) {
-    // Try to override file permission
-    /* istanbul ignore next */
-    if (e.code === 'EPERM') {
-      fs.chmodSync(file, '0666');
-      fs.unlinkSync(file);
-    } else {
-      throw e;
-    }
-  }
-}
-exports.unlinkSync = unlinkSync;
-
-// wrappers around common.statFollowLinks and common.statNoFollowLinks that clarify intent
-// and improve readability
-function statFollowLinks() {
-  return fs.statSync.apply(fs, arguments);
-}
-exports.statFollowLinks = statFollowLinks;
-
-function statNoFollowLinks() {
-  return fs.lstatSync.apply(fs, arguments);
-}
-exports.statNoFollowLinks = statNoFollowLinks;
-
-// e.g. 'shelljs_a5f185d0443ca...'
-function randomFileName() {
-  function randomHash(count) {
-    if (count === 1) {
-      return parseInt(16 * Math.random(), 10).toString(16);
-    }
-    var hash = '';
-    for (var i = 0; i < count; i++) {
-      hash += randomHash(1);
-    }
-    return hash;
-  }
-
-  return 'shelljs_' + randomHash(20);
-}
-exports.randomFileName = randomFileName;
-
-// Common wrapper for all Unix-like commands that performs glob expansion,
-// command-logging, and other nice things
-function wrap(cmd, fn, options) {
-  options = options || {};
-  if (options.canReceivePipe) {
-    pipeMethods.push(cmd);
-  }
-  return function () {
-    var retValue = null;
-
-    state.currentCmd = cmd;
-    state.error = null;
-    state.errorCode = 0;
-
-    try {
-      var args = [].slice.call(arguments, 0);
-
-      // Log the command to stderr, if appropriate
-      if (config.verbose) {
-        console.error.apply(console, [cmd].concat(args));
-      }
-
-      // If this is coming from a pipe, let's set the pipedValue (otherwise, set
-      // it to the empty string)
-      state.pipedValue = (this && typeof this.stdout === 'string') ? this.stdout : '';
-
-      if (options.unix === false) { // this branch is for exec()
-        retValue = fn.apply(this, args);
-      } else { // and this branch is for everything else
-        if (isObject(args[0]) && args[0].constructor.name === 'Object') {
-          // a no-op, allowing the syntax `touch({'-r': file}, ...)`
-        } else if (args.length === 0 || typeof args[0] !== 'string' || args[0].length <= 1 || args[0][0] !== '-') {
-          args.unshift(''); // only add dummy option if '-option' not already present
-        }
-
-        // flatten out arrays that are arguments, to make the syntax:
-        //    `cp([file1, file2, file3], dest);`
-        // equivalent to:
-        //    `cp(file1, file2, file3, dest);`
-        args = args.reduce(function (accum, cur) {
-          if (Array.isArray(cur)) {
-            return accum.concat(cur);
-          }
-          accum.push(cur);
-          return accum;
-        }, []);
-
-        // Convert ShellStrings (basically just String objects) to regular strings
-        args = args.map(function (arg) {
-          if (isObject(arg) && arg.constructor.name === 'String') {
-            return arg.toString();
-          }
-          return arg;
-        });
-
-        // Expand the '~' if appropriate
-        var homeDir = os.homedir();
-        args = args.map(function (arg) {
-          if (typeof arg === 'string' && arg.slice(0, 2) === '~/' || arg === '~') {
-            return arg.replace(/^~/, homeDir);
-          }
-          return arg;
-        });
-
-        // Perform glob-expansion on all arguments after globStart, but preserve
-        // the arguments before it (like regexes for sed and grep)
-        if (!config.noglob && options.allowGlobbing === true) {
-          args = args.slice(0, options.globStart).concat(expand(args.slice(options.globStart)));
-        }
+        // Recursive
+        // 'cp /a/source dest' should create 'source' in 'dest'
+        var newDest = (destStat && destStat.isDirectory()) ?
+            path.join(dest, path.basename(src)) :
+            dest;
 
         try {
-          // parse options if options are provided
-          if (isObject(options.cmdOptions)) {
-            args[0] = parseOptions(args[0], options.cmdOptions);
-          }
-
-          retValue = fn.apply(this, args);
+          fs.statSync(path.dirname(dest));
+          cpdirSyncRecursive(src, newDest, 0, { no_force: options.no_force, followsymlink: options.followsymlink });
         } catch (e) {
-          /* istanbul ignore else */
-          if (e.msg === 'earlyExit') {
-            retValue = e.retValue;
-          } else {
-            throw e; // this is probably a bug that should be thrown up the call stack
-          }
+          /* istanbul ignore next */
+          common.error("cannot create directory '" + dest + "': No such file or directory");
         }
       }
-    } catch (e) {
-      /* istanbul ignore next */
-      if (!state.error) {
-        // If state.error hasn't been set it's an error thrown by Node, not us - probably a bug...
-        e.name = 'ShellJSInternalError';
-        throw e;
+    } else {
+      // If here, src is a file
+
+      // When copying to '/path/dir':
+      //    thisDest = '/path/dir/file1'
+      var thisDest = dest;
+      if (destStat && destStat.isDirectory()) {
+        thisDest = path.normalize(dest + '/' + path.basename(src));
       }
-      if (config.fatal) throw e;
+
+      var thisDestExists = fs.existsSync(thisDest);
+      if (thisDestExists && checkRecentCreated(sources, srcIndex)) {
+        // cannot overwrite file created recently in current execution, but we want to continue copying other files
+        if (!options.no_force) {
+          common.error("will not overwrite just-created '" + thisDest + "' with '" + src + "'", { continue: true });
+        }
+        return;
+      }
+
+      if (thisDestExists && options.no_force) {
+        return; // skip file
+      }
+
+      if (path.relative(src, thisDest) === '') {
+        // a file cannot be copied to itself, but we want to continue copying other files
+        common.error("'" + thisDest + "' and '" + src + "' are the same file", { continue: true });
+        return;
+      }
+
+      copyFileSync(src, thisDest, options);
     }
+  }); // forEach(src)
 
-    if (options.wrapOutput &&
-        (typeof retValue === 'string' || Array.isArray(retValue))) {
-      retValue = new ShellString(retValue, state.error, state.errorCode);
-    }
-
-    state.currentCmd = 'shell.js';
-    return retValue;
-  };
-} // wrap
-exports.wrap = wrap;
-
-// This returns all the input that is piped into the current command (or the
-// empty string, if this isn't on the right-hand side of a pipe
-function _readFromPipe() {
-  return state.pipedValue;
+  return new common.ShellString('', common.state.error, common.state.errorCode);
 }
-exports.readFromPipe = _readFromPipe;
-
-var DEFAULT_WRAP_OPTIONS = {
-  allowGlobbing: true,
-  canReceivePipe: false,
-  cmdOptions: false,
-  globStart: 1,
-  pipeOnly: false,
-  unix: true,
-  wrapOutput: true,
-  overWrite: false,
-};
-
-// Register a new ShellJS command
-function _register(name, implementation, wrapOptions) {
-  wrapOptions = wrapOptions || {};
-  // If an option isn't specified, use the default
-  wrapOptions = Object.assign({}, DEFAULT_WRAP_OPTIONS, wrapOptions);
-
-  if (shell[name] && !wrapOptions.overWrite) {
-    throw new Error('unable to overwrite `' + name + '` command');
-  }
-
-  if (wrapOptions.pipeOnly) {
-    wrapOptions.canReceivePipe = true;
-    shellMethods[name] = wrap(name, implementation, wrapOptions);
-  } else {
-    shell[name] = wrap(name, implementation, wrapOptions);
-  }
-}
-exports.register = _register;
+module.exports = _cp;

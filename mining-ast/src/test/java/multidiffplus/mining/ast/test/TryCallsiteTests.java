@@ -17,7 +17,7 @@ import multidiffplus.facts.Annotation;
 import multidiffplus.facts.MiningFactBase;
 import multidiffplus.mining.ast.factories.MiningCommitAnalysisFactory;
 
-public class AjaxDataTests {
+public class TryCallsiteTests {
 
     /**
      * Tests data mining data set construction.
@@ -55,57 +55,17 @@ public class AjaxDataTests {
 
     @Test
     public void testContrived() throws Exception {
-	String src = "src/test/resources/ajax_stringify/contrived_old.js";
-	String dst = "src/test/resources/ajax_stringify/contrived_new.js";
-	String expected = "AJAX_STRINGIFY_MUTATE_DEL";
+	String src = "src/test/resources/try/contrived_old.js";
+	String dst = "src/test/resources/try/contrived_new.js";
+	String expected = "CRITERION_NEW_UNPROTECTED_CALLSITE";
 	this.runTest(src, dst, expected);
     }
 
     @Test
-    public void testStrider() throws Exception {
-	String src = "src/test/resources/ajax_stringify/strider_old.js";
-	String dst = "src/test/resources/ajax_stringify/strider_new.js";
-	String expected = "AJAX_STRINGIFY_REPAIR";
-	this.runTest(src, dst, expected);
-    }
-
-    @Test
-    public void testStrider2() throws Exception {
-	String src = "src/test/resources/ajax_stringify/strider2_old.js";
-	String dst = "src/test/resources/ajax_stringify/strider2_new.js";
-	String expected = null;
-	this.runTest(src, dst, expected);
-    }
-
-    @Test
-    public void testRecline() throws Exception {
-	String src = "src/test/resources/ajax_stringify/recline_old.js";
-	String dst = "src/test/resources/ajax_stringify/recline_new.js";
-	String expected = "AJAX_STRINGIFY_REPAIR";
-	this.runTest(src, dst, expected);
-    }
-
-    @Test
-    public void testAnnotator() throws Exception {
-	String src = "src/test/resources/ajax_stringify/annotator_old.js";
-	String dst = "src/test/resources/ajax_stringify/annotator_new.js";
-	String expected = "AJAX_STRINGIFY_MUTATE_ADD";
-	this.runTest(src, dst, expected);
-    }
-
-    @Test
-    public void testNodeRed1() throws Exception {
-	String src = "src/test/resources/ajax_stringify/node-red_old.js";
-	String dst = "src/test/resources/ajax_stringify/node-red_new.js";
-	String expected = "AJAX_STRINGIFY_MUTATE_DEL";
-	this.runTest(src, dst, expected);
-    }
-
-    @Test
-    public void testNodeRed2() throws Exception {
-	String src = "src/test/resources/ajax_stringify/node-red_old.js";
-	String dst = "src/test/resources/ajax_stringify/node-red_new.js";
-	String expected = "AJAX_OTHER";
+    public void testShellJS() throws Exception {
+	String src = "src/test/resources/try/shelljs_old.js";
+	String dst = "src/test/resources/try/shelljs_new.js";
+	String expected = "TRY";
 	this.runTest(src, dst, expected);
     }
 
