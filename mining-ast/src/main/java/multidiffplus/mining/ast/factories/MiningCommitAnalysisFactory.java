@@ -19,12 +19,9 @@ public class MiningCommitAnalysisFactory implements ICommitAnalysisFactory {
 	srcVisitorFactories.add(new ModifiedStatementASTAnalysisFactory());
 
 	List<IASTVisitorFactory> dstVisitorFactories = new LinkedList<IASTVisitorFactory>();
-	// dstVisitorFactories.add(new AjaxDataASTAnalysisFactory());
-	// dstVisitorFactories.add(new TryASTAnalysisFactory());
-	dstVisitorFactories.add(new TryCallsiteAstAnalysisFactory());
-	// dstVisitorFactories.add(new JQueryASTAnalysisFactory());
-	// dstVisitorFactories.add(new ConfigASTAnalysisFactory());
 	// dstVisitorFactories.add(new ModifiedStatementASTAnalysisFactory());
+	// dstVisitorFactories.add(new AjaxDataASTAnalysisFactory());
+	dstVisitorFactories.add(new TryCallsiteAstAnalysisFactory());
 
 	List<IDomainAnalysisFactory> domainFactories = new LinkedList<IDomainAnalysisFactory>();
 	domainFactories.add(new MiningDomainAnalysisFactory(srcVisitorFactories,
