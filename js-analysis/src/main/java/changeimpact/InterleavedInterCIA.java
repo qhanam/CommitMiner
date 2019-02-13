@@ -6,7 +6,6 @@ import multidiffplus.cfg.CFG;
 import multidiffplus.commit.SourceCodeFileChange;
 import multidiffplus.diff.DiffContext;
 import multidiffplus.factories.ICFGVisitorFactory;
-import multidiffplus.jsanalysis.flow.Analysis;
 import multidiffplus.jsanalysis.flow.Analysis2;
 
 /**
@@ -19,7 +18,6 @@ public class InterleavedInterCIA {
     SourceCodeFileChange sourceCodeFileChange;
     DiffContext diffContext;
 
-    Analysis srcAnalysis;
     Analysis2 dstAnalysis;
 
     public InterleavedInterCIA(List<ICFGVisitorFactory> cfgVisitorFactories,
@@ -27,8 +25,6 @@ public class InterleavedInterCIA {
 	this.cfgVisitorFactories = cfgVisitorFactories;
 	this.sourceCodeFileChange = sourceCodeFileChange;
 	this.diffContext = diffContext;
-	// this.srcAnalysis = Analysis.build(diffContext.srcScript,
-	// diffContext.srcCFGs);
 	this.dstAnalysis = Analysis2.build(diffContext.dstScript, diffContext.dstCFGs);
     }
 
@@ -36,12 +32,6 @@ public class InterleavedInterCIA {
      * Run the analysis.
      */
     public void analyze() throws Exception {
-
-	/*
-	 * Run the src analysis to completion. The analysis data will be available to
-	 * the dst analysis.
-	 */
-	// srcAnalysis.run();
 
 	/* Run the dst analysis. */
 	dstAnalysis.run();

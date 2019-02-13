@@ -59,6 +59,7 @@ public class TryCallsiteAnalysis implements NodeVisitor {
 	AstNode ancestor = functionCall.getParent();
 	while (true) {
 	    switch (ancestor.getType()) {
+	    case Token.CATCH:
 	    case Token.FUNCTION:
 	    case Token.SCRIPT:
 		factBase.registerAnnotationFact(new Annotation("CRITERION_NEW_UNPROTECTED_CALLSITE",
