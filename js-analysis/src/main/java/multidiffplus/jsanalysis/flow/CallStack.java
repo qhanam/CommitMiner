@@ -61,4 +61,8 @@ public class CallStack {
 	return reachables.poll();
     }
 
+    public boolean isScriptLevel() {
+	return callStack.size() == 1 && callStack.peek().getCFG().isScript();
+    }
+
 }

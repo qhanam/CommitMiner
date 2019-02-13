@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
+import org.mozilla.javascript.ast.AstRoot;
+
 /**
  * A low(er) level control flow graph or subgraph.
  *
@@ -329,6 +331,10 @@ public class CFG {
      */
     public void setMappedCFG(CFG mappedCFG) {
 	this.mappedCFG = mappedCFG;
+    }
+
+    public boolean isScript() {
+	return entryNode.getStatement() instanceof AstRoot;
     }
 
 }

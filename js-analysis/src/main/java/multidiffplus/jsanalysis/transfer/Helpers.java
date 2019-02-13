@@ -39,6 +39,7 @@ import multidiffplus.jsanalysis.flow.ReachableFunction;
 import multidiffplus.jsanalysis.flow.StackFrame;
 import multidiffplus.jsanalysis.trace.Trace;
 import multidiffplus.jsanalysis.visitors.FunctionLiftVisitor;
+import multidiffplus.jsanalysis.visitors.GlobalVisitor;
 import multidiffplus.jsanalysis.visitors.VariableLiftVisitor;
 
 public class Helpers {
@@ -241,6 +242,21 @@ public class Helpers {
 		(ScriptNode) stackFrame.getCFG().getEntryNode().getStatement());
 	for (Name localVarName : localVarNames)
 	    localVars.add(localVarName.toSource());
+
+	if (callStack.isScriptLevel()) {
+	    /* Add globals. */
+	    for (String globalVarName : GlobalVisitor
+		    .getGlobals((ScriptNode) stackFrame.getCFG().getEntryNode().getStatement())) {
+		localVars.add(globalVarName);
+	    }
+	} else {
+	    /* Add params. */
+	    FunctionNode function = (FunctionNode) stackFrame.getCFG().getEntryNode()
+		    .getStatement();
+	    for (AstNode name : function.getParams()) {
+		localVars.add(name.toSource());
+	    }
+	}
 
 	/* Get the set of local functions to search for unanalyzed functions. */
 	List<FunctionNode> localFunctions = FunctionLiftVisitor.getFunctionDeclarations(

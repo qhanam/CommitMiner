@@ -119,7 +119,8 @@ public class CFGNode {
      * Increments the number of edges that point to this node by one.
      */
     public void addIncommingEdge(CFGEdge inEdge) {
-	this.inEdges.add(inEdge);
+	if (inEdges.contains(inEdge))
+	    inEdges.add(inEdge);
     }
 
     /**

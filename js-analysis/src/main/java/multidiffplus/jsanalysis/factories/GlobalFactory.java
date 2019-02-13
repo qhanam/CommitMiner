@@ -16,23 +16,29 @@ import multidiffplus.jsanalysis.abstractdomain.Undefined;
  * Initializes the global environment with builtins.
  */
 public class GlobalFactory {
-	
-	private static final Integer OBJECT_DEFINER_ID = -10;
-	private static final Integer UNDEFINED_DEFINER_ID = -11;
 
-	Store store;
+    private static final Integer OBJECT_DEFINER_ID = -10;
+    private static final Integer UNDEFINED_DEFINER_ID = -11;
+    private static final Integer MODULE_DEFINER_ID = -12;
 
-	public GlobalFactory(Store store) {
-		this.store = store;
-	}
+    Store store;
 
-	public Obj Global_Obj() {
-		Map<String, Property> ext = new HashMap<String, Property>();
-		store = Utilities.addProp("Object", OBJECT_DEFINER_ID, Address.inject(StoreFactory.Object_Addr, Change.u(), DefinerIDs.bottom()), ext, store);
-		store = Utilities.addProp("undefined", UNDEFINED_DEFINER_ID, Undefined.inject(Undefined.top(), Change.u(), DefinerIDs.bottom()), ext, store);
+    public GlobalFactory(Store store) {
+	this.store = store;
+    }
 
-		InternalObjectProperties internal = new InternalObjectProperties();
-		return new Obj(ext, internal);
-	}
+    public Obj Global_Obj() {
+	Map<String, Property> ext = new HashMap<String, Property>();
+	store = Utilities.addProp("Object", OBJECT_DEFINER_ID,
+		Address.inject(StoreFactory.Object_Addr, Change.u(), DefinerIDs.bottom()), ext,
+		store);
+	store = Utilities.addProp("undefined", UNDEFINED_DEFINER_ID,
+		Undefined.inject(Undefined.top(), Change.u(), DefinerIDs.bottom()), ext, store);
+	store = Utilities.addProp("module", MODULE_DEFINER_ID,
+		Undefined.inject(Undefined.top(), Change.u(), DefinerIDs.bottom()), ext, store);
+
+	InternalObjectProperties internal = new InternalObjectProperties();
+	return new Obj(ext, internal);
+    }
 
 }

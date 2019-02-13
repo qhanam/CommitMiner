@@ -48,6 +48,7 @@ import multidiffplus.jsanalysis.abstractdomain.Str;
 import multidiffplus.jsanalysis.abstractdomain.Undefined;
 import multidiffplus.jsanalysis.abstractdomain.Variable;
 import multidiffplus.jsanalysis.flow.CallStack;
+import multidiffplus.jsanalysis.flow.ReachableFunction;
 
 public class ExpEval {
 
@@ -703,33 +704,13 @@ public class ExpEval {
 	}
 
 	/* Analyze any callbacks */
-	// for(Address addr : callbacks) {
-	// Obj funct = newState.store.getObj(addr);
-	//
-	// InternalFunctionProperties ifp =
-	// (InternalFunctionProperties)funct.internalProperties;
-	//
-	// /* Create the argument object. */
-	// scratch = new Scratchpad(null, new BValue[0]);
-	//
-	// /* Create the control domain. */
-	// Control control = new Control();
-	//
-	// /* Is this function being called recursively? If so abort. */
-	// if(state.callStack.contains(addr)) continue;
-	//
-	// /* Push this function onto the call stack. */
-	// state.callStack.push(addr);
-	//
-	// /* Analyze the function. */
-	// ifp.closure.run(state.selfAddr, state.store,
-	// scratch, state.trace, control,
-	// state.callStack);
-	//
-	// /* Pop this function off the call stack. */
-	// state.callStack.pop();
-	//
-	// }
+	for (Address addr : callbacks) {
+	    Obj funct = newState.store.getObj(addr);
+	    InternalFunctionProperties ifp = (InternalFunctionProperties) funct.internalProperties;
+	    FunctionClosure closure = (FunctionClosure) ifp.closure;
+	    callStack.addReachableFunction(
+		    new ReachableFunction(closure, state.selfAddr, state.store, state.trace));
+	}
 
 	this.state.store = newState.store;
 	return newState.scratch.applyReturn();
