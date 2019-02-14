@@ -389,6 +389,10 @@ public class Helpers {
 		InternalFunctionProperties ifp = (InternalFunctionProperties) obj.internalProperties;
 		FunctionClosure fc = (FunctionClosure) ifp.closure;
 
+		/* FunctionClosures may not be defined for some built-in functions. */
+		if (fc == null)
+		    continue;
+
 		if (fc.cfg.getEntryNode().getBeforeState() == null) {
 		    callStack.addReachableFunction(
 			    new ReachableFunction(fc, selfAddr, state.store, state.trace));
