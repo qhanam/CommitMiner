@@ -12,32 +12,34 @@ import org.apache.logging.log4j.Logger;
  * created.
  */
 public class CandidateAnalysisTask implements Callable<Void> {
-	
-	protected final Logger logger = LogManager.getLogger(CandidateAnalysisTask.class);
 
-	private CandidateAnalysis candidateAnalysis;
-	private CountDownLatch latch;
-	
-	public CandidateAnalysisTask(CandidateAnalysis candidateAnalysis, CountDownLatch latch) {
-		this.candidateAnalysis = candidateAnalysis;
-		this.latch = latch;
+    protected final Logger logger = LogManager.getLogger(CandidateAnalysisTask.class);
+
+    private CandidateAnalysis candidateAnalysis;
+    private CountDownLatch latch;
+
+    public CandidateAnalysisTask(CandidateAnalysis candidateAnalysis, CountDownLatch latch) {
+	this.candidateAnalysis = candidateAnalysis;
+	this.latch = latch;
+    }
+
+    @Override
+    public Void call() throws Exception {
+
+	try {
+	    candidateAnalysis.analyze();
+	} catch (Exception e) {
+	    Candidate candidate = candidateAnalysis.getCandidate();
+	    System.err
+		    .println("[ERR] Exception on GitProjectAnalysisTask " + candidate.getNewFile());
+	    e.printStackTrace();
+	} finally {
+	    logger.info(" [TASK FINALIZED] {} tasks left", latch.getCount());
+	    latch.countDown();
 	}
-	
-	@Override
-	public Void call() throws Exception {
 
-		try {
-			candidateAnalysis.analyze();
-		} catch (Exception e) {
-			System.err.println("[ERR] Exception on GitProjectAnalysisTask");
-			e.printStackTrace();
-		} finally {
-			logger.info(" [TASK FINALIZED] {} tasks left", latch.getCount());
-			latch.countDown();
-		}
-		
-		return null;
+	return null;
 
-	}
+    }
 
 }

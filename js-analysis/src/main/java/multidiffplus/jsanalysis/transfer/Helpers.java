@@ -136,13 +136,16 @@ public class Helpers {
 		    ? ifp.closure.run(selfAddr, store, sp, trace, control)
 		    : ifp.closure.run(selfAddr, store, sp, trace, control, callStack);
 
+	    if (endState == null)
+		// The function could not be resolved by the store.
+		continue;
 	    if (state == null)
+		// This is the first function to be resolved.
 		state = endState;
 	    else {
-		/*
-		 * Join the store and scratchpad only. Environment, trace and control no longer
-		 * apply.
-		 */
+		// This is not the first function to be resolved. For example,
+		// callback parameters frequently point to more than one
+		// function definition. In this case, we must join states.
 		state.store = state.store.join(endState.store);
 		state.scratch = state.scratch.join(endState.scratch);
 	    }

@@ -101,8 +101,6 @@ public class MultiDiffPlus {
     }
 
     /**
-     * ;
-     * 
      * @return A dummy source code file change for testing.
      * @throws IOException
      */
