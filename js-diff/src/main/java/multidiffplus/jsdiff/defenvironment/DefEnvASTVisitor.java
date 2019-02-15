@@ -29,126 +29,127 @@ import multidiffplus.jsanalysis.abstractdomain.Variable;
 
 public class DefEnvASTVisitor implements NodeVisitor {
 
-	/**
-	 * The set of changed variable annotations found in the statement.
-	 **/
-	public Set<Annotation> annotations;
+    /**
+     * The set of changed variable annotations found in the statement.
+     **/
+    public Set<Annotation> annotations;
 
-	/** The abstract environment. **/
-	private Environment env;
+    /** The abstract environment. **/
+    private Environment env;
 
-	/**
-	 * Detects uses of the identifier.
-	 * @return the set of nodes where the identifier is used.
-	 */
-	public static Set<Annotation> getAnnotations(Environment env, AstNode statement) {
-		DefEnvASTVisitor visitor = new DefEnvASTVisitor(env);
-		
-		if(statement instanceof AstRoot) {
-			/* This is the root. Nothing should be flagged. */
-			return visitor.annotations;
-		}
-		else if(statement instanceof FunctionNode) {
-			/* This is a function declaration, so only check the parameters
-			 * and the function name. */
+    /**
+     * Detects uses of the identifier.
+     * 
+     * @return the set of nodes where the identifier is used.
+     */
+    public static Set<Annotation> getAnnotations(Environment env, AstNode statement) {
+	DefEnvASTVisitor visitor = new DefEnvASTVisitor(env);
 
-			FunctionNode function = (FunctionNode) statement;
-			for(AstNode param : function.getParams()) {
-				param.visit(visitor);
-			}
+	if (statement instanceof AstRoot) {
+	    /* This is the root. Nothing should be flagged. */
+	    return visitor.annotations;
+	} else if (statement instanceof FunctionNode) {
+	    /*
+	     * This is a function declaration, so only check the parameters and the function
+	     * name.
+	     */
 
-			Name name = function.getFunctionName();
-			if(name != null) name.visit(visitor);
+	    FunctionNode function = (FunctionNode) statement;
+	    for (AstNode param : function.getParams()) {
+		param.visit(visitor);
+	    }
 
-		}
-		else if(statement != null){
-			statement.visit(visitor);
-		}
+	    Name name = function.getFunctionName();
+	    if (name != null)
+		name.visit(visitor);
 
-		return visitor.annotations;
+	} else if (statement != null) {
+	    statement.visit(visitor);
 	}
 
-	public DefEnvASTVisitor(Environment env) {
-		this.annotations = new HashSet<Annotation>();
-		this.env = env;
-	}
+	return visitor.annotations;
+    }
 
-	@Override
-	public boolean visit(AstNode node) {
+    public DefEnvASTVisitor(Environment env) {
+	this.annotations = new HashSet<Annotation>();
+	this.env = env;
+    }
 
-		if(node instanceof Name) {
+    @Override
+    public boolean visit(AstNode node) {
 
-			Variable var = env.environment.get(node.toSource());
-			if(var != null) {
+	if (node instanceof Name) {
 
-				List<DependencyIdentifier> ids = new LinkedList<DependencyIdentifier>();
-				ids.add(var);
-				
-				/* Distinguish between definitions and uses of variables. */
-				if(node.getParent() instanceof VariableDeclaration 
-						|| node.getParent() instanceof VariableInitializer
-						|| node.getParent() instanceof FunctionNode) {
-					this.annotations.add(new Annotation("DENV-DEF", ids, node.getLineno(), node.getFixedPosition(), node.getLength()));
-				}
-				else {
-					this.annotations.add(new Annotation("DENV-USE", ids, node.getLineno(), node.getFixedPosition(), node.getLength()));
-				}
+	    Variable var = env.environment.get(node.toSource());
+	    if (var != null) {
 
-			}
+		List<DependencyIdentifier> ids = new LinkedList<DependencyIdentifier>();
+		ids.add(var);
 
-		}
-		/* Inspect the expression part of an object property. */
-		else if(node instanceof ObjectProperty) {
-			ObjectProperty op = (ObjectProperty) node;
-			op.getRight().visit(this);
-			return false;
-		}
-		/* Inspect the variable part of a property access. */
-		if(node instanceof PropertyGet) {
-			PropertyGet pg = (PropertyGet) node;
-			pg.getLeft().visit(this);
-			return false;
-		}
-		/* Ignore the body of loops, ifs and functions. */
-		else if(node instanceof IfStatement) {
-			IfStatement ifStatement = (IfStatement) node;
-			ifStatement.getCondition().visit(this);
-			return false;
-		}
-		else if(node instanceof WhileLoop) {
-			WhileLoop whileLoop = (WhileLoop) node;
-			whileLoop.getCondition().visit(this);
-			return false;
-		}
-		else if(node instanceof ForLoop) {
-			ForLoop loop = (ForLoop) node;
-			loop.getCondition().visit(this);
-			loop.getInitializer().visit(this);
-			loop.getIncrement().visit(this);
-			return false;
-		}
-		else if(node instanceof ForInLoop) {
-			ForInLoop loop = (ForInLoop) node;
-			loop.getIteratedObject().visit(this);
-			loop.getIterator().visit(this);
-			return false;
-		}
-		else if(node instanceof DoLoop) {
-			DoLoop loop = (DoLoop) node;
-			loop.getCondition().visit(this);
-			return false;
-		}
-		else if(node instanceof WithStatement) {
-			WithStatement with = (WithStatement) node;
-			with.getExpression().visit(this);
-			return false;
-		}
-		else if(node instanceof TryStatement || node instanceof FunctionNode) {
-			return false;
+		/* Distinguish between definitions and uses of variables. */
+		if (node.getParent() instanceof VariableDeclaration
+			|| node.getParent() instanceof VariableInitializer
+			|| node.getParent() instanceof FunctionNode) {
+		    this.annotations.add(new Annotation("DENV-DEF", ids, node.getLineno(),
+			    node.getFixedPosition(), node.getLength()));
+		    for (Integer address : var.getAddresses())
+			node.addCriterion("VARIABLE", address);
+		} else {
+		    this.annotations.add(new Annotation("DENV-USE", ids, node.getLineno(),
+			    node.getFixedPosition(), node.getLength()));
+		    for (Integer address : var.getAddresses())
+			node.addCriterion("VARIABLE", address);
 		}
 
-		return true;
+	    }
 
 	}
+	/* Inspect the expression part of an object property. */
+	else if (node instanceof ObjectProperty) {
+	    ObjectProperty op = (ObjectProperty) node;
+	    op.getRight().visit(this);
+	    return false;
+	}
+	/* Inspect the variable part of a property access. */
+	if (node instanceof PropertyGet) {
+	    PropertyGet pg = (PropertyGet) node;
+	    pg.getLeft().visit(this);
+	    return false;
+	}
+	/* Ignore the body of loops, ifs and functions. */
+	else if (node instanceof IfStatement) {
+	    IfStatement ifStatement = (IfStatement) node;
+	    ifStatement.getCondition().visit(this);
+	    return false;
+	} else if (node instanceof WhileLoop) {
+	    WhileLoop whileLoop = (WhileLoop) node;
+	    whileLoop.getCondition().visit(this);
+	    return false;
+	} else if (node instanceof ForLoop) {
+	    ForLoop loop = (ForLoop) node;
+	    loop.getCondition().visit(this);
+	    loop.getInitializer().visit(this);
+	    loop.getIncrement().visit(this);
+	    return false;
+	} else if (node instanceof ForInLoop) {
+	    ForInLoop loop = (ForInLoop) node;
+	    loop.getIteratedObject().visit(this);
+	    loop.getIterator().visit(this);
+	    return false;
+	} else if (node instanceof DoLoop) {
+	    DoLoop loop = (DoLoop) node;
+	    loop.getCondition().visit(this);
+	    return false;
+	} else if (node instanceof WithStatement) {
+	    WithStatement with = (WithStatement) node;
+	    with.getExpression().visit(this);
+	    return false;
+	} else if (node instanceof TryStatement || node instanceof FunctionNode) {
+	    return false;
+	}
+
+	return true;
+
+    }
 
 }

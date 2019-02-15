@@ -17,6 +17,7 @@ import multidiffplus.commit.Commit.Type;
 import multidiffplus.commit.SourceCodeFileChange;
 import multidiffplus.factories.ICommitAnalysisFactory;
 import multidiffplus.facts.AnnotationFactBase;
+import multidiffplus.facts.JsonFactBase;
 import multidiffplus.jsdiff.view.HTMLMultiDiffViewer;
 import multidiffplus.jsdiff.view.HTMLUnixDiffViewer;
 
@@ -86,6 +87,10 @@ public class MultiDiffPlus {
 	Files.write(Paths.get(options.getOutputFile()), annotatedCombined.getBytes(),
 		StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
+	/* Write the json file. */
+	JsonFactBase jsonFactBase = JsonFactBase.getInstance(sourceCodeFileChange);
+	Files.write(Paths.get(options.getJsonFile()), jsonFactBase.getJson().toString().getBytes(),
+		StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
     }
 
     /**
