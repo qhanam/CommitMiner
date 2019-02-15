@@ -703,13 +703,16 @@ public class ExpEval {
 
 	}
 
-	/* Analyze any callbacks */
-	for (Address addr : callbacks) {
-	    Obj funct = newState.store.getObj(addr);
-	    InternalFunctionProperties ifp = (InternalFunctionProperties) funct.internalProperties;
-	    FunctionClosure closure = (FunctionClosure) ifp.closure;
-	    callStack.addReachableFunction(
-		    new ReachableFunction(closure, state.selfAddr, state.store, state.trace));
+	// Analyze any callbacks if we are running an analysis. We are running
+	// an analysis if there is a callstack.
+	if (callStack != null) {
+	    for (Address addr : callbacks) {
+		Obj funct = newState.store.getObj(addr);
+		InternalFunctionProperties ifp = (InternalFunctionProperties) funct.internalProperties;
+		FunctionClosure closure = (FunctionClosure) ifp.closure;
+		callStack.addReachableFunction(
+			new ReachableFunction(closure, state.selfAddr, state.store, state.trace));
+	    }
 	}
 
 	this.state.store = newState.store;
