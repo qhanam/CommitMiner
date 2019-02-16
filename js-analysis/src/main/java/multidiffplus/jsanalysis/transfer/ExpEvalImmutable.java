@@ -1,16 +1,11 @@
 package multidiffplus.jsanalysis.transfer;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang3.math.NumberUtils;
 import org.mozilla.javascript.Token;
 import org.mozilla.javascript.ast.ArrayLiteral;
-import org.mozilla.javascript.ast.Assignment;
 import org.mozilla.javascript.ast.AstNode;
 import org.mozilla.javascript.ast.ElementGet;
 import org.mozilla.javascript.ast.FunctionCall;
@@ -20,7 +15,6 @@ import org.mozilla.javascript.ast.KeywordLiteral;
 import org.mozilla.javascript.ast.Name;
 import org.mozilla.javascript.ast.NumberLiteral;
 import org.mozilla.javascript.ast.ObjectLiteral;
-import org.mozilla.javascript.ast.ObjectProperty;
 import org.mozilla.javascript.ast.PropertyGet;
 import org.mozilla.javascript.ast.StringLiteral;
 import org.mozilla.javascript.ast.UnaryExpression;
@@ -31,43 +25,26 @@ import multidiffplus.jsanalysis.abstractdomain.Addresses;
 import multidiffplus.jsanalysis.abstractdomain.BValue;
 import multidiffplus.jsanalysis.abstractdomain.Bool;
 import multidiffplus.jsanalysis.abstractdomain.Change;
-import multidiffplus.jsanalysis.abstractdomain.Closure;
 import multidiffplus.jsanalysis.abstractdomain.Control;
 import multidiffplus.jsanalysis.abstractdomain.DefinerIDs;
-import multidiffplus.jsanalysis.abstractdomain.FunctionClosure;
-import multidiffplus.jsanalysis.abstractdomain.InternalFunctionProperties;
-import multidiffplus.jsanalysis.abstractdomain.InternalObjectProperties;
 import multidiffplus.jsanalysis.abstractdomain.JSClass;
 import multidiffplus.jsanalysis.abstractdomain.Null;
 import multidiffplus.jsanalysis.abstractdomain.Num;
 import multidiffplus.jsanalysis.abstractdomain.Obj;
-import multidiffplus.jsanalysis.abstractdomain.Property;
 import multidiffplus.jsanalysis.abstractdomain.Scratchpad;
 import multidiffplus.jsanalysis.abstractdomain.State;
 import multidiffplus.jsanalysis.abstractdomain.Str;
 import multidiffplus.jsanalysis.abstractdomain.Undefined;
 import multidiffplus.jsanalysis.abstractdomain.Variable;
-import multidiffplus.jsanalysis.flow.CallStack;
-import multidiffplus.jsanalysis.flow.ReachableFunction;
 
-public class ExpEval {
+public class ExpEvalImmutable {
 
-    private CallStack callStack;
     private State state;
-
-    /**
-     * Use inside transfer functions.
-     */
-    public ExpEval(CallStack callStack, State state) {
-	this.callStack = callStack;
-	this.state = state;
-    }
 
     /**
      * Only use when functions are not called (ie. by CFG visitors).
      */
-    public ExpEval(State state) {
-	this.callStack = null;
+    public ExpEvalImmutable(State state) {
 	this.state = state;
     }
 
@@ -123,88 +100,45 @@ public class ExpEval {
     }
 
     /**
-     * Creates a new function from a function definition.
+     * Resolves the address of the function literal.
      * 
      * @param f
      *            The function definition.
      * @return A BValue that points to the new function object.
      */
     public BValue evalFunctionNode(FunctionNode f) {
-	if (callStack == null) {
-	    // This is a visitor and not an analysis.
-	    return BValue.bottom(Change.convU(f));
-	}
-	Closure closure = new FunctionClosure(callStack.getCFGs().get(f), state.env);
 	Address addr = state.trace.makeAddr(f.getID(), "");
 	addr = state.trace.modAddr(addr, JSClass.CFunction);
-	state.store = Helpers.createFunctionObj(closure, state.store, state.trace, addr, f);
 	return Address.inject(addr, Change.convU(f), DefinerIDs.inject(f.getID()));
     }
 
     /**
-     * Creates a new object from an object literal.
+     * Resolves the address of the object literal.
      * 
      * @param ol
      *            The object literal.
      * @return A BValue that points to the new object literal.
      */
     public BValue evalObjectLiteral(ObjectLiteral ol) {
-	Map<String, Property> ext = new HashMap<String, Property>();
-	InternalObjectProperties in = new InternalObjectProperties();
-
-	for (ObjectProperty property : ol.getElements()) {
-	    AstNode prop = property.getLeft();
-	    String propName = "~unknown~";
-	    if (prop instanceof Name)
-		propName = prop.toSource();
-	    else if (prop instanceof StringLiteral)
-		propName = ((StringLiteral) prop).getValue();
-	    else if (prop instanceof NumberLiteral)
-		propName = ((NumberLiteral) prop).getValue();
-	    BValue propVal = this.eval(property.getRight());
-	    Address propAddr = state.trace.makeAddr(property.getID(), propName);
-	    state.store = state.store.alloc(propAddr, propVal);
-	    if (propName != null)
-		ext.put(propName, new Property(property.getID(), propName, propAddr));
-	}
-
-	Obj obj = new Obj(ext, in);
 	Address objAddr = state.trace.makeAddr(ol.getID(), "");
-	state.store = state.store.alloc(objAddr, obj);
-
 	return Address.inject(objAddr, Change.convU(ol), DefinerIDs.inject(ol.getID()));
     }
 
     /**
-     * Creates a new array from an array literal.
+     * Resolves the address of the array literal.
      * 
      * @param al
      *            The array literal.
      * @return A BValue that points to the new array literal.
      */
     public BValue evalArrayLiteral(ArrayLiteral al) {
-
-	Map<String, Property> ext = new HashMap<String, Property>();
-	InternalObjectProperties in = new InternalObjectProperties();
-
-	Integer i = 0;
-	for (AstNode element : al.getElements()) {
-	    BValue propVal = this.eval(element);
-	    Address propAddr = state.trace.makeAddr(element.getID(), "");
-	    state.store = state.store.alloc(propAddr, propVal);
-	    ext.put(i.toString(), new Property(element.getID(), i.toString(), propAddr));
-	    i++;
-	}
-
-	Obj obj = new Obj(ext, in);
 	Address objAddr = state.trace.makeAddr(al.getID(), "");
-	state.store = state.store.alloc(objAddr, obj);
-
 	return Address.inject(objAddr, Change.convU(al), DefinerIDs.inject(al.getID()));
-
     }
 
     /**
+     * Resolves the value of the unary expression.
+     * 
      * @param ue
      *            The unary expression.
      * @return the abstract interpretation of the expression.
@@ -213,10 +147,8 @@ public class ExpEval {
 
 	BValue operand = this.eval(ue.getOperand());
 
-	/*
-	 * First create a bottom BValue with the proper change type. We will put in
-	 * values later.
-	 */
+	// First create a bottom BValue with the proper change type. We will put
+	// in values later.
 	BValue val;
 	if (operand.change.le == Change.LatticeElement.CHANGED
 		|| operand.change.le == Change.LatticeElement.TOP) {
@@ -229,10 +161,7 @@ public class ExpEval {
 	    val = BValue.bottom(Change.u());
 	}
 
-	/*
-	 * For now, just do a basic conservative estimate of unary operator evaluations.
-	 */
-
+	// Over-approximate the evaluation of the unary operator.
 	switch (ue.getType()) {
 	case Token.NOT:
 	    val.booleanAD.le = Bool.LatticeElement.TOP;
@@ -252,6 +181,8 @@ public class ExpEval {
     }
 
     /**
+     * Evaluate the value of the infix expression.
+     * 
      * @param ie
      *            The infix expression.
      * @return the abstract interpretation of the name
@@ -261,10 +192,6 @@ public class ExpEval {
 	/* If this is an assignment, we need to interpret it through state. */
 	switch (ie.getType()) {
 	case Token.ASSIGN:
-	    /*
-	     * We need to interpret this assignment and propagate the value left.
-	     */
-	    this.evalAssignment((Assignment) ie);
 	    return this.eval(ie.getLeft());
 	case Token.GETPROPNOWARN:
 	case Token.GETPROP: {
@@ -282,16 +209,12 @@ public class ExpEval {
 	case Token.MOD:
 	    return evalMathOp(ie);
 	case Token.ASSIGN_ADD: {
-	    BValue val = evalPlus(ie);
-	    this.evalAssignment(ie.getLeft(), val);
 	    return this.eval(ie.getLeft());
 	}
 	case Token.ASSIGN_SUB:
 	case Token.ASSIGN_MUL:
 	case Token.ASSIGN_DIV:
 	case Token.ASSIGN_MOD: {
-	    BValue val = evalMathOp(ie);
-	    this.evalAssignment(ie.getLeft(), val);
 	    return this.eval(ie.getLeft());
 	}
 	default:
@@ -491,114 +414,6 @@ public class ExpEval {
     }
 
     /**
-     * Updates the store based on abstract interpretation of assignments.
-     * 
-     * @param a
-     *            The assignment.
-     */
-    public void evalAssignment(Assignment a) {
-	evalAssignment(a.getLeft(), a.getRight());
-    }
-
-    /**
-     * Helper function since variable initializers and assignments do the same
-     * thing.
-     */
-    public void evalAssignment(AstNode lhs, AstNode rhs) {
-
-	/* Resolve the left hand side to a set of addresses. */
-	Set<Address> addrs = this.resolveOrCreate(lhs);
-
-	/* Resolve the right hand side to a value. */
-	BValue val = this.eval(rhs);
-
-	/* CPSC513: If the value is a changed integer, verify with symex. */
-	if (val.numberAD.le != Num.LatticeElement.BOTTOM
-		&& (val.change.le == Change.LatticeElement.CHANGED
-			|| val.change.le == Change.LatticeElement.TOP)) {
-	    // TODO: Create a backwards slice starting from here, for both versions.
-	    // verify(String Vo, String Vn, Array INITo, Array INITn, Array CONSTRAINT,
-	    // ASSERTION)
-
-	    // PROBLEM: We don't execute the programs together... maybe we should start a
-	    // new project
-	    // for this? Probably. This is getting a little out of control. Maybe we do a
-	    // simplified
-	    // analysis that only handles integers and arrays or something.
-	}
-
-	/*
-	 * Conservatively add a dummy DefinerID to the BValue if there are currently no
-	 * DefinerIDs
-	 */
-	if (val.definerIDs.isEmpty()) {
-	    val.definerIDs = val.definerIDs.strongUpdate(rhs.getID());
-	    rhs.setDummy();
-	}
-
-	/* Update the values in the store. */
-	// TODO: Is this correct? We should probably only do a strong update if
-	// there is only one address. Otherwise we don't know which one
-	// to update.
-	for (Address addr : addrs) {
-	    state.store = state.store.strongUpdate(addr, val);
-	}
-
-    }
-
-    /**
-     * Helper function since variable initializers and assignments do the same
-     * thing.
-     */
-    public void evalAssignment(AstNode lhs, BValue val) {
-
-	/* Resolve the left hand side to a set of addresses. */
-	Set<Address> addrs = this.resolveOrCreate(lhs);
-
-	/* Update the values in the store. */
-	// TODO: Is this correct? We should probably only do a strong update if
-	// there is only one address. Otherwise we don't know which one
-	// to update.
-	for (Address addr : addrs) {
-	    state.store = state.store.strongUpdate(addr, val);
-	}
-
-    }
-
-    /**
-     * @return The list of functions pointed to by the value.
-     */
-    private List<Address> extractFunctions(BValue val, List<Address> functionAddrs,
-	    Set<Address> visited) {
-
-	for (Address objAddr : val.addressAD.addresses) {
-	    Obj obj = state.store.getObj(objAddr);
-
-	    if (obj.internalProperties.klass == JSClass.CFunction) {
-		InternalFunctionProperties ifp = (InternalFunctionProperties) obj.internalProperties;
-		if (ifp.closure instanceof FunctionClosure) {
-		    functionAddrs.add(objAddr);
-		}
-	    }
-
-	    /* Recursively look for object properties that are functions. */
-	    for (Property property : obj.externalProperties.values()) {
-
-		/* Avoid circular references. */
-		if (visited.contains(property.address))
-		    continue;
-		visited.add(property.address);
-
-		extractFunctions(state.store.apply(property.address), functionAddrs, visited);
-	    }
-
-	}
-
-	return functionAddrs;
-
-    }
-
-    /**
      * Evaluate a function call expression to a BValue.
      * 
      * @param fc
@@ -609,9 +424,6 @@ public class ExpEval {
 
 	/* The state after the function call. */
 	State newState = null;
-
-	/* Keep track of callback functions. */
-	List<Address> callbacks = new LinkedList<Address>();
 
 	/* Create the argument values. */
 	BValue[] args = new BValue[fc.getArguments().size()];
@@ -633,14 +445,6 @@ public class ExpEval {
 	    }
 
 	    args[i] = argVal;
-
-	    /* Arguments of bind, call or apply are not callbacks. */
-	    AstNode target = fc.getTarget();
-	    if (!(target instanceof PropertyGet
-		    && ((PropertyGet) target).getRight().toSource().equals("bind")))
-		callbacks.addAll(extractFunctions(argVal, new LinkedList<Address>(),
-			new HashSet<Address>()));
-
 	    i++;
 
 	}
@@ -658,8 +462,6 @@ public class ExpEval {
 	Address objAddr = state.trace.toAddr("this");
 	if (objVal == null)
 	    objAddr = state.selfAddr;
-	else
-	    state.store = state.store.alloc(objAddr, objVal);
 
 	if (funVal != null) {
 
@@ -669,58 +471,20 @@ public class ExpEval {
 
 	    /* Call the function and get a join of the new states. */
 	    newState = Helpers.applyClosure(funVal, objAddr, state.store, scratch, state.trace,
-		    control, callStack);
+		    control, null);
 	}
 
-	/* Get the call change type. */
-	boolean callChange = Change.convU(fc).le == Change.LatticeElement.CHANGED
-		|| Change.convU(fc).le == Change.LatticeElement.TOP ? true : false;
+	BValue retVal = BValue.top(Change.convU(fc));
 
-	if (newState == null) {
-	    /*
-	     * Because our analysis is not complete, the identifier may not point to any
-	     * function object. In this case, we assume the (local) state is unchanged, but
-	     * add BValue.TOP as the return value.
-	     */
-	    BValue value = callChange ? BValue.top(Change.top()) : BValue.top(Change.u());
-	    state.scratch = state.scratch.strongUpdate(value, null);
-	    newState = new State(state.store, state.env, state.scratch, state.trace, state.control,
-		    state.selfAddr);
-
-	    /* Create the return value. */
-	    BValue retVal = BValue.top(Change.convU(fc));
-
-	    newState.scratch = newState.scratch.strongUpdate(retVal, null);
-	} else {
-
-	    BValue retVal = newState.scratch.applyReturn();
+	if (newState != null) {
+	    retVal = newState.scratch.applyReturn();
 	    if (retVal == null) {
 		/* Functions with no return statement return undefined. */
 		retVal = Undefined.inject(Undefined.top(), Change.u(), DefinerIDs.bottom());
-		newState.scratch = newState.scratch.strongUpdate(retVal, null);
-	    }
-
-	    /* This could be a new value if the call is new. */
-	    if (callChange) {
-		newState.scratch.applyReturn().change = Change.top();
-	    }
-
-	}
-
-	// Analyze any callbacks if we are running an analysis. We are running
-	// an analysis if there is a callstack.
-	if (callStack != null) {
-	    for (Address addr : callbacks) {
-		Obj funct = newState.store.getObj(addr);
-		InternalFunctionProperties ifp = (InternalFunctionProperties) funct.internalProperties;
-		FunctionClosure closure = (FunctionClosure) ifp.closure;
-		callStack.addReachableFunction(
-			new ReachableFunction(closure, state.selfAddr, state.store, state.trace));
 	    }
 	}
 
-	this.state.store = newState.store;
-	return newState.scratch.applyReturn();
+	return retVal;
 
     }
 
@@ -734,7 +498,7 @@ public class ExpEval {
 	BValue value = null;
 
 	/* Resolve the identifier. */
-	Set<Address> addrs = this.resolveOrCreate(node);
+	Set<Address> addrs = this.resolve(node);
 	if (addrs == null)
 	    return null;
 	for (Address addr : addrs) {
@@ -756,13 +520,6 @@ public class ExpEval {
     }
 
     /**
-     * Apply a strong update directly to the store using an address.
-     */
-    public void updateAddress(Address address, BValue value) {
-	state.store.strongUpdate(address, value);
-    }
-
-    /**
      * Resolves a function's parent object.
      * 
      * @return The parent object (this) and the function object.
@@ -774,7 +531,7 @@ public class ExpEval {
 	} else if (node instanceof InfixExpression) {
 	    /* We have a qualified name. Recursively find the addresses. */
 	    InfixExpression ie = (InfixExpression) node;
-	    Set<Address> addrs = this.resolveOrCreate(ie.getLeft());
+	    Set<Address> addrs = this.resolve(ie.getLeft());
 	    if (addrs == null)
 		return null;
 
@@ -811,27 +568,12 @@ public class ExpEval {
      *            A Name node
      * @return The set of addresses this identifier can resolve to.
      */
-    private Set<Address> resolveOrCreateBaseCase(Name node) {
-
+    private Set<Address> resolveBaseCase(Name node) {
 	Set<Address> result = new HashSet<Address>();
-
 	Addresses addrs = state.env.apply(node.toSource());
-	if (addrs == null) {
-	    /*
-	     * Assume the variable exists in the environment (ie. not a TypeError) and add
-	     * it to the environment/store as BValue.TOP since we know nothing about it.
-	     */
-	    Address addr = state.trace.makeAddr(node.getID(), "");
-	    state.env = state.env.strongUpdate(node.toSource(), new Variable(node.getID(),
-		    node.toSource(), Change.bottom(), new Addresses(addr)));
-	    state.store = state.store.alloc(addr,
-		    Addresses.dummy(Change.bottom(), DefinerIDs.inject(node.getID())));
-	    addrs = new Addresses(addr);
-	}
-
-	result.addAll(addrs.addresses);
+	if (addrs != null)
+	    result.addAll(addrs.addresses);
 	return result;
-
     }
 
     /**
@@ -841,7 +583,7 @@ public class ExpEval {
      *            A qualified name node.
      * @return The set of addresses this identifier can resolve to.
      */
-    private Set<Address> resolveOrCreateProperty(PropertyGet ie) {
+    private Set<Address> resolveProperty(PropertyGet ie) {
 
 	Set<Address> result = new HashSet<Address>();
 
@@ -853,7 +595,7 @@ public class ExpEval {
 	 * We have a qualified name. Recursively find all the addresses that lhs can
 	 * resolve to.
 	 */
-	Set<Address> lhs = resolveOrCreate(ie.getLeft());
+	Set<Address> lhs = resolve(ie.getLeft());
 
 	/* Just in case we couldn't resolve or create the sub-expression. */
 	if (lhs == null)
@@ -867,18 +609,6 @@ public class ExpEval {
 
 	    /* Get the value at the address. */
 	    BValue val = state.store.apply(valAddr);
-
-	    /*
-	     * We may need to create a dummy object if 'val' doesn't point to any objects.
-	     */
-	    if (val.addressAD.addresses.size() == 0) {
-		Map<String, Property> ext = new HashMap<String, Property>();
-		Obj dummy = new Obj(ext, new InternalObjectProperties());
-		Address addr = state.trace.makeAddr(ie.getLeft().getID(), "");
-		state.store = state.store.alloc(addr, dummy);
-		val = val.join(Address.inject(addr, Change.bottom(), DefinerIDs.bottom()));
-		state.store = state.store.strongUpdate(valAddr, val);
-	    }
 
 	    for (Address objAddr : val.addressAD.addresses) {
 
@@ -894,36 +624,6 @@ public class ExpEval {
 		    BValue propVal = state.store.apply(propAddr);
 		    if (propVal == null)
 			throw new Error("Property value does not exist in store.");
-		} else {
-		    /*
-		     * This property was not found, which means it is either undefined or was
-		     * initialized somewhere outside the analysis. Create it and give it the value
-		     * BValue.TOP.
-		     */
-
-		    /*
-		     * Create a new address (BValue) for the property and put it in the store.
-		     */
-		    propAddr = state.trace.makeAddr(ie.getRight().getID(),
-			    ie.getRight().toSource());
-		    BValue propVal = Addresses.dummy(Change.bottom(),
-			    DefinerIDs.inject(ie.getRight().getID()));
-		    state.store = state.store.alloc(propAddr, propVal);
-
-		    /* Add the property to the external properties of the object. */
-		    Map<String, Property> ext = new HashMap<String, Property>(
-			    obj.externalProperties);
-		    ext.put(ie.getRight().toSource(), new Property(ie.getRight().getID(),
-			    ie.getRight().toSource(), propAddr));
-
-		    /*
-		     * We need to create a new object so that the previous states are not affected
-		     * by this update.
-		     */
-		    Obj newObj = new Obj(ext, obj.internalProperties);
-		    state.store = state.store.strongUpdate(objAddr, newObj);
-
-		    result.add(propAddr);
 		}
 	    }
 	}
@@ -939,7 +639,7 @@ public class ExpEval {
      *            An element access node.
      * @return The set of addresses this element can resolve to.
      */
-    private Set<Address> resolveOrCreateElementCase(ElementGet eg) {
+    private Set<Address> resolveElementCase(ElementGet eg) {
 
 	Set<Address> result = new HashSet<Address>();
 
@@ -947,7 +647,7 @@ public class ExpEval {
 	 * We have a qualified name. Recursively find all the addresses that lhs can
 	 * resolve to.
 	 */
-	Set<Address> lhs = resolveOrCreate(eg.getTarget());
+	Set<Address> lhs = resolve(eg.getTarget());
 
 	/* Just in case we couldn't resolve or create the sub-expression. */
 	if (lhs == null)
@@ -961,18 +661,6 @@ public class ExpEval {
 
 	    /* Get the value at the address. */
 	    BValue val = state.store.apply(valAddr);
-
-	    /*
-	     * We may need to create a dummy object if 'val' doesn't point to any objects.
-	     */
-	    if (val.addressAD.addresses.size() == 0) {
-		Map<String, Property> ext = new HashMap<String, Property>();
-		Obj dummy = new Obj(ext, new InternalObjectProperties());
-		Address addr = state.trace.makeAddr(eg.getID(), "");
-		state.store = state.store.alloc(addr, dummy);
-		val = val.join(Address.inject(addr, Change.bottom(), DefinerIDs.bottom()));
-		state.store = state.store.strongUpdate(valAddr, val);
-	    }
 
 	    for (Address objAddr : val.addressAD.addresses) {
 
@@ -1001,35 +689,6 @@ public class ExpEval {
 		    BValue propVal = state.store.apply(propAddr);
 		    if (propVal == null)
 			throw new Error("Property value does not exist in store.");
-		} else {
-		    /*
-		     * This property was not found, which means it is either undefined or was
-		     * initialized somewhere outside the analysis. Create it and give it the value
-		     * BValue.TOP.
-		     */
-
-		    /*
-		     * Create a new address (BValue) for the property and put it in the store.
-		     */
-		    propAddr = state.trace.makeAddr(eg.getID(), elementString);
-		    BValue propVal = Addresses.dummy(Change.bottom(),
-			    DefinerIDs.inject(eg.getID()));
-		    state.store = state.store.alloc(propAddr, propVal);
-
-		    /* Add the property to the external properties of the object. */
-		    Map<String, Property> ext = new HashMap<String, Property>(
-			    obj.externalProperties);
-		    ext.put(elementString,
-			    new Property(eg.getTarget().getID(), elementString, propAddr));
-
-		    /*
-		     * We need to create a new object so that the previous states are not affected
-		     * by this update.
-		     */
-		    Obj newObj = new Obj(ext, obj.internalProperties);
-		    state.store = state.store.strongUpdate(objAddr, newObj);
-
-		    result.add(propAddr);
 		}
 	    }
 
@@ -1045,19 +704,11 @@ public class ExpEval {
      * 
      * @return the address of a new (stopgap) value.
      */
-    public Set<Address> resolveOrCreateExpression(AstNode node) {
-
-	/* Resolve the expression to a value. */
-	BValue val = this.eval(node);
-
-	/* Place the value on the store */
+    public Set<Address> resolveExpression(AstNode node) {
 	Set<Address> addrs = new HashSet<Address>();
 	Address addr = state.trace.makeAddr(node.getID(), "");
-	state.store = state.store.alloc(addr, val);
 	addrs.add(addr);
-
 	return addrs;
-
     }
 
     /**
@@ -1067,26 +718,26 @@ public class ExpEval {
      *            The identifier to resolve.
      * @return The set of addresses this identifier can resolve to.
      */
-    public Set<Address> resolveOrCreate(AstNode node) {
+    public Set<Address> resolve(AstNode node) {
 
 	/* Base Case: A simple name in the environment. */
 	if (node instanceof Name) {
-	    return resolveOrCreateBaseCase((Name) node);
+	    return resolveBaseCase((Name) node);
 	}
 
 	/* Recursive Case: A property access. */
 	else if (node instanceof PropertyGet) {
-	    return resolveOrCreateProperty((PropertyGet) node);
+	    return resolveProperty((PropertyGet) node);
 	}
 
 	/* Recursive Case: An element access. */
 	else if (node instanceof ElementGet) {
-	    return resolveOrCreateElementCase((ElementGet) node);
+	    return resolveElementCase((ElementGet) node);
 	}
 
 	/* This must be an expression, which we need to resolve. */
 	else {
-	    return resolveOrCreateExpression(node);
+	    return resolveExpression(node);
 	}
 
     }

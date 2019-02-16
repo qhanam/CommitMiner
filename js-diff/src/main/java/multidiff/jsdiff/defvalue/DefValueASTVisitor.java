@@ -35,7 +35,7 @@ import multidiffplus.jsanalysis.abstractdomain.BValue;
 import multidiffplus.jsanalysis.abstractdomain.Obj;
 import multidiffplus.jsanalysis.abstractdomain.State;
 import multidiffplus.jsanalysis.abstractdomain.Variable;
-import multidiffplus.jsanalysis.transfer.ExpEval;
+import multidiffplus.jsanalysis.transfer.ExpEvalImmutable;
 
 public class DefValueASTVisitor implements NodeVisitor {
 
@@ -130,9 +130,9 @@ public class DefValueASTVisitor implements NodeVisitor {
 	    PropertyGet pg = (PropertyGet) node;
 
 	    /* Try to resolve the full property get. */
-	    ExpEval expEval = new ExpEval(state);
+	    ExpEvalImmutable expEval = new ExpEvalImmutable(state);
 	    List<DependencyIdentifier> ids = new LinkedList<DependencyIdentifier>();
-	    for (Address addr : expEval.resolveOrCreate(node)) {
+	    for (Address addr : expEval.resolve(node)) {
 		BValue val = state.store.apply(addr);
 		ids.add(val);
 	    }
@@ -156,9 +156,9 @@ public class DefValueASTVisitor implements NodeVisitor {
 	    ElementGet pg = (ElementGet) node;
 
 	    /* Try to resolve the full property get. */
-	    ExpEval expEval = new ExpEval(state);
+	    ExpEvalImmutable expEval = new ExpEvalImmutable(state);
 	    List<DependencyIdentifier> ids = new LinkedList<DependencyIdentifier>();
-	    for (Address addr : expEval.resolveOrCreate(node)) {
+	    for (Address addr : expEval.resolve(node)) {
 		BValue val = state.store.apply(addr);
 		ids.add(val);
 	    }
