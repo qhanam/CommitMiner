@@ -30,7 +30,7 @@ public class ValueCFGVisitor implements ICFGVisitor {
 
     @Override
     public void visit(CFGEdge edge) {
-	visit((AstNode) edge.getCondition(), (State) edge.getBeforeState());
+	visit((AstNode) edge.getCondition(), (State) edge.getAfterState());
     }
 
     /**

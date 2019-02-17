@@ -476,7 +476,9 @@ public class ExpEvalImmutable {
 
 	BValue retVal = BValue.top(Change.convU(fc));
 
-	if (newState != null) {
+	if (newState == null) {
+	    retVal = BValue.top(Change.convU(fc));
+	} else {
 	    retVal = newState.scratch.applyReturn();
 	    if (retVal == null) {
 		/* Functions with no return statement return undefined. */

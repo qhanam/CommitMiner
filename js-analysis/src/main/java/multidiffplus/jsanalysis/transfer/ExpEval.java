@@ -21,6 +21,7 @@ import org.mozilla.javascript.ast.Name;
 import org.mozilla.javascript.ast.NumberLiteral;
 import org.mozilla.javascript.ast.ObjectLiteral;
 import org.mozilla.javascript.ast.ObjectProperty;
+import org.mozilla.javascript.ast.ParenthesizedExpression;
 import org.mozilla.javascript.ast.PropertyGet;
 import org.mozilla.javascript.ast.StringLiteral;
 import org.mozilla.javascript.ast.UnaryExpression;
@@ -102,11 +103,22 @@ public class ExpEval {
 	    return evalFunctionNode((FunctionNode) node);
 	} else if (node instanceof FunctionCall) {
 	    return evalFunctionCall((FunctionCall) node);
+	} else if (node instanceof ParenthesizedExpression) {
+	    return evalParenthesizedExpression((ParenthesizedExpression) node);
 	}
 
 	/* We could not evaluate the expression. Return top. */
 	return BValue.top(Change.convU(node));
 
+    }
+
+    /**
+     * @param pe
+     *            The parenthesized expression.
+     * @return The value of the expression inside the parentheses.
+     */
+    private BValue evalParenthesizedExpression(ParenthesizedExpression pe) {
+	return eval(pe.getExpression());
     }
 
     /**

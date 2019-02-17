@@ -16,32 +16,32 @@ import multidiffplus.jsanalysis.abstractdomain.State;
  */
 public class DefValueCFGVisitor implements ICFGVisitor {
 
-	/* The fact database we will populate. */
-	private AnnotationFactBase factBase;
+    /* The fact database we will populate. */
+    private AnnotationFactBase factBase;
 
-	public DefValueCFGVisitor(AnnotationFactBase factBase) {
-		this.factBase = factBase;
-	}
+    public DefValueCFGVisitor(AnnotationFactBase factBase) {
+	this.factBase = factBase;
+    }
 
-	@Override
-	public void visit(CFGNode node) {
-		visit((AstNode) node.getStatement(), (State)node.getAfterState());
-	}
+    @Override
+    public void visit(CFGNode node) {
+	visit((AstNode) node.getStatement(), (State) node.getAfterState());
+    }
 
-	@Override
-	public void visit(CFGEdge edge) {
-		visit((AstNode) edge.getCondition(), (State)edge.getBeforeState());
-	}
+    @Override
+    public void visit(CFGEdge edge) {
+	visit((AstNode) edge.getCondition(), (State) edge.getAfterState());
+    }
 
-	/**
-	 * Visit an AstNode (a statement or condition) and extract facts about
-	 * value changes.
-	 */
-	private void visit(AstNode node, State state) {
-		if(state != null) {
-			Set<Annotation> annotations = DefValueASTVisitor.getAnnotations(state, node);
-			factBase.registerAnnotationFacts(annotations);
-		}
+    /**
+     * Visit an AstNode (a statement or condition) and extract facts about value
+     * changes.
+     */
+    private void visit(AstNode node, State state) {
+	if (state != null) {
+	    Set<Annotation> annotations = DefValueASTVisitor.getAnnotations(state, node);
+	    factBase.registerAnnotationFacts(annotations);
 	}
+    }
 
 }
