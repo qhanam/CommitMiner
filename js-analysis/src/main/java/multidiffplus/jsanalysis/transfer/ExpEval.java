@@ -142,10 +142,6 @@ public class ExpEval {
      * @return A BValue that points to the new function object.
      */
     public BValue evalFunctionNode(FunctionNode f) {
-	if (callStack == null) {
-	    // This is a visitor and not an analysis.
-	    return BValue.bottom(Change.convU(f));
-	}
 	Closure closure = new FunctionClosure(callStack.getCFGs().get(f), state.env);
 	Address addr = state.trace.makeAddr(f.getID(), "");
 	addr = state.trace.modAddr(addr, JSClass.CFunction);
