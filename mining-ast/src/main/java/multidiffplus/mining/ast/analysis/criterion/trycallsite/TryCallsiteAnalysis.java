@@ -32,6 +32,10 @@ public class TryCallsiteAnalysis implements NodeVisitor {
     public TryCallsiteAnalysis(SourceCodeFileChange sourceCodeFileChange, AstNode root) {
 	this.factBase = MiningFactBase.getInstance(sourceCodeFileChange);
 	this.root = root;
+
+	/* Record that TryCallsiteAnalysis was performed on the file. */
+	factBase.registerAnnotationFact(new Annotation("TRY_CALLSITE_ANALYSIS",
+		new LinkedList<DependencyIdentifier>(), 0, 0, 0));
     }
 
     @Override
