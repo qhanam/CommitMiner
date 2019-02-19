@@ -270,6 +270,15 @@ public class Helpers {
 		localVars.add(name.toSource());
 	}
 
+	/*
+	 * Case where control cannot reach the end of the function because an error is
+	 * thrown on the single path (e.g., function() { throw new Error(); })
+	 */
+	if (stackFrame.getCFG().getExitNodes().stream().anyMatch((node) -> {
+	    return node.getIncommingEdgeCount() == 0;
+	}))
+	    return;
+
 	/* Analyze reachable functions. */
 	State exitState = Helpers.getMergedExitState(stackFrame.getCFG());
 	Helpers.analyzeEnvReachable(exitState, exitState.env.environment, exitState.selfAddr,
