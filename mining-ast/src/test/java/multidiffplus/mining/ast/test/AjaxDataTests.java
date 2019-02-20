@@ -113,7 +113,7 @@ public class AjaxDataTests {
      * @return A dummy commit for testing.
      */
     private static Commit getCommit() {
-	return new Commit("test", "http://github.com/saltlab/Pangor", "c0", "c1", Type.BUG_FIX);
+	return new Commit("test", "http://github.com/saltlab/Pangor", "c0", "c1", Type.BUG_FIX, 0);
     }
 
     /**

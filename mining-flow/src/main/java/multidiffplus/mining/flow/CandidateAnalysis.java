@@ -80,7 +80,7 @@ public class CandidateAnalysis {
      * @return Create a dummy commit
      */
     private static Commit getCommit(String project, String url, String commitID) {
-	return new Commit(project, url, "unk", commitID, Type.OTHER);
+	return new Commit(project, url, "unk", commitID, Type.OTHER, 0);
     }
 
     /**

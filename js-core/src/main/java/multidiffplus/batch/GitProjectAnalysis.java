@@ -7,7 +7,6 @@ import java.io.PrintStream;
 import java.util.List;
 
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jgit.api.DiffCommand;
@@ -76,23 +75,23 @@ public class GitProjectAnalysis extends GitProject {
 	logger.info("[START ANALYSIS] {}", this.getURI());
 
 	/* Get the list of bug fixing commits from version history. */
-	List<Triple<String, String, Type>> commits = this.getCommitPairs();
+	List<CommitSignature> commitSignatures = this.getCommitPairs();
 
-	logger.info(" [ANALYZING] {} bug fixing commits", commits.size());
+	logger.info(" [ANALYZING] {} bug fixing commits", commitSignatures.size());
 
 	/* Analyze the changes made in each bug fixing commit. */
-	for (Triple<String, String, Type> commit : commits) {
+	for (CommitSignature commitSignature : commitSignatures) {
 
-	    /* Abort if the analysis goes over 5 minutes. */
-	    if (projectTimer.getTime() > 300000) {
+	    /* Abort if the analysis goes over 10 minutes. */
+	    if (projectTimer.getTime() > 600000) {
 		logger.warn(" [WARNING] {} aborting due to project timeout", this.getURI());
 		break;
 	    }
 
 	    try {
-		this.analyzeDiff(commit.getLeft(), commit.getMiddle(), commit.getRight());
+		this.analyzeDiff(commitSignature);
 	    } catch (Exception e) {
-		logger.error("[ERROR] {}, {}", commit.getMiddle(), e.getMessage());
+		logger.error("[ERROR] {}, {}", commitSignature.getNewRevision(), e.getMessage());
 		e.printStackTrace();
 	    }
 
@@ -115,16 +114,16 @@ public class GitProjectAnalysis extends GitProject {
      * @throws IOException
      * @throws GitAPIException
      */
-    private void analyzeDiff(String buggyRevision, String bugFixingRevision, Type commitMessageType)
+    private void analyzeDiff(CommitSignature commitSignature)
 	    throws IOException, GitAPIException, Exception {
 
-	ObjectId buggy = this.repository.resolve(buggyRevision + "^{tree}");
-	ObjectId repaired = this.repository.resolve(bugFixingRevision + "^{tree}");
+	ObjectId buggy = this.repository.resolve(commitSignature.getOldRevision() + "^{tree}");
+	ObjectId repaired = this.repository.resolve(commitSignature.getOldRevision() + "^{tree}");
 
 	ObjectReader reader = this.repository.newObjectReader();
 
 	CanonicalTreeParser buggyTreeIter = new CanonicalTreeParser();
-	if (buggyRevision != null)
+	if (commitSignature.getOldRevision() != null)
 	    buggyTreeIter.reset(reader, buggy);
 	else
 	    buggyTreeIter.reset();
@@ -138,8 +137,9 @@ public class GitProjectAnalysis extends GitProject {
 	List<DiffEntry> diffs = diffCommand.call();
 
 	/* The {@code Commit} is meta data and a set of source code changes. */
-	Commit commit = new Commit(this.projectID, this.projectHomepage, buggyRevision,
-		bugFixingRevision, commitMessageType);
+	Commit commit = new Commit(this.projectID, this.projectHomepage,
+		commitSignature.getOldRevision(), commitSignature.getNewRevision(),
+		commitSignature.getType(), commitSignature.getTimestamp());
 
 	/* Skip merge commits. */
 	if (commit.commitMessageType == Type.MERGE) {
@@ -214,15 +214,16 @@ public class GitProjectAnalysis extends GitProject {
 		continue;
 	    }
 
-	    logger.debug("Exploring diff \n {} \n {} - {} \n {} - {}", getURI(), buggyRevision,
-		    diff.getOldPath(), bugFixingRevision, diff.getNewPath());
+	    logger.debug("Exploring diff \n {} \n {} - {} \n {} - {}", getURI(),
+		    commitSignature.getOldRevision(), diff.getOldPath(),
+		    commitSignature.getNewRevision(), diff.getNewPath());
 
 	    /* Add this source code file change to the commit. */
 
-	    String oldFile = buggyRevision == null ? ""
-		    : this.fetchBlob(buggyRevision, diff.getOldPath());
+	    String oldFile = commitSignature.getOldRevision() == null ? ""
+		    : this.fetchBlob(commitSignature.getOldRevision(), diff.getOldPath());
 
-	    String newFile = this.fetchBlob(bugFixingRevision, diff.getNewPath());
+	    String newFile = this.fetchBlob(commitSignature.getOldRevision(), diff.getNewPath());
 
 	    commit.addSourceCodeFileChange(new SourceCodeFileChange(diff.getOldPath(),
 		    diff.getNewPath(), oldFile, newFile));
@@ -250,11 +251,13 @@ public class GitProjectAnalysis extends GitProject {
 
 	} catch (Exception ignore) {
 	    System.err.println("Ignoring exception in ProjectAnalysis.runSDJSB.\nBuggy Revision: "
-		    + buggyRevision + "\nBug Fixing Revision: " + bugFixingRevision);
+		    + commitSignature.getOldRevision() + "\nBug Fixing Revision: "
+		    + commitSignature.getNewRevision());
 	    ignore.printStackTrace();
 	} catch (Error e) {
 	    System.err.println("Ignoring error in ProjectAnalysis.runSDJSB.\nBuggy Revision: "
-		    + buggyRevision + "\nBug Fixing Revision: " + bugFixingRevision);
+		    + commitSignature.getOldRevision() + "\nBug Fixing Revision: "
+		    + commitSignature.getNewRevision());
 	    e.printStackTrace();
 	}
 
