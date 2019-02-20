@@ -118,7 +118,7 @@ public class GitProjectAnalysis extends GitProject {
 	    throws IOException, GitAPIException, Exception {
 
 	ObjectId buggy = this.repository.resolve(commitSignature.getOldRevision() + "^{tree}");
-	ObjectId repaired = this.repository.resolve(commitSignature.getOldRevision() + "^{tree}");
+	ObjectId repaired = this.repository.resolve(commitSignature.getNewRevision() + "^{tree}");
 
 	ObjectReader reader = this.repository.newObjectReader();
 
@@ -354,9 +354,10 @@ public class GitProjectAnalysis extends GitProject {
 
 	    /* Write the data set. */
 	    for (Annotation annotation : factBase.getAnnotations()) {
-		stream.println(commit.toString() + "," + sourceCodeFileChange.toString() + ","
-			+ srcFile.getName() + "," + dstFile.getName() + "," + annotation.getLabel()
-			+ "," + annotation.getLine());
+		stream.println(commit.toString() + "," + commit.timestamp + ","
+			+ sourceCodeFileChange.toString() + "," + srcFile.getName() + ","
+			+ dstFile.getName() + "," + annotation.getLabel() + ","
+			+ annotation.getLine());
 	    }
 
 	}
