@@ -221,9 +221,9 @@ public class GitProjectAnalysis extends GitProject {
 	    /* Add this source code file change to the commit. */
 
 	    String oldFile = commitSignature.getOldRevision() == null ? ""
-		    : this.fetchBlob(commitSignature.getNewRevision(), diff.getOldPath());
+		    : this.fetchBlob(commitSignature.getOldRevision(), diff.getOldPath());
 
-	    String newFile = this.fetchBlob(commitSignature.getOldRevision(), diff.getNewPath());
+	    String newFile = this.fetchBlob(commitSignature.getNewRevision(), diff.getNewPath());
 
 	    commit.addSourceCodeFileChange(new SourceCodeFileChange(diff.getOldPath(),
 		    diff.getNewPath(), oldFile, newFile));
