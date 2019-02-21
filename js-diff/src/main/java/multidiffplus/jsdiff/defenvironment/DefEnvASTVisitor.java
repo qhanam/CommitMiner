@@ -90,8 +90,9 @@ public class DefEnvASTVisitor implements NodeVisitor {
 		if (node.getParent() instanceof VariableDeclaration
 			|| node.getParent() instanceof VariableInitializer
 			|| node.getParent() instanceof FunctionNode) {
-		    this.annotations.add(new Annotation("DENV-DEF", ids, node.getLineno(),
-			    node.getFixedPosition(), node.getLength()));
+		    if (!node.toSource().contains("~"))
+			this.annotations.add(new Annotation("DENV-DEF", ids, node.getLineno(),
+				node.getFixedPosition(), node.getLength()));
 		    for (Integer address : var.getAddresses())
 			node.addCriterion("VARIABLE", address);
 		} else {

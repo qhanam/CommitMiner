@@ -18,75 +18,82 @@ import multidiffplus.jsanalysis.abstractdomain.State;
 
 public class ControlConditionASTVisitor implements NodeVisitor {
 
-	/**
-	 * The set of changed variable annotations found in the statement.
-	 **/
-	public Set<Annotation> annotations;
-	
-	/** The abstract state. **/
-	@SuppressWarnings("unused")
-	private State state;
+    /**
+     * The set of changed variable annotations found in the statement.
+     **/
+    public Set<Annotation> annotations;
 
-	/**
-	 * Detects defs of changes to branch conditions.
-	 * @return the set of nodes that are impacted by a branch condition change 
-	 */
-	public static Set<Annotation> getDefAnnotations(State state, AstNode statement) {
-		ControlConditionASTVisitor visitor = new ControlConditionASTVisitor(state);
-		
-		if(statement instanceof AstRoot) {
-			/* This is the root. Nothing should be flagged. */
-			return visitor.annotations;
-		}
-		else if(statement instanceof FunctionNode) {
-			/* This is a function declaration. Nothing should be flagged. */
-			return visitor.annotations;
-		}
-		else if(statement != null){
+    /** The abstract state. **/
+    @SuppressWarnings("unused")
+    private State state;
 
-			/* Register CON-USE annotations for statements at depth 1 from an
-			 * inserted or updated branch condition. */
-			if(state.control.getCondition().isChanged() && statement.getLineno() > 0) {
-				List<DependencyIdentifier> ids = new LinkedList<DependencyIdentifier>();
-				ids.add(state.control.getCondition());
-				visitor.annotations.add(new Annotation("CON-USE", ids, statement.getLineno(), statement.getFixedPosition(), statement.getLength()));
-			}
+    /**
+     * Detects defs of changes to branch conditions.
+     * 
+     * @return the set of nodes that are impacted by a branch condition change
+     */
+    public static Set<Annotation> getDefAnnotations(State state, AstNode statement) {
+	ControlConditionASTVisitor visitor = new ControlConditionASTVisitor(state);
 
-		}
-		return visitor.annotations;
-	}
+	if (statement instanceof AstRoot) {
+	    /* This is the root. Nothing should be flagged. */
+	    return visitor.annotations;
+	} else if (statement instanceof FunctionNode) {
+	    /* This is a function declaration. Nothing should be flagged. */
+	    return visitor.annotations;
+	} else if (statement != null) {
 
-	/**
-	 * Detects uses of changes to branch conditions.
-	 * @return the set of nodes that are impacted by a branch condition change 
-	 */
-	public static Set<Annotation> getUseAnnotations(State state, AstNode statement) {
-
-		ControlConditionASTVisitor visitor = new ControlConditionASTVisitor(state);
-		if(statement == null) return visitor.annotations;
-		statement.visit(visitor);
-		return visitor.annotations;
+	    /*
+	     * Register CON-USE annotations for statements at depth 1 from an inserted or
+	     * updated branch condition.
+	     */
+	    if (state.control.getCondition().isChanged() && statement.getLineno() > 0
+		    && !statement.toSource().contains("~")) {
+		List<DependencyIdentifier> ids = new LinkedList<DependencyIdentifier>();
+		ids.add(state.control.getCondition());
+		visitor.annotations.add(new Annotation("CON-USE", ids, statement.getLineno(),
+			statement.getFixedPosition(), statement.getLength()));
+	    }
 
 	}
+	return visitor.annotations;
+    }
 
-	public ControlConditionASTVisitor(State state) {
-		this.annotations = new HashSet<Annotation>();
-		this.state = state;
+    /**
+     * Detects uses of changes to branch conditions.
+     * 
+     * @return the set of nodes that are impacted by a branch condition change
+     */
+    public static Set<Annotation> getUseAnnotations(State state, AstNode statement) {
+
+	ControlConditionASTVisitor visitor = new ControlConditionASTVisitor(state);
+	if (statement == null)
+	    return visitor.annotations;
+	statement.visit(visitor);
+	return visitor.annotations;
+
+    }
+
+    public ControlConditionASTVisitor(State state) {
+	this.annotations = new HashSet<Annotation>();
+	this.state = state;
+    }
+
+    @Override
+    public boolean visit(AstNode node) {
+
+	/* Register CON-DEF annotations for branch conditions. */
+	if (Change.convU(node).le == Change.LatticeElement.CHANGED && node.getID() != null) {
+	    List<DependencyIdentifier> ids = new LinkedList<DependencyIdentifier>();
+	    ids.add(new GenericDependencyIdentifier(node.getID()));
+	    if (node.getLength() > 0 && !node.toSource().contains("~")) // Don't register def for
+									// the negated condition
+		annotations.add(new Annotation("CON-DEF", ids, node.getLineno(),
+			node.getFixedPosition(), node.getLength()));
 	}
 
-	@Override
-	public boolean visit(AstNode node) {
+	return false;
 
-		/* Register CON-DEF annotations for branch conditions. */
-		if(Change.convU(node).le == Change.LatticeElement.CHANGED && node.getID() != null) {
-			List<DependencyIdentifier> ids = new LinkedList<DependencyIdentifier>();
-			ids.add(new GenericDependencyIdentifier(node.getID()));
-			if(node.getLength() > 0) // Don't register def for the negated condition
-				annotations.add(new Annotation("CON-DEF", ids, node.getLineno(), node.getFixedPosition(), node.getLength()));
-		}
-
-		return false;
-
-	}
+    }
 
 }

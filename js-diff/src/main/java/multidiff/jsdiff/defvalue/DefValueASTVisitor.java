@@ -117,8 +117,9 @@ public class DefValueASTVisitor implements NodeVisitor {
 		List<DependencyIdentifier> ids = new LinkedList<DependencyIdentifier>();
 		ids.add(val);
 
-		this.annotations.add(new Annotation("DVAL-USE", ids, node.getLineno(),
-			node.getFixedPosition(), node.getLength()));
+		if (!node.toSource().contains("~"))
+		    this.annotations.add(new Annotation("DVAL-USE", ids, node.getLineno(),
+			    node.getFixedPosition(), node.getLength()));
 		for (Integer id : val.getAddresses()) {
 		    node.addDependency("VALUE", id);
 		}
@@ -138,8 +139,9 @@ public class DefValueASTVisitor implements NodeVisitor {
 	    }
 
 	    if (ids.size() > 0) {
-		this.annotations.add(new Annotation("DVAL-USE", ids, pg.getRight().getLineno(),
-			pg.getRight().getFixedPosition(), pg.getRight().getLength()));
+		if (!node.toString().contains("~"))
+		    this.annotations.add(new Annotation("DVAL-USE", ids, pg.getRight().getLineno(),
+			    pg.getRight().getFixedPosition(), pg.getRight().getLength()));
 		for (DependencyIdentifier identifier : ids) {
 		    for (Integer id : identifier.getAddresses())
 			node.addDependency("VALUE", id);

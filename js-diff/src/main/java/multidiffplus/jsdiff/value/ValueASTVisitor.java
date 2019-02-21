@@ -115,8 +115,9 @@ public class ValueASTVisitor implements NodeVisitor {
 		    List<DependencyIdentifier> ids = new LinkedList<DependencyIdentifier>();
 		    ids.add(val);
 
-		    this.annotations.add(new Annotation("VAL-USE", ids, node.getLineno(),
-			    node.getFixedPosition(), node.getLength()));
+		    if (!node.toSource().contains("~"))
+			this.annotations.add(new Annotation("VAL-USE", ids, node.getLineno(),
+				node.getFixedPosition(), node.getLength()));
 		}
 
 	    }
