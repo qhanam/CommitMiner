@@ -83,13 +83,13 @@ public interface ICFGFactory {
 
 	// Do a depth first traversal.
 	for (CFGEdge outEdge : node.getOutgoingEdges()) {
-	    if (!visited.contains(edge)) {
-		visited.add(edge);
-		path.add(edge);
+	    if (!visited.contains(outEdge)) {
+		visited.add(outEdge);
+		path.add(outEdge);
 		addIncomingAndDetectLoops(visited, path, outEdge);
-		path.remove(edge);
-	    } else if (path.contains(edge)) {
-		edge.isLoopEdge = true;
+		path.remove(outEdge);
+	    } else if (path.contains(outEdge)) {
+		outEdge.isLoopEdge = true;
 	    }
 	}
 
