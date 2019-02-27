@@ -8,7 +8,7 @@ import multidiffplus.jsanalysis.abstractdomain.Address;
 import multidiffplus.jsanalysis.abstractdomain.Change;
 import multidiffplus.jsanalysis.abstractdomain.Closure;
 import multidiffplus.jsanalysis.abstractdomain.Control;
-import multidiffplus.jsanalysis.abstractdomain.DefinerIDs;
+import multidiffplus.jsanalysis.abstractdomain.Dependencies;
 import multidiffplus.jsanalysis.abstractdomain.InternalFunctionProperties;
 import multidiffplus.jsanalysis.abstractdomain.InternalObjectProperties;
 import multidiffplus.jsanalysis.abstractdomain.JSClass;
@@ -35,10 +35,10 @@ public class ArgumentsFactory {
     public Obj Arguments_Obj() {
 	Map<String, Property> ext = new HashMap<String, Property>();
 	store = Utilities.addProp("prototype", ARG_DEFINER_ID,
-		Address.inject(StoreFactory.Object_proto_Addr, Change.u(), DefinerIDs.bottom()),
-		ext, store);
+		Address.inject(StoreFactory.Object_proto_Addr, Change.u(), Dependencies.bot()), ext,
+		store);
 	store = Utilities.addProp("length", ARG_DEFINER_ID,
-		Num.inject(Num.top(), Change.u(), DefinerIDs.bottom()), ext, store);
+		Num.inject(Num.top(), Change.u(), Dependencies.bot()), ext, store);
 
 	NativeClosure closure = new NativeClosure() {
 	    @Override

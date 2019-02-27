@@ -1,16 +1,11 @@
 package multidiffplus.jsanalysis.abstractdomain;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import multidiffplus.commit.DependencyIdentifier;
-
 /**
  * The abstract domain for base values. Because the value can be multiple types,
  * the abstract domain is a tuple of lattice elements: one for each base type
  * (string, number, boolean, null, undefined and address).
  */
-public class BValue implements DependencyIdentifier {
+public class BValue {
 
     /** The abstract domain for strings. **/
     public Str stringAD;
@@ -30,14 +25,14 @@ public class BValue implements DependencyIdentifier {
     /** The abstract domain for memory addresses. **/
     public Addresses addressAD;
 
-    /** The set of definer IDs this BValue may point to. **/
-    public DefinerIDs definerIDs;
+    /** The set of value definitions this BValue may point to. **/
+    public Dependencies deps;
 
     /** The lattice element for tracking changes to this value. **/
     public Change change;
 
-    public BValue(Str stringAD, Num numberAD, Bool booleanAD, Null nullAD, Undefined undefinedAD,
-	    Addresses addressAD, Change change, DefinerIDs definerIDs) {
+    private BValue(Str stringAD, Num numberAD, Bool booleanAD, Null nullAD, Undefined undefinedAD,
+	    Addresses addressAD, Change change, Dependencies deps) {
 	this.stringAD = stringAD;
 	this.numberAD = numberAD;
 	this.booleanAD = booleanAD;
@@ -45,19 +40,7 @@ public class BValue implements DependencyIdentifier {
 	this.undefinedAD = undefinedAD;
 	this.addressAD = addressAD;
 	this.change = change;
-	this.definerIDs = definerIDs;
-    }
-
-    public BValue(Str stringAD, Num numberAD, Bool booleanAD, Null nullAD, Undefined undefinedAD,
-	    Addresses addressAD, Change change, Change dependent, Integer definerID) {
-	this.stringAD = stringAD;
-	this.numberAD = numberAD;
-	this.booleanAD = booleanAD;
-	this.nullAD = nullAD;
-	this.undefinedAD = undefinedAD;
-	this.addressAD = addressAD;
-	this.change = change;
-	this.definerIDs = DefinerIDs.inject(definerID);
+	this.deps = deps;
     }
 
     public BValue join(BValue state) {
@@ -65,7 +48,7 @@ public class BValue implements DependencyIdentifier {
 	return new BValue(this.stringAD.join(state.stringAD), this.numberAD.join(state.numberAD),
 		this.booleanAD.join(state.booleanAD), this.nullAD.join(state.nullAD),
 		this.undefinedAD.join(state.undefinedAD), this.addressAD.join(state.addressAD),
-		this.change.join(state.change), this.definerIDs.join(state.definerIDs));
+		this.change.join(state.change), this.deps.join(state.deps));
 
     }
 
@@ -173,10 +156,18 @@ public class BValue implements DependencyIdentifier {
      *            The change LE for the value.
      * @return the top lattice element
      */
-    public static BValue top(Change valChange) {
+    public static BValue top(Change valChange, Dependencies deps) {
 	/* Set addresses to BOT to enable dynamic object creation. */
 	return new BValue(Str.top(), Num.top(), Bool.top(), Null.top(), Undefined.top(),
-		Addresses.bottom(), valChange, DefinerIDs.bottom());
+		Addresses.bottom(), valChange, deps);
+    }
+
+    /**
+     * @return the bottom lattice element
+     */
+    public static BValue bottom() {
+	return new BValue(Str.bottom(), Num.bottom(), Bool.bottom(), Null.bottom(),
+		Undefined.bottom(), Addresses.bottom(), Change.bottom(), Dependencies.bot());
     }
 
     /**
@@ -184,9 +175,9 @@ public class BValue implements DependencyIdentifier {
      *            The change LE for the value.
      * @return the bottom lattice element
      */
-    public static BValue bottom(Change valChange) {
+    public static BValue bottom(Change valChange, Dependencies deps) {
 	return new BValue(Str.bottom(), Num.bottom(), Bool.bottom(), Null.bottom(),
-		Undefined.bottom(), Addresses.bottom(), valChange, DefinerIDs.bottom());
+		Undefined.bottom(), Addresses.bottom(), valChange, deps);
     }
 
     /**
@@ -194,9 +185,14 @@ public class BValue implements DependencyIdentifier {
      *            The change LE for the value.
      * @return a primitive value (not an address).
      */
-    public static BValue primitive(Change valChange) {
+    public static BValue primitive(Change valChange, Dependencies deps) {
 	return new BValue(Str.top(), Num.top(), Bool.top(), Null.top(), Undefined.top(),
-		Addresses.bottom(), valChange, DefinerIDs.bottom());
+		Addresses.bottom(), valChange, deps);
+    }
+
+    public static BValue inject(Str str, Num num, Bool bool, Null nul, Undefined undef,
+	    Addresses addrs, Change valChange, Dependencies deps) {
+	return new BValue(str, num, bool, nul, undef, addrs, valChange, deps);
     }
 
     @Override
@@ -204,7 +200,7 @@ public class BValue implements DependencyIdentifier {
 	return this.nullAD.toString() + "|" + this.undefinedAD.toString() + "|"
 		+ this.booleanAD.toString() + "|" + this.numberAD.toString() + "|"
 		+ this.stringAD.toString() + "|" + this.addressAD.toString() + "|"
-		+ this.change.toString() + "|" + this.getAddress();
+		+ this.change.toString() + "|" + this.deps.toString();
     }
 
     @Override
@@ -226,21 +222,9 @@ public class BValue implements DependencyIdentifier {
 	    return false;
 	if (!this.change.equals(v.change))
 	    return false;
-	if (!this.definerIDs.equals(v.definerIDs))
+	if (!this.deps.equals(v.deps))
 	    return false;
 	return true;
-    }
-
-    @Override
-    public String getAddress() {
-	return this.definerIDs.toString();
-    }
-
-    @Override
-    public List<Integer> getAddresses() {
-	List<Integer> addresses = new ArrayList<Integer>();
-	addresses.addAll(definerIDs.getDefinerIDs());
-	return addresses;
     }
 
 }

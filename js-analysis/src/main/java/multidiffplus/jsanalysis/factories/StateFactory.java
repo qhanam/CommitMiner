@@ -13,6 +13,7 @@ import multidiffplus.jsanalysis.abstractdomain.Addresses;
 import multidiffplus.jsanalysis.abstractdomain.BValue;
 import multidiffplus.jsanalysis.abstractdomain.Change;
 import multidiffplus.jsanalysis.abstractdomain.Control;
+import multidiffplus.jsanalysis.abstractdomain.Dependencies;
 import multidiffplus.jsanalysis.abstractdomain.Environment;
 import multidiffplus.jsanalysis.abstractdomain.Scratchpad;
 import multidiffplus.jsanalysis.abstractdomain.State;
@@ -27,38 +28,39 @@ import multidiffplus.jsanalysis.visitors.GlobalVisitor;
  */
 public class StateFactory {
 
-	/**
-	 * @param script The file under analysis.
-	 * @return The initial state ς ∈ State := ρ x σ
-	 */
-	public static State createInitialState(ScriptNode script, Map<AstNode, CFG> cfgs) {
-		Trace trace = new FSCI(script.getID());
-		Store store = StoreFactory.createInitialStore();
-		Pair<Environment, Store> lifted =
-				EnvironmentFactory.createInitialEnvironment(script, store, cfgs, trace);
-		Scratchpad scratchpad = new Scratchpad();
-		Control control = new Control();
-		Environment env = lifted.getLeft();
-		store = lifted.getRight();
-		store = liftGlobals(script, trace, env, store);
-		return new State(store, env, scratchpad,
-						 trace, control, StoreFactory.global_binding_Addr);
-	}
-	
-	private static Store liftGlobals(ScriptNode script, Trace trace, Environment env, Store store) {
+    /**
+     * @param script
+     *            The file under analysis.
+     * @return The initial state ς ∈ State := ρ x σ
+     */
+    public static State createInitialState(ScriptNode script, Map<AstNode, CFG> cfgs) {
+	Trace trace = new FSCI(script.getID());
+	Store store = StoreFactory.createInitialStore();
+	Pair<Environment, Store> lifted = EnvironmentFactory.createInitialEnvironment(script, store,
+		cfgs, trace);
+	Scratchpad scratchpad = new Scratchpad();
+	Control control = Control.bottom();
+	Environment env = lifted.getLeft();
+	store = lifted.getRight();
+	store = liftGlobals(script, trace, env, store);
+	return new State(store, env, scratchpad, trace, control, StoreFactory.global_binding_Addr);
+    }
 
-		/* Lift global variables into the environment and initialize to undefined. */
-		Set<String> globals = GlobalVisitor.getGlobals(script);
-		int i = -1000;
-		for(String global : globals) {
-			Address address = trace.makeAddr(i, "");
-			env.strongUpdateNoCopy(global, new Variable(i, global, Change.bottom(), new Addresses(address)));
-			store = store.alloc(address, BValue.top(Change.u()));
-			i--;
-		}
-		
-		return store;
-		
+    private static Store liftGlobals(ScriptNode script, Trace trace, Environment env, Store store) {
+
+	/* Lift global variables into the environment and initialize to undefined. */
+	Set<String> globals = GlobalVisitor.getGlobals(script);
+	int i = -1000;
+	for (String global : globals) {
+	    Address address = trace.makeAddr(i, "");
+	    env.strongUpdateNoCopy(global,
+		    new Variable(i, global, Change.bottom(), new Addresses(address)));
+	    store = store.alloc(address, BValue.top(Change.u(), Dependencies.bot()));
+	    i--;
 	}
+
+	return store;
+
+    }
 
 }

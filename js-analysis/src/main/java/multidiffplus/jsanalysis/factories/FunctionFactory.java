@@ -9,7 +9,7 @@ import multidiffplus.jsanalysis.abstractdomain.BValue;
 import multidiffplus.jsanalysis.abstractdomain.Change;
 import multidiffplus.jsanalysis.abstractdomain.Closure;
 import multidiffplus.jsanalysis.abstractdomain.Control;
-import multidiffplus.jsanalysis.abstractdomain.DefinerIDs;
+import multidiffplus.jsanalysis.abstractdomain.Dependencies;
 import multidiffplus.jsanalysis.abstractdomain.Environment;
 import multidiffplus.jsanalysis.abstractdomain.InternalFunctionProperties;
 import multidiffplus.jsanalysis.abstractdomain.InternalObjectProperties;
@@ -36,18 +36,18 @@ public class FunctionFactory {
     public Obj Function_proto_Obj() {
 	Map<String, Property> ext = new HashMap<String, Property>();
 	store = Utilities.addProp("external", -41,
-		Num.inject(Num.top(), Change.u(), DefinerIDs.bottom()), ext, store);
+		Num.inject(Num.top(), Change.u(), Dependencies.bot()), ext, store);
 	store = Utilities.addProp("apply", -42, Address
-		.inject(StoreFactory.Function_proto_apply_Addr, Change.u(), DefinerIDs.bottom()),
+		.inject(StoreFactory.Function_proto_apply_Addr, Change.u(), Dependencies.bot()),
 		ext, store);
 	store = Utilities.addProp("call", -43, Address.inject(StoreFactory.Function_proto_call_Addr,
-		Change.u(), DefinerIDs.bottom()), ext, store);
+		Change.u(), Dependencies.bot()), ext, store);
 	store = Utilities.addProp("toString", -44, Address
-		.inject(StoreFactory.Function_proto_toString_Addr, Change.u(), DefinerIDs.bottom()),
+		.inject(StoreFactory.Function_proto_toString_Addr, Change.u(), Dependencies.bot()),
 		ext, store);
 
 	InternalObjectProperties internal = new InternalObjectProperties(
-		Address.inject(StoreFactory.Function_proto_Addr, Change.u(), DefinerIDs.bottom()),
+		Address.inject(StoreFactory.Function_proto_Addr, Change.u(), Dependencies.bot()),
 		JSClass.CFunction_prototype_Obj);
 
 	return new Obj(ext, internal);
@@ -56,15 +56,15 @@ public class FunctionFactory {
     // TODO: apply and call need native closures because their behaviour
     // affects the analysis.
     public Obj Function_proto_toString_Obj() {
-	return constFunctionObj(Str.inject(Str.top(), Change.u(), DefinerIDs.bottom()));
+	return constFunctionObj(Str.inject(Str.top(), Change.u(), Dependencies.bot()));
     }
 
     public Obj Function_proto_apply_Obj() {
-	return constFunctionObj(BValue.top(Change.u()));
+	return constFunctionObj(BValue.top(Change.u(), Dependencies.bot()));
     }
 
     public Obj Function_proto_call_Obj() {
-	return constFunctionObj(BValue.top(Change.u()));
+	return constFunctionObj(BValue.top(Change.u(), Dependencies.bot()));
     }
 
     /**

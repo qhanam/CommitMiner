@@ -1,79 +1,53 @@
 package multidiffplus.jsanalysis.abstractdomain;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import multidiffplus.commit.DependencyIdentifier;
-
 /**
  * Stores the state of control flow changes due to changes in function calls.
  */
-public class ControlCall implements DependencyIdentifier {
+public class ControlCall {
 
     /**
      * AST node IDs of modified callsites of this method.
      */
-    Set<Integer> callsites;
+    Change change;
 
-    public ControlCall() {
-	this.callsites = new HashSet<Integer>();
+    private ControlCall() {
+	this.change = Change.bottom();
     }
 
-    public ControlCall(Set<Integer> callsites) {
-	this.callsites = callsites;
+    private ControlCall(Change change) {
+	this.change = change;
     }
 
     /**
      * Update the control call domain for a new callsite. We only track callsites
      * one level deep.
      */
-    public ControlCall update(Integer callsite) {
-	Set<Integer> callsites = new HashSet<Integer>();
-	callsites.add(callsite);
-	return new ControlCall(callsites);
+    public ControlCall update(Change change) {
+	return new ControlCall(change);
     }
 
-    public ControlCall join(ControlCall cc) {
-	Set<Integer> callsites = new HashSet<Integer>(this.callsites);
-	callsites.addAll(cc.callsites);
-	return new ControlCall(callsites);
+    public ControlCall join(ControlCall that) {
+	return new ControlCall(this.change.join(that.change));
     }
 
     public boolean isChanged() {
-	return !callsites.isEmpty();
+	return !change.getDependencies().isEmpty();
+    }
+
+    public static ControlCall inject(Change change) {
+	return new ControlCall(change);
+    }
+
+    public static ControlCall bottom() {
+	return new ControlCall();
     }
 
     @Override
     public boolean equals(Object o) {
 	if (!(o instanceof ControlCall))
 	    return false;
-	ControlCall cc = (ControlCall) o;
-	if (callsites.size() != cc.callsites.size())
-	    return false;
-	for (Integer callsite : callsites) {
-	    if (!cc.callsites.contains(callsite))
-		return false;
-	}
-	return true;
+	ControlCall that = (ControlCall) o;
+	return this.change.equals(that.change);
     }
 
-    @Override
-    public String getAddress() {
-	String id = "";
-	if (callsites.isEmpty())
-	    return "";
-	for (Integer callsite : callsites) {
-	    id += callsite + ",";
-	}
-	return id.substring(0, id.length() - 1);
-    }
-
-    @Override
-    public List<Integer> getAddresses() {
-	List<Integer> addresses = new ArrayList<Integer>();
-	addresses.addAll(callsites);
-	return addresses;
-    }
 }

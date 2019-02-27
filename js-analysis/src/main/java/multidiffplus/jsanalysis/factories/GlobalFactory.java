@@ -5,7 +5,7 @@ import java.util.Map;
 
 import multidiffplus.jsanalysis.abstractdomain.Address;
 import multidiffplus.jsanalysis.abstractdomain.Change;
-import multidiffplus.jsanalysis.abstractdomain.DefinerIDs;
+import multidiffplus.jsanalysis.abstractdomain.Dependencies;
 import multidiffplus.jsanalysis.abstractdomain.InternalObjectProperties;
 import multidiffplus.jsanalysis.abstractdomain.Obj;
 import multidiffplus.jsanalysis.abstractdomain.Property;
@@ -30,12 +30,12 @@ public class GlobalFactory {
     public Obj Global_Obj() {
 	Map<String, Property> ext = new HashMap<String, Property>();
 	store = Utilities.addProp("Object", OBJECT_DEFINER_ID,
-		Address.inject(StoreFactory.Object_Addr, Change.u(), DefinerIDs.bottom()), ext,
+		Address.inject(StoreFactory.Object_Addr, Change.u(), Dependencies.bot()), ext,
 		store);
 	store = Utilities.addProp("undefined", UNDEFINED_DEFINER_ID,
-		Undefined.inject(Undefined.top(), Change.u(), DefinerIDs.bottom()), ext, store);
+		Undefined.inject(Undefined.top(), Change.u(), Dependencies.bot()), ext, store);
 	store = Utilities.addProp("module", MODULE_DEFINER_ID,
-		Undefined.inject(Undefined.top(), Change.u(), DefinerIDs.bottom()), ext, store);
+		Undefined.inject(Undefined.top(), Change.u(), Dependencies.bot()), ext, store);
 
 	InternalObjectProperties internal = new InternalObjectProperties();
 	return new Obj(ext, internal);

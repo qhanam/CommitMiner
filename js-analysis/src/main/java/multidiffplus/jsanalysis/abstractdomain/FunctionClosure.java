@@ -131,7 +131,7 @@ public class FunctionClosure extends Closure {
 	    }
 
 	    InternalObjectProperties internal = new InternalObjectProperties(
-		    Address.inject(StoreFactory.Arguments_Addr, Change.u(), DefinerIDs.bottom()),
+		    Address.inject(StoreFactory.Arguments_Addr, Change.u(), Dependencies.bot()),
 		    JSClass.CObject);
 	    Obj argObj = new Obj(ext, internal);
 
@@ -153,7 +153,9 @@ public class FunctionClosure extends Closure {
 			 */
 
 			/* Add the argument address to the argument object. */
-			BValue argVal = BValue.top(Change.convU(param));
+			BValue argVal = BValue.top(
+				Change.convU(param, Dependencies.injectValueChange(param)),
+				Dependencies.injectValue(param));
 			store = Helpers.addProp(param.getID(), String.valueOf(i), argVal,
 				argObj.externalProperties, store, trace);
 			prop = argObj.externalProperties.get(String.valueOf(i));
@@ -164,7 +166,8 @@ public class FunctionClosure extends Closure {
 
 		    }
 		    Variable identity = new Variable(paramName.getID(), paramName.toSource(),
-			    Change.conv(paramName), new Addresses(prop.address));
+			    Change.conv(paramName, Dependencies.injectValueChange(paramName)),
+			    new Addresses(prop.address));
 		    env = env.strongUpdate(paramName.toSource(), identity);
 		}
 		i++;

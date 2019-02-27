@@ -6,7 +6,7 @@ import java.util.Map;
 import multidiffplus.jsanalysis.abstractdomain.Address;
 import multidiffplus.jsanalysis.abstractdomain.BValue;
 import multidiffplus.jsanalysis.abstractdomain.Change;
-import multidiffplus.jsanalysis.abstractdomain.DefinerIDs;
+import multidiffplus.jsanalysis.abstractdomain.Dependencies;
 import multidiffplus.jsanalysis.abstractdomain.Obj;
 import multidiffplus.jsanalysis.abstractdomain.Store;
 
@@ -77,7 +77,7 @@ public class StoreFactory {
 	Store store = new Store(bValueStore, objectStore);
 
 	bValueStore.put(global_binding_Addr,
-		Address.inject(global_Addr, Change.u(), DefinerIDs.bottom()));
+		Address.inject(global_Addr, Change.u(), Dependencies.bot()));
 
 	GlobalFactory gf = new GlobalFactory(store);
 	objectStore.put(global_Addr, gf.Global_Obj());

@@ -23,19 +23,19 @@ public class ControlCondition implements DependencyIdentifier {
      * Tracks condition changes for each branch. When the negated branch condition
      * is encountered, the condition is removed from the set.
      */
-    public Set<AstNode> conditions;
+    public Set<Condition> conditions;
 
     /**
      * Tracks control flow changes that have been merged and no longer apply.
      */
-    public Set<AstNode> negConditions;
+    public Set<Condition> negConditions;
 
-    public ControlCondition() {
-	conditions = new HashSet<AstNode>();
-	negConditions = new HashSet<AstNode>();
+    private ControlCondition() {
+	conditions = new HashSet<Condition>();
+	negConditions = new HashSet<Condition>();
     }
 
-    public ControlCondition(Set<AstNode> conditions, Set<AstNode> negConditions) {
+    private ControlCondition(Set<Condition> conditions, Set<Condition> negConditions) {
 	this.conditions = conditions;
 	this.negConditions = negConditions;
     }
@@ -47,22 +47,24 @@ public class ControlCondition implements DependencyIdentifier {
      */
     public ControlCondition update(CFGEdge edge, CFGNode node) {
 
-	Set<AstNode> conditions = new HashSet<AstNode>(this.conditions);
-	Set<AstNode> negConditions = new HashSet<AstNode>(this.negConditions);
+	Set<Condition> conditions = new HashSet<Condition>(this.conditions);
+	Set<Condition> negConditions = new HashSet<Condition>(this.negConditions);
 
-	/*
-	 * Put the current branch condition in the 'conditions' set and all other
-	 * conditions in the 'neg' set since they must be false.
-	 */
+	// Put the current branch condition in the 'conditions' set and all other
+	// conditions in the 'neg' set since they must be false.
 
-	if (edge.getCondition() != null
-		&& Change.convU(edge.getCondition()).le == Change.LatticeElement.CHANGED) {
+	if (edge.getCondition() != null) {
 
-	    conditions.add((AstNode) edge.getCondition());
+	    Change change = Change.convU((AstNode) edge.getCondition(),
+		    Dependencies.injectConditionChange((AstNode) edge.getCondition()));
 
-	    for (CFGEdge child : node.getOutgoingEdges()) {
-		if (child != edge && child.getCondition() != null) {
-		    negConditions.add((AstNode) child.getCondition());
+	    if (change.isChanged()) {
+		conditions.add(new Condition((AstNode) edge.getCondition(), change));
+
+		for (CFGEdge child : node.getOutgoingEdges()) {
+		    if (child != edge && child.getCondition() != null) {
+			negConditions.add(new Condition((AstNode) child.getCondition(), change));
+		    }
 		}
 	    }
 
@@ -70,9 +72,14 @@ public class ControlCondition implements DependencyIdentifier {
 
 	/* Check the siblings for neg conditions. */
 	for (CFGEdge child : node.getOutgoingEdges()) {
-	    if (child != edge && child.getCondition() != null
-		    && Change.convU(child.getCondition()).le == Change.LatticeElement.CHANGED) {
-		negConditions.add((AstNode) child.getCondition());
+	    if (child != edge && child.getCondition() != null) {
+
+		Change change = Change.convU((AstNode) child.getCondition(),
+			Dependencies.injectConditionChange((AstNode) child.getCondition()));
+
+		if (change.isChanged()) {
+		    negConditions.add(new Condition((AstNode) child.getCondition(), change));
+		}
 	    }
 	}
 
@@ -88,8 +95,8 @@ public class ControlCondition implements DependencyIdentifier {
     public ControlCondition join(ControlCondition right) {
 
 	/* Join the sets. */
-	Set<AstNode> conditions = new HashSet<AstNode>(this.conditions);
-	Set<AstNode> negConditions = new HashSet<AstNode>(this.negConditions);
+	Set<Condition> conditions = new HashSet<Condition>(this.conditions);
+	Set<Condition> negConditions = new HashSet<Condition>(this.negConditions);
 
 	conditions.addAll(right.conditions);
 	negConditions.addAll(right.negConditions);
@@ -105,19 +112,30 @@ public class ControlCondition implements DependencyIdentifier {
 	return !conditions.isEmpty();
     }
 
+    public static ControlCondition bottom() {
+	return new ControlCondition();
+    }
+
+    public static ControlCondition inject(Condition condition, Set<Condition> negConditions) {
+	Set<Condition> conditions = new HashSet<Condition>();
+	conditions.add(condition);
+	return new ControlCondition(conditions, negConditions);
+    }
+
     @Override
     public String getAddress() {
 	String id = "";
 	if (conditions.isEmpty())
 	    return "";
-	for (AstNode condition : conditions) {
+	for (Condition condition : conditions) {
 	    /* Get the ID of the non-negated condition. */
-	    if (condition.getID() == null && condition instanceof UnaryExpression) {
-		UnaryExpression ue = (UnaryExpression) condition;
+	    if (condition.getCondition().getID() == null
+		    && condition.getCondition() instanceof UnaryExpression) {
+		UnaryExpression ue = (UnaryExpression) condition.getCondition();
 		if (ue.getOperator() == Token.NOT)
 		    id += ((ParenthesizedExpression) ue.getOperand()).getExpression().getID() + ",";
 	    } else {
-		id += condition.getID() + ",";
+		id += condition.getCondition().getID() + ",";
 	    }
 	}
 	return id.substring(0, id.length() - 1);
@@ -128,15 +146,16 @@ public class ControlCondition implements DependencyIdentifier {
 	List<Integer> addresses = new ArrayList<Integer>();
 	if (conditions.isEmpty())
 	    return addresses;
-	for (AstNode condition : conditions) {
+	for (Condition condition : conditions) {
 	    /* Get the ID of the non-negated condition. */
-	    if (condition.getID() == null && condition instanceof UnaryExpression) {
-		UnaryExpression ue = (UnaryExpression) condition;
+	    if (condition.getCondition().getID() == null
+		    && condition.getCondition() instanceof UnaryExpression) {
+		UnaryExpression ue = (UnaryExpression) condition.getCondition();
 		if (ue.getOperator() == Token.NOT)
 		    addresses.add(
 			    ((ParenthesizedExpression) ue.getOperand()).getExpression().getID());
 	    } else {
-		addresses.add(condition.getID());
+		addresses.add(condition.getCondition().getID());
 	    }
 	}
 	return addresses;

@@ -26,7 +26,6 @@ import org.mozilla.javascript.ast.PropertyGet;
 import org.mozilla.javascript.ast.StringLiteral;
 import org.mozilla.javascript.ast.UnaryExpression;
 
-import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode.ChangeType;
 import multidiffplus.jsanalysis.abstractdomain.Address;
 import multidiffplus.jsanalysis.abstractdomain.Addresses;
 import multidiffplus.jsanalysis.abstractdomain.BValue;
@@ -34,7 +33,7 @@ import multidiffplus.jsanalysis.abstractdomain.Bool;
 import multidiffplus.jsanalysis.abstractdomain.Change;
 import multidiffplus.jsanalysis.abstractdomain.Closure;
 import multidiffplus.jsanalysis.abstractdomain.Control;
-import multidiffplus.jsanalysis.abstractdomain.DefinerIDs;
+import multidiffplus.jsanalysis.abstractdomain.Dependencies;
 import multidiffplus.jsanalysis.abstractdomain.FunctionClosure;
 import multidiffplus.jsanalysis.abstractdomain.InternalFunctionProperties;
 import multidiffplus.jsanalysis.abstractdomain.InternalObjectProperties;
@@ -108,7 +107,8 @@ public class ExpEval {
 	}
 
 	/* We could not evaluate the expression. Return top. */
-	return BValue.top(Change.convU(node));
+	return BValue.top(Change.convU(node, Dependencies.injectValueChange(node)),
+		Dependencies.injectValue(node));
 
     }
 
@@ -130,7 +130,7 @@ public class ExpEval {
 	/* This is an identifier.. so we attempt to dereference it. */
 	BValue val = resolveValue(eg);
 	if (val == null)
-	    return BValue.top(Change.u());
+	    return BValue.top(Change.u(), Dependencies.injectValue(eg));
 	return val;
     }
 
@@ -146,7 +146,8 @@ public class ExpEval {
 	Address addr = state.trace.makeAddr(f.getID(), "");
 	addr = state.trace.modAddr(addr, JSClass.CFunction);
 	state.store = Helpers.createFunctionObj(closure, state.store, state.trace, addr, f);
-	return Address.inject(addr, Change.convU(f), DefinerIDs.inject(f.getID()));
+	return Address.inject(addr, Change.convU(f, Dependencies.injectValueChange(f)),
+		Dependencies.injectValue(f));
     }
 
     /**
@@ -180,7 +181,8 @@ public class ExpEval {
 	Address objAddr = state.trace.makeAddr(ol.getID(), "");
 	state.store = state.store.alloc(objAddr, obj);
 
-	return Address.inject(objAddr, Change.convU(ol), DefinerIDs.inject(ol.getID()));
+	return Address.inject(objAddr, Change.convU(ol, Dependencies.injectValueChange(ol)),
+		Dependencies.injectValue(ol));
     }
 
     /**
@@ -208,7 +210,8 @@ public class ExpEval {
 	Address objAddr = state.trace.makeAddr(al.getID(), "");
 	state.store = state.store.alloc(objAddr, obj);
 
-	return Address.inject(objAddr, Change.convU(al), DefinerIDs.inject(al.getID()));
+	return Address.inject(objAddr, Change.convU(al, Dependencies.injectValueChange(al)),
+		Dependencies.injectValue(al));
 
     }
 
@@ -221,40 +224,29 @@ public class ExpEval {
 
 	BValue operand = this.eval(ue.getOperand());
 
-	/*
-	 * First create a bottom BValue with the proper change type. We will put in
-	 * values later.
-	 */
-	BValue val;
-	if (operand.change.le == Change.LatticeElement.CHANGED
-		|| operand.change.le == Change.LatticeElement.TOP) {
-	    val = BValue.bottom(Change.c());
-	} else if (ue.getChangeType() == ChangeType.INSERTED
-		|| ue.getChangeType() == ChangeType.REMOVED
-		|| ue.getChangeType() == ChangeType.UPDATED) {
-	    val = BValue.bottom(Change.c());
-	} else {
-	    val = BValue.bottom(Change.u());
-	}
+	// Change propagation:
+	//
+	// (1) If the underlying value has changes, the post-operator value has also
+	// changed and inherits the original values dependencies.
+	//
+	// (2) If the operator has changed, the post-operator value has also changed and
+	// a new criterion (the unary-operator expression) is added.
+	Change operatorChange = Change.conv(ue, Dependencies.injectValueChange(ue));
 
-	/*
-	 * For now, just do a basic conservative estimate of unary operator evaluations.
-	 */
+	// Join the operand and operator changes.
+	operatorChange = operand.change.join(operatorChange);
 
+	// Conservatively estimate the unary operator evaluations.
 	switch (ue.getType()) {
 	case Token.NOT:
-	    val.booleanAD.le = Bool.LatticeElement.TOP;
-	    return val;
+	    return Bool.inject(Bool.top(), operatorChange, Dependencies.injectValue(ue));
 	case Token.INC:
 	case Token.DEC:
-	    val.numberAD.le = Num.LatticeElement.TOP;
-	    return val;
+	    return Num.inject(Num.top(), operatorChange, Dependencies.injectValue(ue));
 	case Token.TYPEOF:
-	    val.stringAD.le = Str.LatticeElement.TOP;
-	    return val;
+	    return Str.inject(Str.top(), operatorChange, Dependencies.injectValue(ue));
 	default:
-	    val.undefinedAD.le = Undefined.LatticeElement.TOP;
-	    return val;
+	    return BValue.top(operatorChange, Dependencies.injectValue(ue));
 	}
 
     }
@@ -279,7 +271,7 @@ public class ExpEval {
 	    /* This is an identifier.. so we attempt to dereference it. */
 	    BValue val = resolveValue(ie);
 	    if (val == null)
-		return BValue.top(Change.u());
+		return BValue.top(Change.u(), Dependencies.injectValue(ie));
 	    return val;
 	}
 	case Token.ADD:
@@ -316,25 +308,20 @@ public class ExpEval {
 	BValue left = this.eval(ie.getLeft());
 	BValue right = this.eval(ie.getRight());
 
-	/*
-	 * First create a bottom BValue with the proper change type. We will put in
-	 * values later.
-	 */
-	BValue val;
-	if (left.change.le == Change.LatticeElement.CHANGED
-		|| left.change.le == Change.LatticeElement.TOP
-		|| right.change.le == Change.LatticeElement.CHANGED
-		|| right.change.le == Change.LatticeElement.TOP) {
-	    val = BValue.top(Change.c());
-	} else if (ie.getChangeType() == ChangeType.INSERTED
-		|| ie.getChangeType() == ChangeType.REMOVED
-		|| ie.getChangeType() == ChangeType.UPDATED) {
-	    val = BValue.top(Change.c());
-	} else {
-	    val = BValue.top(Change.u());
-	}
+	// Change propagation:
+	//
+	// (1) If the underlying value has changes, the post-operator value has also
+	// changed and inherits the original values dependencies.
+	//
+	// (2) If the operator has changed, the post-operator value has also changed and
+	// a new criterion (the unary-operator expression) is added.
+	Change operatorChange = Change.conv(ie, Dependencies.injectValueChange(ie));
 
-	return val;
+	// Join the operand and operator changes.
+	operatorChange = left.change.join(right.change).join(operatorChange);
+
+	// Conservatively estimate the binary operator evaluations.
+	return BValue.top(operatorChange, Dependencies.injectValue(ie));
 
     }
 
@@ -346,52 +333,56 @@ public class ExpEval {
 	BValue left = this.eval(ie.getLeft());
 	BValue right = this.eval(ie.getRight());
 
-	/*
-	 * First create a bottom BValue with the proper change type. We will put in
-	 * values later.
-	 */
-	BValue plus;
-	if (left.change.le == Change.LatticeElement.CHANGED
-		|| left.change.le == Change.LatticeElement.TOP
-		|| right.change.le == Change.LatticeElement.CHANGED
-		|| right.change.le == Change.LatticeElement.TOP) {
-	    plus = BValue.bottom(Change.c());
-	} else if (ie.getChangeType() == ChangeType.INSERTED
-		|| ie.getChangeType() == ChangeType.REMOVED
-		|| ie.getChangeType() == ChangeType.UPDATED) {
-	    plus = BValue.top(Change.c());
-	} else {
-	    plus = BValue.bottom(Change.u());
-	}
+	// Change propagation:
+	//
+	// (1) If either of the underlying values have changed, the post-operator value
+	// has also changed and inherits the original values dependencies.
+	//
+	// (2) If the operator has changed, the post-operator value has also changed and
+	// a new criterion (the unary-operator expression) is added.
+	Change operatorChange = Change.conv(ie, Dependencies.injectValueChange(ie));
 
-	/* Assign a definer ID to track this new value. */
-	ie.setDummy();
-	plus.definerIDs = plus.definerIDs.join(DefinerIDs.inject(ie.getID()));
+	// Join the operand and operator changes.
+	operatorChange = left.change.join(right.change).join(operatorChange);
 
-	/*
-	 * For now, just do a basic conservative estimate of binary operator
-	 * evaluations.
-	 */
+	// Conservatively estimate the binary operator evaluations.
+	BValue val = BValue.bottom(operatorChange, Dependencies.injectValue(ie));
 
-	/* Strings. */
+	// Strings
 	if (left.stringAD.le != Str.LatticeElement.BOTTOM
 		|| right.stringAD.le != Str.LatticeElement.BOTTOM) {
-	    plus.stringAD.le = Str.LatticeElement.TOP;
+	    val = val.join(Str.inject(Str.top(), Change.bottom(), Dependencies.bot()));
 	}
-	/* Numbers. */
+	// Numbers
 	if (left.numberAD.le != Num.LatticeElement.BOTTOM
 		|| right.numberAD.le != Num.LatticeElement.BOTTOM) {
-	    plus.numberAD.le = Num.LatticeElement.TOP;
+	    val = val.join(Num.inject(Num.top(), Change.bottom(), Dependencies.bot()));
 	}
-	/* Booleans and Nulls. */
-	if ((left.booleanAD.le != Bool.LatticeElement.BOTTOM
-		|| left.nullAD.le == Null.LatticeElement.TOP)
-		&& (right.booleanAD.le != Bool.LatticeElement.BOTTOM
-			|| right.nullAD.le == Null.LatticeElement.TOP)) {
-	    plus.numberAD.le = Num.LatticeElement.TOP;
+	// Booleans
+	if (left.booleanAD.le != Bool.LatticeElement.BOTTOM
+		|| right.booleanAD.le != Bool.LatticeElement.BOTTOM) {
+	    val = val.join(Num.inject(Num.top(), Change.bottom(), Dependencies.bot()));
+	}
+	// Nulls
+	if (left.nullAD.le != Null.LatticeElement.BOTTOM
+		|| right.nullAD.le != Null.LatticeElement.BOTTOM) {
+	    val = val.join(Num.inject(Num.top(), Change.bottom(), Dependencies.bot()));
+	}
+	// Undefined
+	if (left.undefinedAD.le != Undefined.LatticeElement.BOTTOM
+		|| right.undefinedAD.le != Undefined.LatticeElement.BOTTOM) {
+	    val = val.join(Num.inject(Num.top(), Change.bottom(), Dependencies.bot()));
+	}
+	// Objects and Arrays
+	if (left.addressAD.le != Addresses.LatticeElement.BOTTOM
+		|| right.addressAD.le != Addresses.LatticeElement.BOTTOM) {
+	    // Objects
+	    val = val.join(Num.inject(Num.top(), Change.bottom(), Dependencies.bot()));
+	    // Arrays
+	    val = val.join(Str.inject(Str.top(), Change.bottom(), Dependencies.bot()));
 	}
 
-	return plus;
+	return val;
 
     }
 
@@ -403,32 +394,24 @@ public class ExpEval {
 	BValue left = this.eval(ie.getLeft());
 	BValue right = this.eval(ie.getRight());
 
-	/*
-	 * First create a bottom BValue with the proper change type. We will put in
-	 * values later.
-	 */
-	BValue val;
-	if (left.change.le == Change.LatticeElement.CHANGED
-		|| left.change.le == Change.LatticeElement.TOP
-		|| right.change.le == Change.LatticeElement.CHANGED
-		|| right.change.le == Change.LatticeElement.TOP) {
-	    val = BValue.bottom(Change.c());
-	} else if (ie.getChangeType() == ChangeType.INSERTED
-		|| ie.getChangeType() == ChangeType.REMOVED
-		|| ie.getChangeType() == ChangeType.UPDATED) {
-	    val = BValue.top(Change.c());
-	} else {
-	    val = BValue.bottom(Change.u());
+	// Change propagation:
+	//
+	// (1) If either of the underlying values have changed, the post-operator value
+	// has also changed and inherits the original values dependencies.
+	//
+	// (2) If the operator has changed, the post-operator value has also changed and
+	// a new criterion (the unary-operator expression) is added.
+	Change operatorChange = Change.conv(ie, Dependencies.injectValueChange(ie));
+	if (operatorChange.isChanged()) {
+	    // Add a criterion ID to the AST node.
+	    ie.addCriterion("VALUE_CHANGE", ie.getID());
 	}
 
-	/*
-	 * For now, just do a basic conservative estimate of binary operator
-	 * evaluations.
-	 */
+	// Join the operand and operator changes.
+	operatorChange = left.change.join(right.change).join(operatorChange);
 
-	val.numberAD.le = Num.LatticeElement.TOP;
-
-	return val;
+	// Conservatively estimate the binary operator evaluations.
+	return Num.inject(Num.top(), operatorChange, Dependencies.injectValue(ie));
 
     }
 
@@ -438,8 +421,9 @@ public class ExpEval {
      */
     public BValue evalName(Name name) {
 	BValue val = resolveValue(name);
-	if (val == null)
-	    return BValue.top(Change.u());
+	if (val == null) {
+	    return BValue.top(Change.u(), Dependencies.injectValue(name));
+	}
 	return val;
     }
 
@@ -448,8 +432,9 @@ public class ExpEval {
      * @return the abstract interpretation of the number literal
      */
     public BValue evalNumberLiteral(NumberLiteral numl) {
-	return Num.inject(new Num(Num.LatticeElement.VAL, numl.getValue()), Change.convU(numl),
-		DefinerIDs.inject(numl.getID()));
+	return Num.inject(new Num(Num.LatticeElement.VAL, numl.getValue()),
+		Change.convU(numl, Dependencies.injectValueChange(numl)),
+		Dependencies.injectValue(numl));
     }
 
     /**
@@ -461,7 +446,8 @@ public class ExpEval {
 
 	Str str = null;
 	String val = strl.getValue();
-	Change change = Change.convU(strl);
+	Change change = Change.convU(strl, Dependencies.injectValueChange(strl));
+
 	if (val.equals(""))
 	    str = new Str(Str.LatticeElement.SBLANK);
 	else if (NumberUtils.isCreatable(val)) {
@@ -470,7 +456,7 @@ public class ExpEval {
 	    str = new Str(Str.LatticeElement.SNOTNUMNORSPLVAL, val);
 	}
 
-	return Str.inject(str, change, DefinerIDs.inject(strl.getID()));
+	return Str.inject(str, change, Dependencies.injectValue(strl));
 
     }
 
@@ -480,21 +466,21 @@ public class ExpEval {
      * @return the abstract interpretation of the keyword literal.
      */
     public BValue evalKeywordLiteral(KeywordLiteral kwl) {
-	Change change = Change.conv(kwl);
+	Change change = Change.conv(kwl, Dependencies.injectValueChange(kwl));
 	switch (kwl.getType()) {
 	case Token.THIS:
 	    return state.store.apply(state.selfAddr);
 	case Token.NULL:
-	    return Null.inject(Null.top(), change, DefinerIDs.inject(kwl.getID()));
+	    return Null.inject(Null.top(), change, Dependencies.injectValue(kwl));
 	case Token.TRUE:
 	    return Bool.inject(new Bool(Bool.LatticeElement.TRUE), change,
-		    DefinerIDs.inject(kwl.getID()));
+		    Dependencies.injectValue(kwl));
 	case Token.FALSE:
 	    return Bool.inject(new Bool(Bool.LatticeElement.FALSE), change,
-		    DefinerIDs.inject(kwl.getID()));
+		    Dependencies.injectValue(kwl));
 	case Token.DEBUGGER:
 	default:
-	    return BValue.bottom(change);
+	    return BValue.bottom(change, Dependencies.injectValue(kwl));
 	}
     }
 
@@ -520,34 +506,7 @@ public class ExpEval {
 	/* Resolve the right hand side to a value. */
 	BValue val = this.eval(rhs);
 
-	/* CPSC513: If the value is a changed integer, verify with symex. */
-	if (val.numberAD.le != Num.LatticeElement.BOTTOM
-		&& (val.change.le == Change.LatticeElement.CHANGED
-			|| val.change.le == Change.LatticeElement.TOP)) {
-	    // TODO: Create a backwards slice starting from here, for both versions.
-	    // verify(String Vo, String Vn, Array INITo, Array INITn, Array CONSTRAINT,
-	    // ASSERTION)
-
-	    // PROBLEM: We don't execute the programs together... maybe we should start a
-	    // new project
-	    // for this? Probably. This is getting a little out of control. Maybe we do a
-	    // simplified
-	    // analysis that only handles integers and arrays or something.
-	}
-
-	/*
-	 * Conservatively add a dummy DefinerID to the BValue if there are currently no
-	 * DefinerIDs
-	 */
-	if (val.definerIDs.isEmpty()) {
-	    val.definerIDs = val.definerIDs.strongUpdate(rhs.getID());
-	    rhs.setDummy();
-	}
-
 	/* Update the values in the store. */
-	// TODO: Is this correct? We should probably only do a strong update if
-	// there is only one address. Otherwise we don't know which one
-	// to update.
 	for (Address addr : addrs) {
 	    state.store = state.store.strongUpdate(addr, val);
 	}
@@ -564,45 +523,9 @@ public class ExpEval {
 	Set<Address> addrs = this.resolveOrCreate(lhs);
 
 	/* Update the values in the store. */
-	// TODO: Is this correct? We should probably only do a strong update if
-	// there is only one address. Otherwise we don't know which one
-	// to update.
 	for (Address addr : addrs) {
 	    state.store = state.store.strongUpdate(addr, val);
 	}
-
-    }
-
-    /**
-     * @return The list of functions pointed to by the value.
-     */
-    private List<Address> extractFunctions(BValue val, List<Address> functionAddrs,
-	    Set<Address> visited) {
-
-	for (Address objAddr : val.addressAD.addresses) {
-	    Obj obj = state.store.getObj(objAddr);
-
-	    if (obj.internalProperties.klass == JSClass.CFunction) {
-		InternalFunctionProperties ifp = (InternalFunctionProperties) obj.internalProperties;
-		if (ifp.closure instanceof FunctionClosure) {
-		    functionAddrs.add(objAddr);
-		}
-	    }
-
-	    /* Recursively look for object properties that are functions. */
-	    for (Property property : obj.externalProperties.values()) {
-
-		/* Avoid circular references. */
-		if (visited.contains(property.address))
-		    continue;
-		visited.add(property.address);
-
-		extractFunctions(state.store.apply(property.address), functionAddrs, visited);
-	    }
-
-	}
-
-	return functionAddrs;
 
     }
 
@@ -680,37 +603,35 @@ public class ExpEval {
 		    control, callStack);
 	}
 
-	/* Get the call change type. */
-	boolean callChange = Change.convU(fc).le == Change.LatticeElement.CHANGED
-		|| Change.convU(fc).le == Change.LatticeElement.TOP ? true : false;
+	// Get the call change type.
+	Change retValChange = Change.convU(fc, Dependencies.injectValueChange(fc));
 
 	if (newState == null) {
-	    /*
-	     * Because our analysis is not complete, the identifier may not point to any
-	     * function object. In this case, we assume the (local) state is unchanged, but
-	     * add BValue.TOP as the return value.
-	     */
-	    BValue value = callChange ? BValue.top(Change.top()) : BValue.top(Change.u());
-	    state.scratch = state.scratch.strongUpdate(value, null);
+	    // Because our analysis is not complete, the identifier may not
+	    // point to any function object. In this case, we assume the
+	    // (local) state is unchanged, but add BValue.TOP as the return
+	    // value.
+
+	    // Create the return value.
+	    BValue retVal = BValue.top(retValChange, Dependencies.injectValue(fc));
+
+	    // Add the return value to the scratch space.
+	    state.scratch = state.scratch.strongUpdate(retVal, null);
 	    newState = new State(state.store, state.env, state.scratch, state.trace, state.control,
 		    state.selfAddr);
-
-	    /* Create the return value. */
-	    BValue retVal = BValue.top(Change.convU(fc));
-
-	    newState.scratch = newState.scratch.strongUpdate(retVal, null);
 	} else {
+	    // The function exists and must be evaluated.
 
 	    BValue retVal = newState.scratch.applyReturn();
 	    if (retVal == null) {
-		/* Functions with no return statement return undefined. */
-		retVal = Undefined.inject(Undefined.top(), Change.u(), DefinerIDs.bottom());
+		// Functions with no return statement return undefined.
+		retVal = Undefined.inject(Undefined.top(), Change.u(),
+			Dependencies.injectValue(fc));
 		newState.scratch = newState.scratch.strongUpdate(retVal, null);
-	    }
-
-	    /* This could be a new value if the call is new. */
-	    if (callChange) {
-		newState.scratch.applyReturn().change = Change.top();
+	    } else {
+		// This could be a new value if the call is new.
+		newState.scratch.strongUpdate(
+			retVal.join(BValue.bottom(retValChange, Dependencies.bot())), null);
 	    }
 
 	}
@@ -791,21 +712,22 @@ public class ExpEval {
 	     * points to those objects.
 	     */
 	    Addresses selfAddrs = new Addresses(Addresses.LatticeElement.SET);
-	    DefinerIDs definerIDs = DefinerIDs.bottom();
+	    Dependencies dependencies = Dependencies.bot();
 	    for (Address addr : addrs) {
 		BValue val = this.state.store.apply(addr);
 		for (Address objAddr : val.addressAD.addresses) {
 		    Obj obj = this.state.store.getObj(objAddr);
 		    if (obj != null) {
 			selfAddrs.addresses.add(objAddr);
-			definerIDs = definerIDs.join(val.definerIDs);
+			dependencies = dependencies.join(val.deps);
 		    }
 		}
 	    }
-	    if (selfAddrs.addresses.isEmpty())
-		return BValue.bottom(Change.u());
+	    if (selfAddrs.addresses.isEmpty()) {
+		return BValue.bottom(Change.u(), Dependencies.injectValue(node));
+	    }
 
-	    return Addresses.inject(selfAddrs, Change.u(), definerIDs);
+	    return Addresses.inject(selfAddrs, Change.u(), dependencies);
 	} else {
 	    /* Ignore everything else (e.g., method calls) for now. */
 	    return null;
@@ -833,7 +755,7 @@ public class ExpEval {
 	    state.env = state.env.strongUpdate(node.toSource(), new Variable(node.getID(),
 		    node.toSource(), Change.bottom(), new Addresses(addr)));
 	    state.store = state.store.alloc(addr,
-		    Addresses.dummy(Change.bottom(), DefinerIDs.inject(node.getID())));
+		    Addresses.dummy(Change.bottom(), Dependencies.injectValue(node)));
 	    addrs = new Addresses(addr);
 	}
 
@@ -884,7 +806,7 @@ public class ExpEval {
 		Obj dummy = new Obj(ext, new InternalObjectProperties());
 		Address addr = state.trace.makeAddr(ie.getLeft().getID(), "");
 		state.store = state.store.alloc(addr, dummy);
-		val = val.join(Address.inject(addr, Change.bottom(), DefinerIDs.bottom()));
+		val = val.join(Address.inject(addr, Change.bottom(), Dependencies.bot()));
 		state.store = state.store.strongUpdate(valAddr, val);
 	    }
 
@@ -915,7 +837,7 @@ public class ExpEval {
 		    propAddr = state.trace.makeAddr(ie.getRight().getID(),
 			    ie.getRight().toSource());
 		    BValue propVal = Addresses.dummy(Change.bottom(),
-			    DefinerIDs.inject(ie.getRight().getID()));
+			    Dependencies.injectValue(ie.getRight()));
 		    state.store = state.store.alloc(propAddr, propVal);
 
 		    /* Add the property to the external properties of the object. */
@@ -978,7 +900,7 @@ public class ExpEval {
 		Obj dummy = new Obj(ext, new InternalObjectProperties());
 		Address addr = state.trace.makeAddr(eg.getID(), "");
 		state.store = state.store.alloc(addr, dummy);
-		val = val.join(Address.inject(addr, Change.bottom(), DefinerIDs.bottom()));
+		val = val.join(Address.inject(addr, Change.bottom(), Dependencies.bot()));
 		state.store = state.store.strongUpdate(valAddr, val);
 	    }
 
@@ -1020,8 +942,8 @@ public class ExpEval {
 		     * Create a new address (BValue) for the property and put it in the store.
 		     */
 		    propAddr = state.trace.makeAddr(eg.getID(), elementString);
-		    BValue propVal = Addresses.dummy(Change.bottom(),
-			    DefinerIDs.inject(eg.getID()));
+
+		    BValue propVal = Addresses.dummy(Change.bottom(), Dependencies.injectValue(eg));
 		    state.store = state.store.alloc(propAddr, propVal);
 
 		    /* Add the property to the external properties of the object. */
@@ -1104,6 +1026,39 @@ public class ExpEval {
      */
     public BValue resolveReturn() {
 	return this.state.scratch.applyReturn();
+    }
+
+    /**
+     * @return The list of functions pointed to by the value.
+     */
+    private List<Address> extractFunctions(BValue val, List<Address> functionAddrs,
+	    Set<Address> visited) {
+
+	for (Address objAddr : val.addressAD.addresses) {
+	    Obj obj = state.store.getObj(objAddr);
+
+	    if (obj.internalProperties.klass == JSClass.CFunction) {
+		InternalFunctionProperties ifp = (InternalFunctionProperties) obj.internalProperties;
+		if (ifp.closure instanceof FunctionClosure) {
+		    functionAddrs.add(objAddr);
+		}
+	    }
+
+	    /* Recursively look for object properties that are functions. */
+	    for (Property property : obj.externalProperties.values()) {
+
+		/* Avoid circular references. */
+		if (visited.contains(property.address))
+		    continue;
+		visited.add(property.address);
+
+		extractFunctions(state.store.apply(property.address), functionAddrs, visited);
+	    }
+
+	}
+
+	return functionAddrs;
+
     }
 
 }

@@ -21,6 +21,7 @@ import multidiffplus.jsanalysis.abstractdomain.Change;
 import multidiffplus.jsanalysis.abstractdomain.Closure;
 import multidiffplus.jsanalysis.abstractdomain.Control;
 import multidiffplus.jsanalysis.abstractdomain.DefinerIDs;
+import multidiffplus.jsanalysis.abstractdomain.Dependencies;
 import multidiffplus.jsanalysis.abstractdomain.Environment;
 import multidiffplus.jsanalysis.abstractdomain.FunctionClosure;
 import multidiffplus.jsanalysis.abstractdomain.InternalFunctionProperties;
@@ -88,10 +89,10 @@ public class Helpers {
 
 	Map<String, Property> external = new HashMap<String, Property>();
 	store = addProp(function.getID(), "length",
-		Num.inject(Num.top(), Change.u(), DefinerIDs.bottom()), external, store, trace);
+		Num.inject(Num.top(), Change.u(), Dependencies.bot()), external, store, trace);
 
 	InternalFunctionProperties internal = new InternalFunctionProperties(
-		Address.inject(StoreFactory.Function_proto_Addr, Change.u(), DefinerIDs.bottom()),
+		Address.inject(StoreFactory.Function_proto_Addr, Change.u(), Dependencies.bot()),
 		closure, JSClass.CFunction);
 
 	store = store.alloc(address, new Obj(external, internal));

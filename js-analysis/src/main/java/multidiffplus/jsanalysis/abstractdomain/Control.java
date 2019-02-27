@@ -9,74 +9,92 @@ import multidiffplus.cfg.CFGNode;
  * Stores the state of control flow changes.
  */
 public class Control {
-	
-	private ControlCall call;
-	private ControlCondition condition;
 
-	public Control() {
-		call = new ControlCall();
-		condition = new ControlCondition();
-	}
+    private ControlCall call;
+    private ControlCondition condition;
 
-	public Control(ControlCall call, ControlCondition condition) {
-		this.call = call;
-		this.condition = condition;
-	}
+    private Control() {
+	call = ControlCall.bottom();
+	condition = ControlCondition.bottom();
+    }
 
-	@Override
-	public Control clone() {
-		return new Control(call, condition);
-	}
+    private Control(ControlCall call, ControlCondition condition) {
+	this.call = call;
+	this.condition = condition;
+    }
 
-	/**
-	 * Updates the state for the branch conditions exiting the CFGNode.
-	 * @return The new control state after update.
+    @Override
+    public Control clone() {
+	return new Control(call, condition);
+    }
+
+    /**
+     * Updates the state for the branch conditions exiting the CFGNode.
+     * 
+     * @return The new control state after update.
+     */
+    public Control update(CFGEdge edge, CFGNode node) {
+	return new Control(call, condition.update(edge, node));
+    }
+
+    /**
+     * Updates the state for a function call.
+     * 
+     * @return The new control state after updates.
+     */
+    public Control update(AstNode fc) {
+
+	/*
+	 * If this is a new function call, we interpret the control of the callee as
+	 * changed.
 	 */
-	public Control update(CFGEdge edge, CFGNode node) {
-		return new Control(call, condition.update(edge, node));
-	}
-	
-	/**
-	 * Updates the state for a function call.
-	 * @return The new control state after updates.
+	Change change = Change.convU(fc, Dependencies.injectCallChange(fc));
+	if (change.isChanged())
+	    return Control.inject(call.update(change));
+
+	/*
+	 * If this is not a new function call, the control-call lattice is set to
+	 * bottom.
 	 */
-	public Control update(AstNode fc) {
+	return Control.bottom();
 
-		/* If this is a new function call, we interpret the control of
-		 * the callee as changed. */
-		if(Change.convU(fc).le == Change.LatticeElement.CHANGED)
-			return new Control(call.update(fc.getID()), new ControlCondition());
+    }
 
-		/* If this is not a new function call,  the control-call lattice is set to
-		* bottom. */
-		return new Control(new ControlCall(), new ControlCondition());
+    /**
+     * Joins two Control abstract domains.
+     * 
+     * @return The new state (ControlFlowChange) after join.
+     */
+    public Control join(Control right) {
+	return new Control(call.join(right.call), condition.join(right.condition));
+    }
 
-	}
-	
-	/**
-	 * Joins two Control abstract domains.
-	 * @return The new state (ControlFlowChange) after join.
-	 */
-	public Control join(Control right) {
+    public ControlCall getCall() {
+	return call;
+    }
 
-		return new Control(call.join(right.call),
-						   condition.join(right.condition));
+    public ControlCondition getCondition() {
+	return condition;
+    }
 
-	}
-	
-	public ControlCall getCall() {
-		return call;
-	}
-	
-	public ControlCondition getCondition() {
-		return condition;
-	}
-	
-	@Override
-	public boolean equals(Object o) {
-		if(!(o instanceof Control)) return false;
-		Control cc = (Control)o;
-		return call.equals(cc.call);
-	}
+    public static Control bottom() {
+	return new Control();
+    }
+
+    public static Control inject(ControlCall call) {
+	return new Control(call, ControlCondition.bottom());
+    }
+
+    public static Control inject(ControlCondition condition) {
+	return new Control(ControlCall.bottom(), condition);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+	if (!(o instanceof Control))
+	    return false;
+	Control cc = (Control) o;
+	return call.equals(cc.call);
+    }
 
 }
