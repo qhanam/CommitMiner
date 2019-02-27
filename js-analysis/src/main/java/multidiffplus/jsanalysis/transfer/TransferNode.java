@@ -10,10 +10,9 @@ import org.mozilla.javascript.ast.VariableInitializer;
 
 import multidiffplus.cfg.CFGNode;
 import multidiffplus.jsanalysis.abstractdomain.Address;
-import multidiffplus.jsanalysis.abstractdomain.Addresses;
 import multidiffplus.jsanalysis.abstractdomain.BValue;
 import multidiffplus.jsanalysis.abstractdomain.Change;
-import multidiffplus.jsanalysis.abstractdomain.DefinerIDs;
+import multidiffplus.jsanalysis.abstractdomain.Dependencies;
 import multidiffplus.jsanalysis.abstractdomain.State;
 import multidiffplus.jsanalysis.abstractdomain.Undefined;
 import multidiffplus.jsanalysis.abstractdomain.Variable;
@@ -84,8 +83,8 @@ public class TransferNode {
 
 	/* Evaluate the return value from the return expression. */
 	if (rs.getReturnValue() == null) {
-	    retVal = Undefined.inject(Undefined.top(), Change.convU(rs),
-		    DefinerIDs.inject(rs.getID()));
+	    retVal = Undefined.inject(Undefined.top(), Change.convU(rs, Dependencies.bot()),
+		    Dependencies.injectValue(rs));
 	} else {
 	    retVal = expEval.eval(rs.getReturnValue());
 	}
@@ -95,28 +94,30 @@ public class TransferNode {
 	if (oldVal != null)
 	    retVal = retVal.join(oldVal);
 
-	/*
-	 * Conservatively add a dummy DefinerID to the BValue if there are currently no
-	 * DefinerIDs
-	 */
-	if (retVal.definerIDs.isEmpty()) {
-	    if (rs.getReturnValue() == null) {
-		retVal.definerIDs = retVal.definerIDs.strongUpdate(rs.getID());
-		rs.setDummy();
-	    } else {
-		retVal.definerIDs = retVal.definerIDs.strongUpdate(rs.getReturnValue().getID());
-		rs.getReturnValue().setDummy();
-	    }
-	}
+	// /*
+	// * Conservatively add a dummy DefinerID to the BValue if there are currently
+	// no
+	// * DefinerIDs
+	// */
+	// if (retVal.deps.isEmpty()) {
+	// if (rs.getReturnValue() == null) {
+	// retVal.definerIDs = retVal.definerIDs.strongUpdate(rs.getID());
+	// rs.setDummy();
+	// } else {
+	// retVal.definerIDs =
+	// retVal.definerIDs.strongUpdate(rs.getReturnValue().getID());
+	// rs.getReturnValue().setDummy();
+	// }
+	// }
+	//
 
-	/*
-	 * Make a fake var in the environment and point it to the value so that if it
-	 * contains a function, it will be analyzed during the 'accessible function'
-	 * phase of the analysis.
-	 */
+	// Make a fake var in the environment and point it to the value so that
+	// if it contains a function, it will be analyzed during the 'accessible
+	// function' phase of the analysis.
 	Address address = state.trace.makeAddr(rs.getID(), "");
-	state.env = state.env.strongUpdate("~retval~",
-		new Variable(rs.getID(), "~retval~", new Addresses(address)));
+	String name = "~retval~";
+	state.env = state.env.strongUpdate(name,
+		Variable.inject(name, address, Change.bottom(), Dependencies.injectVariable(rs)));
 	state.store = state.store.alloc(address, retVal);
 
 	/* Update the return value on the scratchpad. */

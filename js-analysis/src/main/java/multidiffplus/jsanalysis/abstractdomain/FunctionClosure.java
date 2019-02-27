@@ -165,10 +165,12 @@ public class FunctionClosure extends Closure {
 			store = store.alloc(argAddr, argObj);
 
 		    }
-		    Variable identity = new Variable(paramName.getID(), paramName.toSource(),
-			    Change.conv(paramName, Dependencies.injectValueChange(paramName)),
-			    new Addresses(prop.address));
-		    env = env.strongUpdate(paramName.toSource(), identity);
+
+		    String name = paramName.toSource();
+		    Variable identity = Variable.inject(name, prop.address,
+			    Change.convU(param, Dependencies.injectVariableChange(param)),
+			    Dependencies.injectVariable(param));
+		    env = env.strongUpdate(name, identity);
 		}
 		i++;
 	    }
@@ -184,8 +186,8 @@ public class FunctionClosure extends Closure {
 		callStack.getCFGs(), trace);
 
 	/* Add 'this' to environment (points to caller's object or new object). */
-	env = env.strongUpdate("this", new Variable(cfg.getEntryNode().getId(), "this", Change.u(),
-		new Addresses(selfAddr)));
+	env = env.strongUpdate("this", Variable.inject("this", selfAddr, Change.u(),
+		Dependencies.injectVariable((AstNode) cfg.getEntryNode().getStatement())));
 
 	/* Create the initial state for the function call. */
 	return new State(store, env, scratchpad, trace, control, selfAddr);

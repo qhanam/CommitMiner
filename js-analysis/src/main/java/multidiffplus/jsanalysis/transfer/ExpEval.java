@@ -553,13 +553,13 @@ public class ExpEval {
 	    BValue argVal = eval(arg);
 
 	    if (arg instanceof ObjectLiteral) {
-		/*
-		 * If this is an object literal, make a fake var in the environment and point it
-		 * to the object literal.
-		 */
+		// If this is an object literal, make a fake var in the
+		// environment and point it to the object literal. This is
+		// useful for function reachability.
 		Address address = state.trace.makeAddr(arg.getID(), "");
-		state.env.strongUpdateNoCopy(arg.getID().toString(),
-			new Variable(arg.getID(), arg.getID().toString(), new Addresses(address)));
+		String argName = arg.getID().toString();
+		state.env.strongUpdateNoCopy(argName,
+			Variable.inject(argName, address, Change.bottom(), Dependencies.bot()));
 		state.store = state.store.alloc(address, argVal);
 	    }
 
@@ -747,13 +747,16 @@ public class ExpEval {
 
 	Addresses addrs = state.env.apply(node.toSource());
 	if (addrs == null) {
-	    /*
-	     * Assume the variable exists in the environment (ie. not a TypeError) and add
-	     * it to the environment/store as BValue.TOP since we know nothing about it.
-	     */
+	    // TODO: Since we search for global variables beforehand, we should
+	    // never reach this.
+
+	    // Assume the variable exists in the environment (ie. not a
+	    // TypeError) and add it to the environment/store as BValue.TOP
+	    // since we know nothing about it.
 	    Address addr = state.trace.makeAddr(node.getID(), "");
-	    state.env = state.env.strongUpdate(node.toSource(), new Variable(node.getID(),
-		    node.toSource(), Change.bottom(), new Addresses(addr)));
+	    String name = node.toSource();
+	    state.env = state.env.strongUpdate(name,
+		    Variable.inject(name, addr, Change.bottom(), Dependencies.bot()));
 	    state.store = state.store.alloc(addr,
 		    Addresses.dummy(Change.bottom(), Dependencies.injectValue(node)));
 	    addrs = new Addresses(addr);

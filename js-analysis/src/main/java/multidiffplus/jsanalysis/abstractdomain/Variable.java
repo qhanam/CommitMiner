@@ -1,63 +1,49 @@
 package multidiffplus.jsanalysis.abstractdomain;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import multidiffplus.commit.DependencyIdentifier;
-
 /**
  * An object property identifier combined with a change lattice.
  */
-public class Variable implements DependencyIdentifier {
+public class Variable {
 
-    public Integer definerID;
+    public Dependencies deps;
     public String name;
     public Change change;
     public Addresses addresses;
 
-    /**
-     * Use for standard lookup operations when the change type does not matter.
-     * 
-     * @param name
-     *            The name of the identifier to inject.
-     */
-    public Variable(Integer definerID, String name, Addresses addresses) {
-	this.definerID = definerID;
+    private Variable(String name, Addresses addresses, Change change, Dependencies deps) {
 	this.name = name;
-	this.change = Change.bottom();
 	this.addresses = addresses;
-    }
-
-    /**
-     * Use for standard lookup operations when the change type does not matter.
-     * 
-     * @param name
-     *            The name of the identifier to inject.
-     * @param change
-     *            How the identifier was changed.
-     */
-    public Variable(Integer definerID, String name, Change change, Addresses addresses) {
-	this.definerID = definerID;
-	this.name = name;
 	this.change = change;
-	this.addresses = addresses;
+	this.deps = deps;
     }
 
     /**
      * Joins the given Identifier with this Identifier.
      */
-    public Variable join(Variable id) {
+    public Variable join(Variable that) {
 
-	if (!definerID.equals(id.definerID) || !name.equals(id.name)) {
-	    if (!name.equalsIgnoreCase("~retval~"))
+	if (!this.deps.equals(that.deps) || !this.name.equals(that.name)) {
+	    if (!this.name.equalsIgnoreCase("~retval~"))
 		System.err.println("Variable::join -- WARNING -- joining different identifiers.");
-	    // throw new Error("Identifier::join() -- Cannot join different Identifiers.");
 	}
 
-	change.join(id.change);
-	addresses.join(id.addresses);
+	return new Variable(this.name, this.addresses.join(that.addresses),
+		this.change.join(that.change), this.deps.join(that.deps));
+    }
 
-	return new Variable(definerID, name, change.join(id.change), addresses.join(id.addresses));
+    /**
+     * @param name
+     *            The name of the identifier to inject.
+     * @param address
+     *            The address of the value pointed to by the identifier in the
+     *            abstract store.
+     * @param change
+     *            How the identifier was changed.
+     * @param deps
+     *            The location where the identifier was defined.
+     */
+    public static Variable inject(String name, Address address, Change change, Dependencies deps) {
+	return new Variable(name, new Addresses(address), change, deps);
     }
 
     @Override
@@ -78,21 +64,6 @@ public class Variable implements DependencyIdentifier {
 	    return false;
 	Variable right = (Variable) o;
 	return this.name.equals(right.name);
-    }
-
-    @Override
-    public String getAddress() {
-	if (definerID == -1)
-	    return "";
-	return definerID.toString();
-    }
-
-    @Override
-    public List<Integer> getAddresses() {
-	List<Integer> addresses = new ArrayList<Integer>();
-	if (definerID != -1)
-	    addresses.add(definerID);
-	return addresses;
     }
 
 }

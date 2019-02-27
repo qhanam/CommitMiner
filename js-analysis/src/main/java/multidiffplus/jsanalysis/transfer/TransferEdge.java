@@ -13,8 +13,6 @@ import multidiffplus.cfg.CFGEdge;
 import multidiffplus.jsanalysis.abstractdomain.Address;
 import multidiffplus.jsanalysis.abstractdomain.BValue;
 import multidiffplus.jsanalysis.abstractdomain.Bool;
-import multidiffplus.jsanalysis.abstractdomain.Change;
-import multidiffplus.jsanalysis.abstractdomain.DefinerIDs;
 import multidiffplus.jsanalysis.abstractdomain.Null;
 import multidiffplus.jsanalysis.abstractdomain.Num;
 import multidiffplus.jsanalysis.abstractdomain.State;
@@ -119,35 +117,33 @@ public class TransferEdge {
 
     private void interpretAddrsFalsey(Set<Address> addrs) {
 
-	/* Update the value(s) to be falsey. */
+	// Update the value(s) to be falsey.
 	for (Address addr : addrs) {
-
-	    /* Keep the BValue change LE (the value does not change). */
+	    // Keep the BValue change LE (the value does not change).
 	    BValue oldVal = state.store.apply(addr);
-
-	    BValue val = Undefined.inject(Undefined.top(), oldVal.change, oldVal.definerIDs)
-		    .join(Null.inject(Null.top(), oldVal.change, oldVal.definerIDs))
-		    .join(Str.inject(new Str(Str.LatticeElement.SBLANK), oldVal.change,
-			    DefinerIDs.bottom()))
-		    .join(Num.inject(new Num(Num.LatticeElement.NAN_ZERO), oldVal.change,
-			    DefinerIDs.bottom()))
-		    .join(Bool.inject(new Bool(Bool.LatticeElement.FALSE), oldVal.change,
-			    DefinerIDs.bottom()));
+	    // Refine the primitives to their falsey values.
+	    BValue val = BValue.inject(new Str(Str.LatticeElement.SBLANK),
+		    new Num(Num.LatticeElement.NAN_ZERO), new Bool(Bool.LatticeElement.FALSE),
+		    Null.top(), Undefined.top(), oldVal.addressAD, oldVal.change, oldVal.deps);
+	    // Update the store.
 	    state.store.strongUpdate(addr, val);
-
 	}
 
     }
 
     private void interpretAddrsTruthy(Set<Address> addrs) {
 
-	/* Update the value(s) to be truthy. */
+	// Update the value(s) to be truthy.
 	for (Address addr : addrs) {
-	    BValue val = state.store.apply(addr);
-	    val.undefinedAD = Undefined.bottom();
-	    val.nullAD = Null.bottom();
-	    val.stringAD = new Str(Str.LatticeElement.SNOTBLANK);
-	    val.numberAD = new Num(Num.LatticeElement.NOT_ZERO_NOR_NAN);
+	    // Keep the BValue change LE (the value does not change).
+	    BValue oldVal = state.store.apply(addr);
+	    // Refine the primitives to their truthy values.
+	    BValue val = BValue.inject(new Str(Str.LatticeElement.SNOTBLANK),
+		    new Num(Num.LatticeElement.NOT_ZERO_NOR_NAN),
+		    new Bool(Bool.LatticeElement.TRUE), Null.bottom(), Undefined.bottom(),
+		    oldVal.addressAD, oldVal.change, oldVal.deps);
+	    // Update the store.
+	    state.store.strongUpdate(addr, val);
 	}
 
     }
@@ -157,7 +153,7 @@ public class TransferEdge {
 	Set<Address> rhsAddrs = expEval.resolveOrCreate(ie.getRight());
 
 	/* Get the value of the RHS. */
-	BValue rhsVal = BValue.bottom(Change.bottom());
+	BValue rhsVal = BValue.bottom();
 	for (Address rhsAddr : rhsAddrs) {
 	    rhsVal = rhsVal.join(state.store.apply(rhsAddr));
 	}
@@ -199,7 +195,7 @@ public class TransferEdge {
 
 	/* Get the value of the RHS. */
 	Set<Address> rhsAddrs = expEval.resolveOrCreate(ie.getRight());
-	BValue rhsVal = BValue.bottom(Change.bottom());
+	BValue rhsVal = BValue.bottom();
 	for (Address rhsAddr : rhsAddrs) {
 	    rhsVal = rhsVal.join(state.store.apply(rhsAddr));
 	}
@@ -209,25 +205,23 @@ public class TransferEdge {
 	if (BValue.isUndefined(rhsVal) || BValue.isNull(rhsVal))
 	    for (Address lhsAddr : lhsAddrs) {
 		BValue oldVal = state.store.apply(lhsAddr);
-		rhsVal = Undefined.inject(Undefined.top(), oldVal.change, oldVal.definerIDs)
-			.join(Null.inject(Null.top(), oldVal.change, oldVal.definerIDs));
+		rhsVal = Undefined.inject(Undefined.top(), oldVal.change, oldVal.deps)
+			.join(Null.inject(Null.top(), oldVal.change, oldVal.deps));
 		state.store.strongUpdate(lhsAddr, rhsVal);
 	    }
 	if (BValue.isBlank(rhsVal) || BValue.isZero(rhsVal))
 	    for (Address lhsAddr : lhsAddrs) {
 		BValue oldVal = state.store.apply(lhsAddr);
-		rhsVal = Str
-			.inject(new Str(Str.LatticeElement.SBLANK), oldVal.change,
-				oldVal.definerIDs)
+		rhsVal = Str.inject(new Str(Str.LatticeElement.SBLANK), oldVal.change, oldVal.deps)
 			.join(Num.inject(new Num(Num.LatticeElement.ZERO), oldVal.change,
-				oldVal.definerIDs));
+				oldVal.deps));
 		state.store.strongUpdate(lhsAddr, rhsVal);
 	    }
 	if (BValue.isNaN(rhsVal))
 	    for (Address lhsAddr : lhsAddrs) {
 		BValue oldVal = state.store.apply(lhsAddr);
-		state.store.strongUpdate(lhsAddr, Num.inject(new Num(Num.LatticeElement.NAN),
-			oldVal.change, oldVal.definerIDs));
+		state.store.strongUpdate(lhsAddr,
+			Num.inject(new Num(Num.LatticeElement.NAN), oldVal.change, oldVal.deps));
 	    }
 	if (BValue.isFalse(rhsVal))
 	    interpretAddrsFalsey(lhsAddrs);
@@ -243,7 +237,7 @@ public class TransferEdge {
 
 	/* Get the value of the RHS. */
 	Set<Address> rhsAddrs = expEval.resolveOrCreate(ie.getRight());
-	BValue rhsVal = BValue.bottom(Change.bottom());
+	BValue rhsVal = BValue.bottom();
 	for (Address rhsAddr : rhsAddrs) {
 	    rhsVal = rhsVal.join(state.store.apply(rhsAddr));
 	}
@@ -261,7 +255,7 @@ public class TransferEdge {
 	Set<Address> rhsAddrs = expEval.resolveOrCreate(ie.getRight());
 
 	/* Get the value of the RHS. */
-	BValue rhsVal = BValue.bottom(Change.bottom());
+	BValue rhsVal = BValue.bottom();
 	for (Address rhsAddr : rhsAddrs) {
 	    rhsVal = rhsVal.join(state.store.apply(rhsAddr));
 	}

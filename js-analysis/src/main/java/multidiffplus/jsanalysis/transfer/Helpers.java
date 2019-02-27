@@ -15,12 +15,10 @@ import org.mozilla.javascript.ast.ScriptNode;
 import multidiffplus.cfg.CFG;
 import multidiffplus.cfg.CFGNode;
 import multidiffplus.jsanalysis.abstractdomain.Address;
-import multidiffplus.jsanalysis.abstractdomain.Addresses;
 import multidiffplus.jsanalysis.abstractdomain.BValue;
 import multidiffplus.jsanalysis.abstractdomain.Change;
 import multidiffplus.jsanalysis.abstractdomain.Closure;
 import multidiffplus.jsanalysis.abstractdomain.Control;
-import multidiffplus.jsanalysis.abstractdomain.DefinerIDs;
 import multidiffplus.jsanalysis.abstractdomain.Dependencies;
 import multidiffplus.jsanalysis.abstractdomain.Environment;
 import multidiffplus.jsanalysis.abstractdomain.FunctionClosure;
@@ -183,10 +181,13 @@ public class Helpers {
 	List<Name> localVars = VariableLiftVisitor.getVariableDeclarations(function);
 	for (Name localVar : localVars) {
 	    Address address = trace.makeAddr(localVar.getID(), "");
-	    env.strongUpdateNoCopy(localVar.toSource(), new Variable(localVar.getID(),
-		    localVar.toSource(), Change.convU(localVar), new Addresses(address)));
-	    store = store.alloc(address,
-		    Undefined.inject(Undefined.top(), Change.u(), DefinerIDs.bottom()));
+	    env.strongUpdateNoCopy(localVar.toSource(),
+		    Variable.inject(localVar.toSource(), address,
+			    Change.convU(localVar, Dependencies.injectVariableChange(localVar)),
+			    Dependencies.injectVariable(localVar)));
+	    Change valueChange = Change.convU(localVar, Dependencies.injectValue(localVar));
+	    store = store.alloc(address, Undefined.inject(Undefined.top(), valueChange,
+		    Dependencies.injectValue(localVar)));
 	}
 
 	/*
@@ -200,12 +201,15 @@ public class Helpers {
 	    address = trace.modAddr(address, JSClass.CFunction);
 
 	    /* The function name variable points to our new function. */
-	    env.strongUpdateNoCopy(child.getName(), new Variable(child.getID(), child.getName(),
-		    Change.convU(child.getFunctionName()), new Addresses(address))); // Env update
-										     // with env
-										     // change type
+	    String name = child.getName();
+	    env.strongUpdateNoCopy(name,
+		    Variable.inject(name, address,
+			    Change.convU(child.getFunctionName(),
+				    Dependencies.injectVariableChange(child.getFunctionName())),
+			    Dependencies.injectVariable(child.getFunctionName())));
+	    Change valueChange = Change.convU(child, Dependencies.injectValue(child));
 	    store = store.alloc(address,
-		    Address.inject(address, Change.convU(child), DefinerIDs.inject(child.getID())));
+		    Address.inject(address, valueChange, Dependencies.injectValue(child)));
 
 	    /* Create a function object. */
 	    Closure closure = new FunctionClosure(cfgs.get(child), env);
@@ -341,7 +345,7 @@ public class Helpers {
 	if (reachable.functionClosure.cfg.getEntryNode().getBeforeState() == null) {
 
 	    /* Create the control domain. */
-	    Control control = new Control();
+	    Control control = Control.bottom();
 
 	    /* Create the argument object. */
 	    Scratchpad scratch = new Scratchpad(null, new BValue[0]);

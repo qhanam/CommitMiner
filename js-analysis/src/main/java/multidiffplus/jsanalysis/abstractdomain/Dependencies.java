@@ -73,6 +73,21 @@ public class Dependencies {
     }
 
     /**
+     * Creates a new variable change criterion and returns a dependency for the
+     * criterion.
+     */
+    public static Dependencies injectVariable(AstNode node) {
+	return inject(node, Type.VARIABLE);
+    }
+
+    /**
+     * Creates a new variable criterion and returns a dependency for the criterion.
+     */
+    public static Dependencies injectVariableChange(AstNode node) {
+	return inject(node, Type.VARIABLE_CHANGE);
+    }
+
+    /**
      * Creates a new value change criterion and returns a dependency for the
      * criterion.
      */
