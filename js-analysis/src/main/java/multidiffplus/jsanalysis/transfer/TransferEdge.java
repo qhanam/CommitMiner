@@ -120,7 +120,7 @@ public class TransferEdge {
 	// Update the value(s) to be falsey.
 	for (Address addr : addrs) {
 	    // Keep the BValue change LE (the value does not change).
-	    BValue oldVal = state.store.apply(addr);
+	    BValue oldVal = state.store.apply(addr, new Name());
 	    // Refine the primitives to their falsey values.
 	    BValue val = BValue.inject(new Str(Str.LatticeElement.SBLANK),
 		    new Num(Num.LatticeElement.NAN_ZERO), new Bool(Bool.LatticeElement.FALSE),
@@ -136,7 +136,7 @@ public class TransferEdge {
 	// Update the value(s) to be truthy.
 	for (Address addr : addrs) {
 	    // Keep the BValue change LE (the value does not change).
-	    BValue oldVal = state.store.apply(addr);
+	    BValue oldVal = state.store.apply(addr, new Name());
 	    // Refine the primitives to their truthy values.
 	    BValue val = BValue.inject(new Str(Str.LatticeElement.SNOTBLANK),
 		    new Num(Num.LatticeElement.NOT_ZERO_NOR_NAN),
@@ -155,20 +155,20 @@ public class TransferEdge {
 	/* Get the value of the RHS. */
 	BValue rhsVal = BValue.bottom();
 	for (Address rhsAddr : rhsAddrs) {
-	    rhsVal = rhsVal.join(state.store.apply(rhsAddr));
+	    rhsVal = rhsVal.join(state.store.apply(rhsAddr, ie.getRight()));
 	}
 
 	/* Update the value(s) on the LHS. */
 	Set<Address> lhsAddrs = expEval.resolveOrCreate(ie.getLeft());
 	if (BValue.isUndefined(rhsVal) || BValue.isNull(rhsVal))
 	    for (Address lhsAddr : lhsAddrs) {
-		BValue lhsVal = state.store.apply(lhsAddr);
+		BValue lhsVal = state.store.apply(lhsAddr, ie.getLeft());
 		lhsVal.undefinedAD = Undefined.bottom();
 		lhsVal.nullAD = Null.bottom();
 	    }
 	if (BValue.isBlank(rhsVal) || BValue.isZero(rhsVal))
 	    for (Address lhsAddr : lhsAddrs) {
-		BValue lhsVal = state.store.apply(lhsAddr);
+		BValue lhsVal = state.store.apply(lhsAddr, ie.getLeft());
 		/* Make sure we don't decrease the precision of the LE. */
 		if (!Str.notBlank(lhsVal.stringAD))
 		    lhsVal.stringAD = new Str(Str.LatticeElement.SNOTBLANK);
@@ -177,7 +177,7 @@ public class TransferEdge {
 	    }
 	if (BValue.isNaN(rhsVal))
 	    for (Address lhsAddr : lhsAddrs) {
-		BValue lhsVal = state.store.apply(lhsAddr);
+		BValue lhsVal = state.store.apply(lhsAddr, ie.getRight());
 		if (!Num.notNaN(lhsVal.numberAD))
 		    lhsVal.numberAD = new Num(Num.LatticeElement.NOT_NAN);
 	    }
@@ -185,7 +185,7 @@ public class TransferEdge {
 	    interpretAddrsTruthy(lhsAddrs);
 	if (BValue.isAddress(rhsVal))
 	    for (Address lhsAddr : lhsAddrs) {
-		BValue lhsVal = state.store.apply(lhsAddr);
+		BValue lhsVal = state.store.apply(lhsAddr, ie.getLeft());
 		lhsVal.addressAD.addresses.removeAll(rhsVal.addressAD.addresses);
 	    }
 
@@ -197,21 +197,21 @@ public class TransferEdge {
 	Set<Address> rhsAddrs = expEval.resolveOrCreate(ie.getRight());
 	BValue rhsVal = BValue.bottom();
 	for (Address rhsAddr : rhsAddrs) {
-	    rhsVal = rhsVal.join(state.store.apply(rhsAddr));
+	    rhsVal = rhsVal.join(state.store.apply(rhsAddr, ie.getRight()));
 	}
 
 	/* Update the value(s) on the LHS. */
 	Set<Address> lhsAddrs = expEval.resolveOrCreate(ie.getLeft());
 	if (BValue.isUndefined(rhsVal) || BValue.isNull(rhsVal))
 	    for (Address lhsAddr : lhsAddrs) {
-		BValue oldVal = state.store.apply(lhsAddr);
+		BValue oldVal = state.store.apply(lhsAddr, ie.getLeft());
 		rhsVal = Undefined.inject(Undefined.top(), oldVal.change, oldVal.deps)
 			.join(Null.inject(Null.top(), oldVal.change, oldVal.deps));
 		state.store.strongUpdate(lhsAddr, rhsVal);
 	    }
 	if (BValue.isBlank(rhsVal) || BValue.isZero(rhsVal))
 	    for (Address lhsAddr : lhsAddrs) {
-		BValue oldVal = state.store.apply(lhsAddr);
+		BValue oldVal = state.store.apply(lhsAddr, ie.getLeft());
 		rhsVal = Str.inject(new Str(Str.LatticeElement.SBLANK), oldVal.change, oldVal.deps)
 			.join(Num.inject(new Num(Num.LatticeElement.ZERO), oldVal.change,
 				oldVal.deps));
@@ -219,7 +219,7 @@ public class TransferEdge {
 	    }
 	if (BValue.isNaN(rhsVal))
 	    for (Address lhsAddr : lhsAddrs) {
-		BValue oldVal = state.store.apply(lhsAddr);
+		BValue oldVal = state.store.apply(lhsAddr, ie.getLeft());
 		state.store.strongUpdate(lhsAddr,
 			Num.inject(new Num(Num.LatticeElement.NAN), oldVal.change, oldVal.deps));
 	    }
@@ -227,7 +227,7 @@ public class TransferEdge {
 	    interpretAddrsFalsey(lhsAddrs);
 	if (BValue.isAddress(rhsVal))
 	    for (Address lhsAddr : lhsAddrs) {
-		BValue lhsVal = state.store.apply(lhsAddr);
+		BValue lhsVal = state.store.apply(lhsAddr, ie.getLeft());
 		lhsVal.addressAD.addresses.retainAll(rhsVal.addressAD.addresses);
 	    }
 
@@ -239,7 +239,7 @@ public class TransferEdge {
 	Set<Address> rhsAddrs = expEval.resolveOrCreate(ie.getRight());
 	BValue rhsVal = BValue.bottom();
 	for (Address rhsAddr : rhsAddrs) {
-	    rhsVal = rhsVal.join(state.store.apply(rhsAddr));
+	    rhsVal = rhsVal.join(state.store.apply(rhsAddr, ie.getRight()));
 	}
 
 	/* Update the value(s) on the LHS. */
@@ -257,32 +257,36 @@ public class TransferEdge {
 	/* Get the value of the RHS. */
 	BValue rhsVal = BValue.bottom();
 	for (Address rhsAddr : rhsAddrs) {
-	    rhsVal = rhsVal.join(state.store.apply(rhsAddr));
+	    rhsVal = rhsVal.join(state.store.apply(rhsAddr, ie.getRight()));
 	}
 
 	/* Update the value(s) on the LHS. */
 	Set<Address> lhsAddrs = expEval.resolveOrCreate(ie.getLeft());
 	if (BValue.isUndefined(rhsVal))
 	    for (Address lhsAddr : lhsAddrs)
-		state.store.apply(lhsAddr).undefinedAD = Undefined.bottom();
+		state.store.apply(lhsAddr, ie.getLeft()).undefinedAD = Undefined.bottom();
 	if (BValue.isNull(rhsVal))
 	    for (Address lhsAddr : lhsAddrs)
-		state.store.apply(lhsAddr).nullAD = Null.bottom();
+		state.store.apply(lhsAddr, ie.getLeft()).nullAD = Null.bottom();
 	if (BValue.isBlank(rhsVal))
 	    for (Address lhsAddr : lhsAddrs)
-		state.store.apply(lhsAddr).stringAD = new Str(Str.LatticeElement.SNOTBLANK);
+		state.store.apply(lhsAddr, ie.getLeft()).stringAD = new Str(
+			Str.LatticeElement.SNOTBLANK);
 	if (BValue.isNaN(rhsVal))
 	    for (Address lhsAddr : lhsAddrs)
-		state.store.apply(lhsAddr).numberAD = new Num(Num.LatticeElement.NOT_NAN);
+		state.store.apply(lhsAddr, ie.getLeft()).numberAD = new Num(
+			Num.LatticeElement.NOT_NAN);
 	if (BValue.isZero(rhsVal))
 	    for (Address lhsAddr : lhsAddrs)
-		state.store.apply(lhsAddr).numberAD = new Num(Num.LatticeElement.NOT_ZERO);
+		state.store.apply(lhsAddr, ie.getLeft()).numberAD = new Num(
+			Num.LatticeElement.NOT_ZERO);
 	if (BValue.isFalse(rhsVal))
 	    for (Address lhsAddr : lhsAddrs)
-		state.store.apply(lhsAddr).booleanAD = new Bool(Bool.LatticeElement.TRUE);
+		state.store.apply(lhsAddr, ie.getLeft()).booleanAD = new Bool(
+			Bool.LatticeElement.TRUE);
 	if (BValue.isAddress(rhsVal))
 	    for (Address lhsAddr : lhsAddrs) {
-		BValue lhsVal = state.store.apply(lhsAddr);
+		BValue lhsVal = state.store.apply(lhsAddr, ie.getLeft());
 		lhsVal.addressAD.addresses.removeAll(rhsVal.addressAD.addresses);
 	    }
 

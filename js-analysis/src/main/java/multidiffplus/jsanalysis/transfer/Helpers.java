@@ -381,7 +381,7 @@ public class Helpers {
     private static boolean analyzePublic(State state, String name, Address addr, Address selfAddr,
 	    Set<Address> visited, Set<String> localvars, CallStack callStack) {
 
-	BValue val = state.store.apply(addr);
+	BValue val = state.store.apply(addr, new Name());
 
 	/*
 	 * Do not visit local variables which were declared at a higher level, and

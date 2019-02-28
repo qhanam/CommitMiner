@@ -9,7 +9,6 @@ import org.mozilla.javascript.ast.ScriptNode;
 
 import multidiffplus.cfg.CFG;
 import multidiffplus.jsanalysis.abstractdomain.Address;
-import multidiffplus.jsanalysis.abstractdomain.Addresses;
 import multidiffplus.jsanalysis.abstractdomain.BValue;
 import multidiffplus.jsanalysis.abstractdomain.Change;
 import multidiffplus.jsanalysis.abstractdomain.Control;
@@ -54,7 +53,7 @@ public class StateFactory {
 	for (String global : globals) {
 	    Address address = trace.makeAddr(i, "");
 	    env.strongUpdateNoCopy(global,
-		    new Variable(i, global, Change.bottom(), new Addresses(address)));
+		    Variable.inject(global, address, Change.bottom(), Dependencies.bot()));
 	    store = store.alloc(address, BValue.top(Change.u(), Dependencies.bot()));
 	    i--;
 	}

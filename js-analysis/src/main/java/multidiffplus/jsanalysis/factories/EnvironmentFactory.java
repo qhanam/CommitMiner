@@ -7,8 +7,8 @@ import org.mozilla.javascript.ast.AstNode;
 import org.mozilla.javascript.ast.ScriptNode;
 
 import multidiffplus.cfg.CFG;
-import multidiffplus.jsanalysis.abstractdomain.Addresses;
 import multidiffplus.jsanalysis.abstractdomain.Change;
+import multidiffplus.jsanalysis.abstractdomain.Dependencies;
 import multidiffplus.jsanalysis.abstractdomain.Environment;
 import multidiffplus.jsanalysis.abstractdomain.Store;
 import multidiffplus.jsanalysis.abstractdomain.Variable;
@@ -52,8 +52,8 @@ public class EnvironmentFactory {
      */
     public static Environment createBaseEnvironment() {
 	Environment env = new Environment();
-	env = env.strongUpdate("this", new Variable(GLOBAL_DEFINER_ID, "this", Change.u(),
-		new Addresses(StoreFactory.global_binding_Addr)));
+	env = env.strongUpdate("this", Variable.inject("this", StoreFactory.global_binding_Addr,
+		Change.u(), Dependencies.bot()));
 	return env;
     }
 

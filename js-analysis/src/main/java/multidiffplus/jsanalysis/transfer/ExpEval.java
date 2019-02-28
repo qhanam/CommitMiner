@@ -422,6 +422,7 @@ public class ExpEval {
     public BValue evalName(Name name) {
 	BValue val = resolveValue(name);
 	if (val == null) {
+	    // TODO: We should never reach this point.
 	    return BValue.top(Change.u(), Dependencies.injectValue(name));
 	}
 	return val;
@@ -469,7 +470,7 @@ public class ExpEval {
 	Change change = Change.conv(kwl, Dependencies.injectValueChange(kwl));
 	switch (kwl.getType()) {
 	case Token.THIS:
-	    return state.store.apply(state.selfAddr);
+	    return state.store.apply(state.selfAddr, kwl);
 	case Token.NULL:
 	    return Null.inject(Null.top(), change, Dependencies.injectValue(kwl));
 	case Token.TRUE:
@@ -668,20 +669,13 @@ public class ExpEval {
 	    return null;
 	for (Address addr : addrs) {
 	    if (value == null)
-		value = state.store.apply(addr);
+		value = state.store.apply(addr, node);
 	    else
-		value = value.join(state.store.apply(addr));
+		value = value.join(state.store.apply(addr, node));
 	}
 
 	return value;
 
-    }
-
-    /**
-     * @return The {@code BValue} direct from the store.
-     */
-    public BValue resolveAddress(Address address) {
-	return state.store.apply(address);
     }
 
     /**
@@ -714,7 +708,7 @@ public class ExpEval {
 	    Addresses selfAddrs = new Addresses(Addresses.LatticeElement.SET);
 	    Dependencies dependencies = Dependencies.bot();
 	    for (Address addr : addrs) {
-		BValue val = this.state.store.apply(addr);
+		BValue val = this.state.store.apply(addr, ie.getLeft());
 		for (Address objAddr : val.addressAD.addresses) {
 		    Obj obj = this.state.store.getObj(objAddr);
 		    if (obj != null) {
@@ -745,7 +739,7 @@ public class ExpEval {
 
 	Set<Address> result = new HashSet<Address>();
 
-	Addresses addrs = state.env.apply(node.toSource());
+	Addresses addrs = state.env.apply(node);
 	if (addrs == null) {
 	    // TODO: Since we search for global variables beforehand, we should
 	    // never reach this.
@@ -799,7 +793,7 @@ public class ExpEval {
 	for (Address valAddr : lhs) {
 
 	    /* Get the value at the address. */
-	    BValue val = state.store.apply(valAddr);
+	    BValue val = state.store.apply(valAddr, ie.getLeft());
 
 	    /*
 	     * We may need to create a dummy object if 'val' doesn't point to any objects.
@@ -824,7 +818,7 @@ public class ExpEval {
 		if (propAddr != null) {
 		    result.add(propAddr);
 		    // Sanity check that the property address is in the store.
-		    BValue propVal = state.store.apply(propAddr);
+		    BValue propVal = state.store.apply(propAddr, ie.getRight());
 		    if (propVal == null)
 			throw new Error("Property value does not exist in store.");
 		} else {
@@ -893,7 +887,7 @@ public class ExpEval {
 	for (Address valAddr : lhs) {
 
 	    /* Get the value at the address. */
-	    BValue val = state.store.apply(valAddr);
+	    BValue val = state.store.apply(valAddr, eg.getTarget());
 
 	    /*
 	     * We may need to create a dummy object if 'val' doesn't point to any objects.
@@ -931,7 +925,7 @@ public class ExpEval {
 		if (propAddr != null) {
 		    result.add(propAddr);
 		    // Sanity check that the property address is in the store.
-		    BValue propVal = state.store.apply(propAddr);
+		    BValue propVal = state.store.apply(propAddr, eg.getTarget());
 		    if (propVal == null)
 			throw new Error("Property value does not exist in store.");
 		} else {
@@ -1055,7 +1049,8 @@ public class ExpEval {
 		    continue;
 		visited.add(property.address);
 
-		extractFunctions(state.store.apply(property.address), functionAddrs, visited);
+		extractFunctions(state.store.apply(property.address, new Name()), functionAddrs,
+			visited);
 	    }
 
 	}

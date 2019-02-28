@@ -7,6 +7,8 @@ import java.util.Set;
 
 import org.mozilla.javascript.ast.AstNode;
 
+import multidiffplus.jsanalysis.abstractdomain.Criterion.Type;
+
 /**
  * Dependencies of AST subtrees.
  * 
@@ -23,28 +25,25 @@ import org.mozilla.javascript.ast.AstNode;
  */
 public class Dependencies {
 
-    private enum Type {
-	VARIABLE, VALUE, VALUE_CHANGE, VARIABLE_CHANGE, CALL_CHANGE, CONDITION_CHANGE
-    }
-
-    private Set<Integer> deps;
+    /** The set of criteria on which the parent object depends. */
+    private Set<Criterion> deps;
 
     private Dependencies() {
-	this.deps = new HashSet<Integer>();
+	this.deps = new HashSet<Criterion>();
     }
 
-    private Dependencies(Integer dep) {
-	this.deps = Collections.singleton(dep);
+    private Dependencies(Criterion crit) {
+	this.deps = Collections.singleton(crit);
     }
 
-    private Dependencies(Set<Integer> deps) {
-	this.deps = new HashSet<Integer>(deps);
+    private Dependencies(Set<Criterion> deps) {
+	this.deps = new HashSet<Criterion>(deps);
     }
 
     /**
      * Returns the dependencies.
      */
-    public Collection<Integer> getDependencies() {
+    public Collection<Criterion> getDependencies() {
 	return this.deps;
     }
 
@@ -77,14 +76,14 @@ public class Dependencies {
      * criterion.
      */
     public static Dependencies injectVariable(AstNode node) {
-	return inject(node, Type.VARIABLE);
+	return inject(Criterion.of(node, Criterion.Type.VARIABLE));
     }
 
     /**
      * Creates a new variable criterion and returns a dependency for the criterion.
      */
     public static Dependencies injectVariableChange(AstNode node) {
-	return inject(node, Type.VARIABLE_CHANGE);
+	return inject(Criterion.of(node, Type.VARIABLE_CHANGE));
     }
 
     /**
@@ -92,14 +91,14 @@ public class Dependencies {
      * criterion.
      */
     public static Dependencies injectValue(AstNode node) {
-	return inject(node, Type.VALUE);
+	return inject(Criterion.of(node, Type.VALUE));
     }
 
     /**
      * Creates a new value criterion and returns a dependency for the criterion.
      */
     public static Dependencies injectValueChange(AstNode node) {
-	return inject(node, Type.VALUE_CHANGE);
+	return inject(Criterion.of(node, Type.VALUE_CHANGE));
     }
 
     /**
@@ -107,7 +106,7 @@ public class Dependencies {
      * criterion.
      */
     public static Dependencies injectConditionChange(AstNode node) {
-	return inject(node, Type.CONDITION_CHANGE);
+	return inject(Criterion.of(node, Type.CONDITION_CHANGE));
     }
 
     /**
@@ -115,15 +114,14 @@ public class Dependencies {
      * criterion.
      */
     public static Dependencies injectCallChange(AstNode node) {
-	return inject(node, Type.CALL_CHANGE);
+	return inject(Criterion.of(node, Type.CALL_CHANGE));
     }
 
     /**
      * Creates a new criterion and returns a dependency for the criterion.
      */
-    private static Dependencies inject(AstNode node, Type type) {
-	node.addCriterion(type.name(), node.getID());
-	return new Dependencies(node.getID());
+    private static Dependencies inject(Criterion crit) {
+	return new Dependencies(crit);
     }
 
     @Override
@@ -137,8 +135,8 @@ public class Dependencies {
     @Override
     public String toString() {
 	String s = "{";
-	for (Integer dep : deps) {
-	    s += dep.toString() + ",";
+	for (Criterion crit : deps) {
+	    s += crit.toString() + ",";
 	}
 	return s.substring(0, s.length() - 2) + "}";
     }
