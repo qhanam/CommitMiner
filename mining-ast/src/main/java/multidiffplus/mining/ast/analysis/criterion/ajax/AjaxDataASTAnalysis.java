@@ -1,6 +1,6 @@
 package multidiffplus.mining.ast.analysis.criterion.ajax;
 
-import java.util.LinkedList;
+import java.util.Collections;
 
 import org.mozilla.javascript.Token;
 import org.mozilla.javascript.ast.AstNode;
@@ -11,7 +11,6 @@ import org.mozilla.javascript.ast.ObjectProperty;
 import org.mozilla.javascript.ast.StringLiteral;
 
 import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode.ChangeType;
-import multidiffplus.commit.DependencyIdentifier;
 import multidiffplus.commit.SourceCodeFileChange;
 import multidiffplus.facts.Annotation;
 import multidiffplus.facts.AnnotationFactBase;
@@ -94,9 +93,8 @@ public class AjaxDataASTAnalysis implements NodeVisitor {
 	if (dataProperty == null) {
 
 	    /* There is no data being sent. */
-	    Annotation annotation = new Annotation("AJAX_OTHER",
-		    new LinkedList<DependencyIdentifier>(), settings.getLineno(),
-		    settings.getAbsolutePosition(), settings.getLength());
+	    Annotation annotation = new Annotation("AJAX_OTHER", Collections.emptyList(),
+		    settings.getLineno(), settings.getAbsolutePosition(), settings.getLength());
 	    factBase.registerAnnotationFact(annotation);
 
 	    return;
@@ -110,7 +108,7 @@ public class AjaxDataASTAnalysis implements NodeVisitor {
 
 	    /* This is mutation candidate. */
 	    Annotation annotation = new Annotation("AJAX_STRINGIFY_MUTATE_ADD",
-		    new LinkedList<DependencyIdentifier>(), dataProperty.getRight().getLineno(),
+		    Collections.emptyList(), dataProperty.getRight().getLineno(),
 		    dataProperty.getRight().getAbsolutePosition(),
 		    dataProperty.getRight().getLength());
 	    factBase.registerAnnotationFact(annotation);
@@ -125,9 +123,8 @@ public class AjaxDataASTAnalysis implements NodeVisitor {
 		&& stringify.getChangeType() == ChangeType.INSERTED) {
 
 	    /* This is a repair. */
-	    Annotation annotation = new Annotation("AJAX_STRINGIFY_REPAIR",
-		    new LinkedList<DependencyIdentifier>(), stringify.getLineno(),
-		    stringify.getAbsolutePosition(), stringify.getLength());
+	    Annotation annotation = new Annotation("AJAX_STRINGIFY_REPAIR", Collections.emptyList(),
+		    stringify.getLineno(), stringify.getAbsolutePosition(), stringify.getLength());
 	    factBase.registerAnnotationFact(annotation);
 
 	} else if (call.getChangeType() == ChangeType.UPDATED
@@ -135,8 +132,8 @@ public class AjaxDataASTAnalysis implements NodeVisitor {
 
 	    /* This is mutation candidate. */
 	    Annotation annotation = new Annotation("AJAX_STRINGIFY_MUTATE_DEL",
-		    new LinkedList<DependencyIdentifier>(), stringify.getLineno(),
-		    stringify.getAbsolutePosition(), stringify.getLength());
+		    Collections.emptyList(), stringify.getLineno(), stringify.getAbsolutePosition(),
+		    stringify.getLength());
 	    factBase.registerAnnotationFact(annotation);
 
 	}
