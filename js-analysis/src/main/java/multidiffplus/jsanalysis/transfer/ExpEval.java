@@ -816,10 +816,14 @@ public class ExpEval {
 	     */
 	    if (val.addressAD.addresses.size() == 0) {
 		Map<String, Property> ext = new HashMap<String, Property>();
+		// Create a dummy value. This will not exist in the output, because the value
+		// and variable initialization exists outside the file.
+		AstNode dummyNode = new ObjectLiteral();
 		Obj dummy = new Obj(ext, new InternalObjectProperties());
 		Address addr = state.trace.makeAddr(ie.getLeft().getID(), "");
 		state.store = state.store.alloc(addr, dummy);
-		val = val.join(Address.inject(addr, Change.bottom(), Dependencies.bot()));
+		val = val.join(
+			Address.inject(addr, Change.bottom(), Dependencies.injectValue(dummyNode)));
 		state.store = state.store.strongUpdate(valAddr, val, ie.getLeft());
 	    }
 
@@ -834,7 +838,7 @@ public class ExpEval {
 		if (propAddr != null) {
 		    result.add(propAddr);
 		    // Sanity check that the property address is in the store.
-		    BValue propVal = state.store.apply(propAddr, ie.getRight());
+		    BValue propVal = state.store.apply(propAddr, ie);
 		    if (propVal == null)
 			throw new Error("Property value does not exist in store.");
 		} else {
@@ -849,8 +853,7 @@ public class ExpEval {
 		     */
 		    propAddr = state.trace.makeAddr(ie.getRight().getID(),
 			    ie.getRight().toSource());
-		    BValue propVal = Addresses.dummy(Change.bottom(),
-			    Dependencies.injectValue(ie.getRight()));
+		    BValue propVal = Addresses.dummy(Change.bottom(), Dependencies.injectValue(ie));
 		    state.store = state.store.alloc(propAddr, propVal, new Name());
 
 		    /* Add the property to the external properties of the object. */
@@ -941,7 +944,7 @@ public class ExpEval {
 		if (propAddr != null) {
 		    result.add(propAddr);
 		    // Sanity check that the property address is in the store.
-		    BValue propVal = state.store.apply(propAddr, eg.getTarget());
+		    BValue propVal = state.store.apply(propAddr, eg);
 		    if (propVal == null)
 			throw new Error("Property value does not exist in store.");
 		} else {
@@ -957,7 +960,7 @@ public class ExpEval {
 		    propAddr = state.trace.makeAddr(eg.getID(), elementString);
 
 		    BValue propVal = Addresses.dummy(Change.bottom(), Dependencies.injectValue(eg));
-		    state.store = state.store.alloc(propAddr, propVal, eg.getElement());
+		    state.store = state.store.alloc(propAddr, propVal, eg);
 
 		    /* Add the property to the external properties of the object. */
 		    Map<String, Property> ext = new HashMap<String, Property>(

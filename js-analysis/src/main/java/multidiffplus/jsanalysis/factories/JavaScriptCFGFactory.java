@@ -577,7 +577,6 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 		target = iterator;
 	    } else {
 		target = new Name(0, "~error~");
-		target.setID(iterator.getID() * -1);
 	    }
 
 	    /*
@@ -588,22 +587,18 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	    Name getNextKey = new Name(0, "~getNextKey");
 	    getNextKey.setChangeType(iterator.getChangeType());
 	    getNextKey.setVersion(forInLoop.getVersion());
-	    getNextKey.setID(forInLoop.getID() * -1);
 	    PropertyGet keyIteratorMethod = new PropertyGet(forInLoop.getIteratedObject(),
 		    getNextKey);
 	    keyIteratorMethod.setChangeType(iterator.getChangeType());
 	    keyIteratorMethod.setVersion(forInLoop.getVersion());
-	    keyIteratorMethod.setID(forInLoop.getID() * -1);
 	    FunctionCall keyIteratorFunction = new FunctionCall();
 	    keyIteratorFunction.setTarget(keyIteratorMethod);
 	    keyIteratorFunction.setChangeType(iterator.getChangeType());
 	    keyIteratorFunction.setVersion(forInLoop.getVersion());
-	    keyIteratorFunction.setID(forInLoop.getID() * -1);
 	    Assignment targetAssignment = new Assignment(target, keyIteratorFunction);
 	    targetAssignment.setType(Token.ASSIGN);
 	    targetAssignment.setChangeType(target.getChangeType());
 	    targetAssignment.setVersion(forInLoop.getVersion());
-	    targetAssignment.setID(forInLoop.getID() * -1);
 
 	    CFGNode assignment = new CFGNode(targetAssignment, idgen.getUniqueID());
 
@@ -613,18 +608,15 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	     */
 
 	    Name hasNextKey = new Name(0, "~hasNextKey");
-	    hasNextKey.setID(forInLoop.getID() * -1);
 	    PropertyGet keyConditionMethod = new PropertyGet(forInLoop.getIteratedObject(),
 		    hasNextKey);
 	    keyConditionMethod.setChangeType(iterator.getChangeType());
 	    keyConditionMethod.setVersion(forInLoop.getVersion());
-	    keyConditionMethod.setID(forInLoop.getID() * -1);
 	    FunctionCall keyConditionFunction = new FunctionCall();
 	    keyConditionFunction.setTarget(keyConditionMethod);
 	    keyConditionFunction.setChangeType(iterator.getChangeType());
 	    keyConditionFunction.setVersion(forInLoop.getVersion());
 	    keyConditionFunction.setParent(forInLoop);
-	    keyConditionFunction.setID(forInLoop.getID() * -1);
 
 	    CFGNode condition = new CFGNode(new EmptyStatement(), "FORIN", idgen.getUniqueID());
 
@@ -832,18 +824,13 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	     */
 
 	    Name createScope = new Name(0, "~createScope");
-	    createScope.setID(withStatement.getID() * -1);
 	    FunctionCall createScopeFunction = new FunctionCall();
 	    createScopeFunction.setTarget(createScope);
 	    createScopeFunction.addArgument(withStatement.getExpression());
-	    createScopeFunction.setID(withStatement.getID());
 
-	    Name destroyScope = new Name(0, "~destroyScope");
-	    destroyScope.setID(withStatement.getID() * -1);
 	    FunctionCall destroyScopeFunction = new FunctionCall();
 	    destroyScopeFunction.setTarget(new Name(0, "~destroySceop"));
 	    destroyScopeFunction.addArgument(withStatement.getExpression());
-	    destroyScopeFunction.setID(withStatement.getID() * -1);
 
 	    CFGNode withNode = new CFGNode(createScopeFunction, "BEGIN_SCOPE", idgen.getUniqueID());
 	    CFGNode endWithNode = new CFGNode(destroyScopeFunction, "END_SCOPE",
@@ -978,7 +965,6 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 
 		    /* Create a special method that contains the exception. */
 		    Name n = new Name(0, "~exception");
-		    n.setID(catchClause.getID() * -1);
 		    FunctionCall exception = new FunctionCall();
 		    List<AstNode> args = new LinkedList<AstNode>();
 		    args.add(catchClause.getVarName());

@@ -5,7 +5,7 @@ import java.util.Set;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.mozilla.javascript.ast.AstNode;
-import org.mozilla.javascript.ast.Name;
+import org.mozilla.javascript.ast.NumberLiteral;
 import org.mozilla.javascript.ast.ScriptNode;
 
 import multidiffplus.cfg.CFG;
@@ -53,9 +53,12 @@ public class StateFactory {
 	int i = -1000;
 	for (String global : globals) {
 	    Address address = trace.makeAddr(i, "");
-	    env.strongUpdateNoCopy(global,
-		    Variable.inject(global, address, Change.bottom(), Dependencies.bot()));
-	    store = store.alloc(address, BValue.top(Change.u(), Dependencies.bot()), new Name());
+	    // Create a dummy value. This will not exist in the output, because the value
+	    // and variable initialization exists outside the file.
+	    AstNode dummy = new NumberLiteral();
+	    env.strongUpdateNoCopy(global, Variable.inject(global, address, Change.bottom(),
+		    Dependencies.injectValue(dummy)));
+	    store = store.alloc(address, BValue.top(Change.u(), Dependencies.bot()), dummy);
 	    i--;
 	}
 
