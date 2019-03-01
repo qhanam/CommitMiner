@@ -3,6 +3,7 @@ package multidiffplus.jsanalysis.transfer;
 import org.mozilla.javascript.Token;
 import org.mozilla.javascript.ast.AstNode;
 import org.mozilla.javascript.ast.ExpressionStatement;
+import org.mozilla.javascript.ast.Name;
 import org.mozilla.javascript.ast.ReturnStatement;
 import org.mozilla.javascript.ast.ThrowStatement;
 import org.mozilla.javascript.ast.VariableDeclaration;
@@ -118,7 +119,7 @@ public class TransferNode {
 	String name = "~retval~";
 	state.env = state.env.strongUpdate(name,
 		Variable.inject(name, address, Change.bottom(), Dependencies.injectVariable(rs)));
-	state.store = state.store.alloc(address, retVal);
+	state.store = state.store.alloc(address, retVal, new Name());
 
 	/* Update the return value on the scratchpad. */
 	state.scratch = state.scratch.strongUpdate(retVal, null);

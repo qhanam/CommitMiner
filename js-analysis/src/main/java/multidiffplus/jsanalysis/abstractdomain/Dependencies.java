@@ -83,7 +83,8 @@ public class Dependencies {
      * Creates a new variable criterion and returns a dependency for the criterion.
      */
     public static Dependencies injectVariableChange(AstNode node) {
-	return inject(Criterion.of(node, Type.VARIABLE_CHANGE));
+	return Change.testU(node) ? inject(Criterion.of(node, Type.VARIABLE_CHANGE))
+		: Dependencies.bot();
     }
 
     /**
@@ -98,7 +99,8 @@ public class Dependencies {
      * Creates a new value criterion and returns a dependency for the criterion.
      */
     public static Dependencies injectValueChange(AstNode node) {
-	return inject(Criterion.of(node, Type.VALUE_CHANGE));
+	return Change.testU(node) ? inject(Criterion.of(node, Type.VALUE_CHANGE))
+		: Dependencies.bot();
     }
 
     /**

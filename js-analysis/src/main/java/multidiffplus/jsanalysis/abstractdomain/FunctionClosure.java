@@ -124,9 +124,8 @@ public class FunctionClosure extends Closure {
 	    Map<String, Property> ext = new HashMap<String, Property>();
 	    int i = 0;
 	    for (BValue argVal : scratchpad.applyArgs()) {
-
 		store = Helpers.addProp(function.getID(), String.valueOf(i), argVal, ext, store,
-			trace);
+			trace, function.getParams().get(i));
 		i++;
 	    }
 
@@ -157,7 +156,7 @@ public class FunctionClosure extends Closure {
 				Change.convU(param, Dependencies.injectValueChange(param)),
 				Dependencies.injectValue(param));
 			store = Helpers.addProp(param.getID(), String.valueOf(i), argVal,
-				argObj.externalProperties, store, trace);
+				argObj.externalProperties, store, trace, param);
 			prop = argObj.externalProperties.get(String.valueOf(i));
 
 			/* Add or update the argument object to the store. */

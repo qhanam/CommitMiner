@@ -5,6 +5,7 @@ import java.util.Set;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.mozilla.javascript.ast.AstNode;
+import org.mozilla.javascript.ast.Name;
 import org.mozilla.javascript.ast.ScriptNode;
 
 import multidiffplus.cfg.CFG;
@@ -54,7 +55,7 @@ public class StateFactory {
 	    Address address = trace.makeAddr(i, "");
 	    env.strongUpdateNoCopy(global,
 		    Variable.inject(global, address, Change.bottom(), Dependencies.bot()));
-	    store = store.alloc(address, BValue.top(Change.u(), Dependencies.bot()));
+	    store = store.alloc(address, BValue.top(Change.u(), Dependencies.bot()), new Name());
 	    i--;
 	}
 

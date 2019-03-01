@@ -49,6 +49,7 @@ import multidiffplus.jsanalysis.abstractdomain.Undefined;
 import multidiffplus.jsanalysis.abstractdomain.Variable;
 import multidiffplus.jsanalysis.flow.CallStack;
 import multidiffplus.jsanalysis.flow.ReachableFunction;
+import multidiffplus.jsanalysis.flow.StackFrame;
 
 public class ExpEval {
 
@@ -172,7 +173,7 @@ public class ExpEval {
 		propName = ((NumberLiteral) prop).getValue();
 	    BValue propVal = this.eval(property.getRight());
 	    Address propAddr = state.trace.makeAddr(property.getID(), propName);
-	    state.store = state.store.alloc(propAddr, propVal);
+	    state.store = state.store.alloc(propAddr, propVal, property.getLeft());
 	    if (propName != null)
 		ext.put(propName, new Property(property.getID(), propName, propAddr));
 	}
@@ -181,7 +182,9 @@ public class ExpEval {
 	Address objAddr = state.trace.makeAddr(ol.getID(), "");
 	state.store = state.store.alloc(objAddr, obj);
 
-	return Address.inject(objAddr, Change.convU(ol, Dependencies.injectValueChange(ol)),
+	Dependencies valChangeDeps = Change.testU(ol) ? Dependencies.injectValueChange(ol)
+		: Dependencies.bot();
+	return Address.inject(objAddr, Change.convU(ol, valChangeDeps),
 		Dependencies.injectValue(ol));
     }
 
@@ -201,7 +204,7 @@ public class ExpEval {
 	for (AstNode element : al.getElements()) {
 	    BValue propVal = this.eval(element);
 	    Address propAddr = state.trace.makeAddr(element.getID(), "");
-	    state.store = state.store.alloc(propAddr, propVal);
+	    state.store = state.store.alloc(propAddr, propVal, new Name());
 	    ext.put(i.toString(), new Property(element.getID(), i.toString(), propAddr));
 	    i++;
 	}
@@ -239,14 +242,17 @@ public class ExpEval {
 	// Conservatively estimate the unary operator evaluations.
 	switch (ue.getType()) {
 	case Token.NOT:
-	    return Bool.inject(Bool.top(), operatorChange, Dependencies.injectValue(ue));
+	    return Bool.inject(Bool.top(), operatorChange,
+		    Dependencies.injectValue(ue).join(operand.deps));
 	case Token.INC:
 	case Token.DEC:
-	    return Num.inject(Num.top(), operatorChange, Dependencies.injectValue(ue));
+	    return Num.inject(Num.top(), operatorChange,
+		    Dependencies.injectValue(ue).join(operand.deps));
 	case Token.TYPEOF:
-	    return Str.inject(Str.top(), operatorChange, Dependencies.injectValue(ue));
+	    return Str.inject(Str.top(), operatorChange,
+		    Dependencies.injectValue(ue).join(operand.deps));
 	default:
-	    return BValue.top(operatorChange, Dependencies.injectValue(ue));
+	    return BValue.top(operatorChange, Dependencies.injectValue(ue).join(operand.deps));
 	}
 
     }
@@ -321,7 +327,8 @@ public class ExpEval {
 	operatorChange = left.change.join(right.change).join(operatorChange);
 
 	// Conservatively estimate the binary operator evaluations.
-	return BValue.top(operatorChange, Dependencies.injectValue(ie));
+	return BValue.top(operatorChange,
+		Dependencies.injectValue(ie).join(left.deps.join(right.deps)));
 
     }
 
@@ -346,7 +353,8 @@ public class ExpEval {
 	operatorChange = left.change.join(right.change).join(operatorChange);
 
 	// Conservatively estimate the binary operator evaluations.
-	BValue val = BValue.bottom(operatorChange, Dependencies.injectValue(ie));
+	BValue val = BValue.bottom(operatorChange,
+		Dependencies.injectValue(ie).join(left.deps).join(right.deps));
 
 	// Strings
 	if (left.stringAD.le != Str.LatticeElement.BOTTOM
@@ -411,7 +419,8 @@ public class ExpEval {
 	operatorChange = left.change.join(right.change).join(operatorChange);
 
 	// Conservatively estimate the binary operator evaluations.
-	return Num.inject(Num.top(), operatorChange, Dependencies.injectValue(ie));
+	return Num.inject(Num.top(), operatorChange,
+		Dependencies.injectValue(ie).join(left.deps).join(right.deps));
 
     }
 
@@ -509,7 +518,7 @@ public class ExpEval {
 
 	/* Update the values in the store. */
 	for (Address addr : addrs) {
-	    state.store = state.store.strongUpdate(addr, val);
+	    state.store = state.store.strongUpdate(addr, val, lhs);
 	}
 
     }
@@ -525,7 +534,7 @@ public class ExpEval {
 
 	/* Update the values in the store. */
 	for (Address addr : addrs) {
-	    state.store = state.store.strongUpdate(addr, val);
+	    state.store = state.store.strongUpdate(addr, val, lhs);
 	}
 
     }
@@ -547,11 +556,15 @@ public class ExpEval {
 
 	/* Create the argument values. */
 	BValue[] args = new BValue[fc.getArguments().size()];
+	Dependencies argDeps = Dependencies.bot();
 	int i = 0;
 	for (AstNode arg : fc.getArguments()) {
 
 	    /* Get the value of the object. It could be a function, object literal, etc. */
 	    BValue argVal = eval(arg);
+
+	    // Update the argument's dependencies.
+	    argDeps = argDeps.join(argVal.deps);
 
 	    if (arg instanceof ObjectLiteral) {
 		// If this is an object literal, make a fake var in the
@@ -561,7 +574,7 @@ public class ExpEval {
 		String argName = arg.getID().toString();
 		state.env.strongUpdateNoCopy(argName,
 			Variable.inject(argName, address, Change.bottom(), Dependencies.bot()));
-		state.store = state.store.alloc(address, argVal);
+		state.store = state.store.alloc(address, argVal, new Name());
 	    }
 
 	    args[i] = argVal;
@@ -591,7 +604,7 @@ public class ExpEval {
 	if (objVal == null)
 	    objAddr = state.selfAddr;
 	else
-	    state.store = state.store.alloc(objAddr, objVal);
+	    state.store = state.store.alloc(objAddr, objVal, new Name());
 
 	if (funVal != null) {
 
@@ -599,9 +612,19 @@ public class ExpEval {
 	    Control control = state.control;
 	    control = control.update(fc);
 
+	    // Save the current stack frame so that we can check if a new stack frame has
+	    // been added.
+	    StackFrame current = callStack.peek();
+
 	    /* Call the function and get a join of the new states. */
 	    newState = Helpers.applyClosure(funVal, objAddr, state.store, scratch, state.trace,
 		    control, callStack);
+
+	    // If a stack frame has been added, we must evaluate it in the next analysis
+	    // iteration before we can continue.
+	    if (callStack.peek() != current) {
+		return BValue.bottom();
+	    }
 	}
 
 	// Get the call change type.
@@ -614,7 +637,7 @@ public class ExpEval {
 	    // value.
 
 	    // Create the return value.
-	    BValue retVal = BValue.top(retValChange, Dependencies.injectValue(fc));
+	    BValue retVal = BValue.top(retValChange, Dependencies.injectValue(fc).join(argDeps));
 
 	    // Add the return value to the scratch space.
 	    state.scratch = state.scratch.strongUpdate(retVal, null);
@@ -676,13 +699,6 @@ public class ExpEval {
 
 	return value;
 
-    }
-
-    /**
-     * Apply a strong update directly to the store using an address.
-     */
-    public void updateAddress(Address address, BValue value) {
-	state.store.strongUpdate(address, value);
     }
 
     /**
@@ -752,7 +768,7 @@ public class ExpEval {
 	    state.env = state.env.strongUpdate(name,
 		    Variable.inject(name, addr, Change.bottom(), Dependencies.bot()));
 	    state.store = state.store.alloc(addr,
-		    Addresses.dummy(Change.bottom(), Dependencies.injectValue(node)));
+		    Addresses.dummy(Change.bottom(), Dependencies.injectValue(node)), new Name());
 	    addrs = new Addresses(addr);
 	}
 
@@ -804,7 +820,7 @@ public class ExpEval {
 		Address addr = state.trace.makeAddr(ie.getLeft().getID(), "");
 		state.store = state.store.alloc(addr, dummy);
 		val = val.join(Address.inject(addr, Change.bottom(), Dependencies.bot()));
-		state.store = state.store.strongUpdate(valAddr, val);
+		state.store = state.store.strongUpdate(valAddr, val, ie.getLeft());
 	    }
 
 	    for (Address objAddr : val.addressAD.addresses) {
@@ -835,7 +851,7 @@ public class ExpEval {
 			    ie.getRight().toSource());
 		    BValue propVal = Addresses.dummy(Change.bottom(),
 			    Dependencies.injectValue(ie.getRight()));
-		    state.store = state.store.alloc(propAddr, propVal);
+		    state.store = state.store.alloc(propAddr, propVal, new Name());
 
 		    /* Add the property to the external properties of the object. */
 		    Map<String, Property> ext = new HashMap<String, Property>(
@@ -898,7 +914,7 @@ public class ExpEval {
 		Address addr = state.trace.makeAddr(eg.getID(), "");
 		state.store = state.store.alloc(addr, dummy);
 		val = val.join(Address.inject(addr, Change.bottom(), Dependencies.bot()));
-		state.store = state.store.strongUpdate(valAddr, val);
+		state.store = state.store.strongUpdate(valAddr, val, eg.getTarget());
 	    }
 
 	    for (Address objAddr : val.addressAD.addresses) {
@@ -941,7 +957,7 @@ public class ExpEval {
 		    propAddr = state.trace.makeAddr(eg.getID(), elementString);
 
 		    BValue propVal = Addresses.dummy(Change.bottom(), Dependencies.injectValue(eg));
-		    state.store = state.store.alloc(propAddr, propVal);
+		    state.store = state.store.alloc(propAddr, propVal, eg.getElement());
 
 		    /* Add the property to the external properties of the object. */
 		    Map<String, Property> ext = new HashMap<String, Property>(
@@ -980,7 +996,7 @@ public class ExpEval {
 	/* Place the value on the store */
 	Set<Address> addrs = new HashSet<Address>();
 	Address addr = state.trace.makeAddr(node.getID(), "");
-	state.store = state.store.alloc(addr, val);
+	state.store = state.store.alloc(addr, val, new Name());
 	addrs.add(addr);
 
 	return addrs;

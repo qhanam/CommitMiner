@@ -105,13 +105,23 @@ public class Store {
      *            The value to place in the store.
      * @return The Store after allocation.
      */
-    public Store alloc(Address address, BValue value) {
+    public Store alloc(Address address, BValue value, AstNode varOrFieldName) {
 	Map<Address, BValue> bValueStore = new HashMap<Address, BValue>(this.bValueStore);
 	BValue left = bValueStore.get(address);
-	if (left == null)
+	if (left == null) {
 	    bValueStore.put(address, value);
-	else
+	} else {
 	    bValueStore.put(address, left.join(value));
+	}
+
+	// Update the value dependencies.
+	for (Criterion crit : value.deps.getDependencies()) {
+	    varOrFieldName.addDependency(crit.getType().toString(), crit.getId());
+	}
+	for (Criterion crit : value.change.getDependencies().getDependencies()) {
+	    varOrFieldName.addDependency(crit.getType().toString(), crit.getId());
+	}
+
 	return new Store(bValueStore, this.objectStore);
     }
 
@@ -137,13 +147,22 @@ public class Store {
     }
 
     /**
-     * Replaces an value using a strong update.
+     * Replaces a value using a strong update.
      * 
      * @return The Store after the strong update.
      */
-    public Store strongUpdate(Address addr, BValue val) {
+    public Store strongUpdate(Address addr, BValue val, AstNode varOrFieldName) {
 	Map<Address, BValue> bValueStore = new HashMap<Address, BValue>(this.bValueStore);
 	bValueStore.put(addr, val);
+
+	// Update the value dependencies.
+	for (Criterion crit : val.deps.getDependencies()) {
+	    varOrFieldName.addDependency(crit.getType().toString(), crit.getId());
+	}
+	for (Criterion crit : val.change.getDependencies().getDependencies()) {
+	    varOrFieldName.addDependency(crit.getType().toString(), crit.getId());
+	}
+
 	return new Store(bValueStore, this.objectStore);
     }
 
@@ -167,12 +186,15 @@ public class Store {
      */
     public BValue apply(Address address, AstNode varOrFieldName) {
 	BValue val = this.bValueStore.get(address);
+
+	// Update the value dependencies.
 	for (Criterion crit : val.deps.getDependencies()) {
 	    varOrFieldName.addDependency(crit.getType().toString(), crit.getId());
 	}
 	for (Criterion crit : val.change.getDependencies().getDependencies()) {
 	    varOrFieldName.addDependency(crit.getType().toString(), crit.getId());
 	}
+
 	return val;
     }
 

@@ -126,7 +126,7 @@ public class TransferEdge {
 		    new Num(Num.LatticeElement.NAN_ZERO), new Bool(Bool.LatticeElement.FALSE),
 		    Null.top(), Undefined.top(), oldVal.addressAD, oldVal.change, oldVal.deps);
 	    // Update the store.
-	    state.store.strongUpdate(addr, val);
+	    state.store.strongUpdate(addr, val, new Name());
 	}
 
     }
@@ -143,7 +143,7 @@ public class TransferEdge {
 		    new Bool(Bool.LatticeElement.TRUE), Null.bottom(), Undefined.bottom(),
 		    oldVal.addressAD, oldVal.change, oldVal.deps);
 	    // Update the store.
-	    state.store.strongUpdate(addr, val);
+	    state.store.strongUpdate(addr, val, new Name());
 	}
 
     }
@@ -207,7 +207,7 @@ public class TransferEdge {
 		BValue oldVal = state.store.apply(lhsAddr, ie.getLeft());
 		rhsVal = Undefined.inject(Undefined.top(), oldVal.change, oldVal.deps)
 			.join(Null.inject(Null.top(), oldVal.change, oldVal.deps));
-		state.store.strongUpdate(lhsAddr, rhsVal);
+		state.store.strongUpdate(lhsAddr, rhsVal, new Name());
 	    }
 	if (BValue.isBlank(rhsVal) || BValue.isZero(rhsVal))
 	    for (Address lhsAddr : lhsAddrs) {
@@ -215,13 +215,14 @@ public class TransferEdge {
 		rhsVal = Str.inject(new Str(Str.LatticeElement.SBLANK), oldVal.change, oldVal.deps)
 			.join(Num.inject(new Num(Num.LatticeElement.ZERO), oldVal.change,
 				oldVal.deps));
-		state.store.strongUpdate(lhsAddr, rhsVal);
+		state.store.strongUpdate(lhsAddr, rhsVal, new Name());
 	    }
 	if (BValue.isNaN(rhsVal))
 	    for (Address lhsAddr : lhsAddrs) {
 		BValue oldVal = state.store.apply(lhsAddr, ie.getLeft());
 		state.store.strongUpdate(lhsAddr,
-			Num.inject(new Num(Num.LatticeElement.NAN), oldVal.change, oldVal.deps));
+			Num.inject(new Num(Num.LatticeElement.NAN), oldVal.change, oldVal.deps),
+			new Name());
 	    }
 	if (BValue.isFalse(rhsVal))
 	    interpretAddrsFalsey(lhsAddrs);
@@ -245,7 +246,7 @@ public class TransferEdge {
 	/* Update the value(s) on the LHS. */
 	Set<Address> lhsAddrs = expEval.resolveOrCreate(ie.getLeft());
 	for (Address lhsAddr : lhsAddrs) {
-	    state.store.strongUpdate(lhsAddr, rhsVal);
+	    state.store.strongUpdate(lhsAddr, rhsVal, new Name());
 	}
 
     }

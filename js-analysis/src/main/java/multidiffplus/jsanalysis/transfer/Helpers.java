@@ -47,30 +47,15 @@ public class Helpers {
      * Adds a property to the object and allocates the property's value on the
      * store.
      * 
-     * @param prop
-     *            The name of the property to add to the object.
-     */
-    public static Store addProp(String prop, BValue propVal, Map<String, Address> ext, Store store,
-	    Trace trace) {
-	Address propAddr = trace.toAddr(prop);
-	store = store.alloc(propAddr, propVal);
-	ext.put(prop, propAddr);
-	return store;
-    }
-
-    /**
-     * Adds a property to the object and allocates the property's value on the
-     * store.
-     * 
      * @param propID
      *            The node id of the property being added to the object.
      * @param propVal
      *            The value of the property.
      */
     public static Store addProp(int propID, String prop, BValue propVal, Map<String, Property> ext,
-	    Store store, Trace trace) {
+	    Store store, Trace trace, AstNode node) {
 	Address propAddr = trace.makeAddr(propID, prop);
-	store = store.alloc(propAddr, propVal);
+	store = store.alloc(propAddr, propVal, node);
 	ext.put(prop, new Property(propID, prop, propAddr));
 	return store;
     }
@@ -87,7 +72,8 @@ public class Helpers {
 
 	Map<String, Property> external = new HashMap<String, Property>();
 	store = addProp(function.getID(), "length",
-		Num.inject(Num.top(), Change.u(), Dependencies.bot()), external, store, trace);
+		Num.inject(Num.top(), Change.u(), Dependencies.bot()), external, store, trace,
+		new Name());
 
 	InternalFunctionProperties internal = new InternalFunctionProperties(
 		Address.inject(StoreFactory.Function_proto_Addr, Change.u(), Dependencies.bot()),
@@ -181,13 +167,20 @@ public class Helpers {
 	List<Name> localVars = VariableLiftVisitor.getVariableDeclarations(function);
 	for (Name localVar : localVars) {
 	    Address address = trace.makeAddr(localVar.getID(), "");
+
+	    // Initialize the variable.
 	    env.strongUpdateNoCopy(localVar.toSource(),
 		    Variable.inject(localVar.toSource(), address,
 			    Change.convU(localVar, Dependencies.injectVariableChange(localVar)),
 			    Dependencies.injectVariable(localVar)));
-	    Change valueChange = Change.convU(localVar, Dependencies.injectValue(localVar));
-	    store = store.alloc(address, Undefined.inject(Undefined.top(), valueChange,
-		    Dependencies.injectValue(localVar)));
+
+	    // Initialize the value to undefined.
+	    Dependencies valChangeDeps = Change.testU(localVar)
+		    ? Dependencies.injectValueChange(localVar)
+		    : Dependencies.bot();
+	    store = store.alloc(address, Undefined.inject(Undefined.top(),
+		    Change.convU(localVar, valChangeDeps), Dependencies.injectValue(localVar)),
+		    new Name());
 	}
 
 	/*
@@ -209,7 +202,8 @@ public class Helpers {
 			    Dependencies.injectVariable(child.getFunctionName())));
 	    Change valueChange = Change.convU(child, Dependencies.injectValue(child));
 	    store = store.alloc(address,
-		    Address.inject(address, valueChange, Dependencies.injectValue(child)));
+		    Address.inject(address, valueChange, Dependencies.injectValue(child)),
+		    new Name());
 
 	    /* Create a function object. */
 	    Closure closure = new FunctionClosure(cfgs.get(child), env);

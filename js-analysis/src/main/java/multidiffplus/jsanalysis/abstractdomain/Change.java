@@ -142,6 +142,35 @@ public class Change {
 	TOP, CHANGED, UNCHANGED, BOTTOM
     }
 
+    /**
+     * Returns {@code true} when the node was inserted or removed.
+     */
+    public static boolean test(AstNode node) {
+	ChangeType ct = node.getChangeType();
+	switch (ct) {
+	case INSERTED:
+	case REMOVED:
+	    return true;
+	default:
+	    return false;
+	}
+    }
+
+    /**
+     * Returns {@code true} when the node was inserted, removed, or updated.
+     */
+    public static boolean testU(AstNode node) {
+	ChangeType ct = node.getChangeType();
+	switch (ct) {
+	case INSERTED:
+	case REMOVED:
+	case UPDATED:
+	    return true;
+	default:
+	    return false;
+	}
+    }
+
     @Override
     public String toString() {
 	return "Change:" + this.le.toString();
