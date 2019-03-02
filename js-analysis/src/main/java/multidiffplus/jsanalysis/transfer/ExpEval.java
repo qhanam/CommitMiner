@@ -511,6 +511,7 @@ public class ExpEval {
     public void evalAssignment(AstNode lhs, AstNode rhs) {
 
 	/* Resolve the left hand side to a set of addresses. */
+	// TODO: 'resolveOrCreate' shouldn't store the deps in the AST node.
 	Set<Address> addrs = this.resolveOrCreate(lhs);
 
 	/* Resolve the right hand side to a value. */
@@ -837,10 +838,6 @@ public class ExpEval {
 
 		if (propAddr != null) {
 		    result.add(propAddr);
-		    // Sanity check that the property address is in the store.
-		    BValue propVal = state.store.apply(propAddr, ie);
-		    if (propVal == null)
-			throw new Error("Property value does not exist in store.");
 		} else {
 		    /*
 		     * This property was not found, which means it is either undefined or was
@@ -947,10 +944,6 @@ public class ExpEval {
 
 		if (propAddr != null) {
 		    result.add(propAddr);
-		    // Sanity check that the property address is in the store.
-		    BValue propVal = state.store.apply(propAddr, eg);
-		    if (propVal == null)
-			throw new Error("Property value does not exist in store.");
 		} else {
 		    /*
 		     * This property was not found, which means it is either undefined or was
