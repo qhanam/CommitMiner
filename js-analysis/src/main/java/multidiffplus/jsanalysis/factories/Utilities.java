@@ -2,7 +2,7 @@ package multidiffplus.jsanalysis.factories;
 
 import java.util.Map;
 
-import org.mozilla.javascript.ast.Name;
+import org.mozilla.javascript.ast.AstNode;
 
 import multidiffplus.jsanalysis.abstractdomain.Address;
 import multidiffplus.jsanalysis.abstractdomain.BValue;
@@ -19,9 +19,9 @@ public class Utilities {
      *            The name of the property to add to the object.
      */
     public static Store addProp(String prop, Integer definerID, BValue propVal,
-	    Map<String, Property> ext, Store store) {
+	    Map<String, Property> ext, Store store, AstNode node) {
 	Address propAddr = Address.createBuiltinAddr(prop);
-	store = store.alloc(propAddr, propVal, new Name());
+	store = store.alloc(propAddr, propVal, node);
 	ext.put(prop, new Property(definerID, prop, propAddr));
 	return store;
     }

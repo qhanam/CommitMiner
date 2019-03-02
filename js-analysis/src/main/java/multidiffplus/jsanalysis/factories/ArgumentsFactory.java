@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
 
+import org.mozilla.javascript.ast.Name;
+
 import multidiffplus.jsanalysis.abstractdomain.Address;
 import multidiffplus.jsanalysis.abstractdomain.Change;
 import multidiffplus.jsanalysis.abstractdomain.Closure;
@@ -36,9 +38,9 @@ public class ArgumentsFactory {
 	Map<String, Property> ext = new HashMap<String, Property>();
 	store = Utilities.addProp("prototype", ARG_DEFINER_ID,
 		Address.inject(StoreFactory.Object_proto_Addr, Change.u(), Dependencies.bot()), ext,
-		store);
+		store, new Name());
 	store = Utilities.addProp("length", ARG_DEFINER_ID,
-		Num.inject(Num.top(), Change.u(), Dependencies.bot()), ext, store);
+		Num.inject(Num.top(), Change.u(), Dependencies.bot()), ext, store, new Name());
 
 	NativeClosure closure = new NativeClosure() {
 	    @Override

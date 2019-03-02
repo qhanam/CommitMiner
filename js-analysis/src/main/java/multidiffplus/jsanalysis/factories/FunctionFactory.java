@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
 
+import org.mozilla.javascript.ast.Name;
+
 import multidiffplus.jsanalysis.abstractdomain.Address;
 import multidiffplus.jsanalysis.abstractdomain.BValue;
 import multidiffplus.jsanalysis.abstractdomain.Change;
@@ -36,15 +38,15 @@ public class FunctionFactory {
     public Obj Function_proto_Obj() {
 	Map<String, Property> ext = new HashMap<String, Property>();
 	store = Utilities.addProp("external", -41,
-		Num.inject(Num.top(), Change.u(), Dependencies.bot()), ext, store);
+		Num.inject(Num.top(), Change.u(), Dependencies.bot()), ext, store, new Name());
 	store = Utilities.addProp("apply", -42, Address
 		.inject(StoreFactory.Function_proto_apply_Addr, Change.u(), Dependencies.bot()),
-		ext, store);
+		ext, store, new Name());
 	store = Utilities.addProp("call", -43, Address.inject(StoreFactory.Function_proto_call_Addr,
-		Change.u(), Dependencies.bot()), ext, store);
+		Change.u(), Dependencies.bot()), ext, store, new Name());
 	store = Utilities.addProp("toString", -44, Address
 		.inject(StoreFactory.Function_proto_toString_Addr, Change.u(), Dependencies.bot()),
-		ext, store);
+		ext, store, new Name());
 
 	InternalObjectProperties internal = new InternalObjectProperties(
 		Address.inject(StoreFactory.Function_proto_Addr, Change.u(), Dependencies.bot()),

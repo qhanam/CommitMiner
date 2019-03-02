@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
 
+import org.mozilla.javascript.ast.Name;
+
 import multidiffplus.jsanalysis.abstractdomain.Address;
 import multidiffplus.jsanalysis.abstractdomain.BValue;
 import multidiffplus.jsanalysis.abstractdomain.Bool;
@@ -39,49 +41,50 @@ public class ObjFactory {
 	Map<String, Property> ext = new HashMap<String, Property>();
 	store = Utilities.addProp("prototype", -21,
 		Address.inject(StoreFactory.Object_proto_Addr, Change.u(), Dependencies.bot()), ext,
-		store);
+		store, new Name());
 	store = Utilities.addProp("number", -22,
-		Num.inject(Num.top(), Change.u(), Dependencies.bot()), ext, store);
+		Num.inject(Num.top(), Change.u(), Dependencies.bot()), ext, store, new Name());
 	store = Utilities.addProp("create", -23,
 		Address.inject(StoreFactory.Object_create_Addr, Change.u(), Dependencies.bot()),
-		ext, store);
+		ext, store, new Name());
 	store = Utilities.addProp("defineProperties", -24, Address
 		.inject(StoreFactory.Object_defineProperties_Addr, Change.u(), Dependencies.bot()),
-		ext, store);
+		ext, store, new Name());
 	store = Utilities.addProp("defineProperty", -25, Address
 		.inject(StoreFactory.Object_defineProperty_Addr, Change.u(), Dependencies.bot()),
-		ext, store);
+		ext, store, new Name());
 	store = Utilities.addProp("freeze", -26,
 		Address.inject(StoreFactory.Object_freeze_Addr, Change.u(), Dependencies.bot()),
-		ext, store);
+		ext, store, new Name());
 	store = Utilities.addProp("getOwnPropertyDescriptor", -27,
 		Address.inject(StoreFactory.Object_getOwnPropertyDescriptor_Addr, Change.u(),
 			Dependencies.bot()),
-		ext, store);
+		ext, store, new Name());
 	store = Utilities.addProp("getOwnPropertyNames", -28,
 		Address.inject(StoreFactory.Object_getOwnPropertyNames_Addr, Change.u(),
 			Dependencies.bot()),
-		ext, store);
+		ext, store, new Name());
 	store = Utilities.addProp("getPrototypeOf", -29, Address
 		.inject(StoreFactory.Object_getPrototypeOf_Addr, Change.u(), Dependencies.bot()),
-		ext, store);
-	store = Utilities.addProp("isExtensible", -30, Address.inject(
-		StoreFactory.Object_isExtensible_Addr, Change.u(), Dependencies.bot()), ext, store);
+		ext, store, new Name());
+	store = Utilities.addProp("isExtensible", -30, Address
+		.inject(StoreFactory.Object_isExtensible_Addr, Change.u(), Dependencies.bot()), ext,
+		store, new Name());
 	store = Utilities.addProp("isFrozen", -31,
 		Address.inject(StoreFactory.Object_isFrozen_Addr, Change.u(), Dependencies.bot()),
-		ext, store);
+		ext, store, new Name());
 	store = Utilities.addProp("isSealed", -32,
 		Address.inject(StoreFactory.Object_isSealed_Addr, Change.u(), Dependencies.bot()),
-		ext, store);
+		ext, store, new Name());
 	store = Utilities.addProp("keys", -33,
 		Address.inject(StoreFactory.Object_keys_Addr, Change.u(), Dependencies.bot()), ext,
-		store);
+		store, new Name());
 	store = Utilities.addProp("preventExtensions", -34, Address
 		.inject(StoreFactory.Object_preventExtensions_Addr, Change.u(), Dependencies.bot()),
-		ext, store);
+		ext, store, new Name());
 	store = Utilities.addProp("seal", -35,
 		Address.inject(StoreFactory.Object_seal_Addr, Change.u(), Dependencies.bot()), ext,
-		store);
+		store, new Name());
 
 	NativeClosure closure = new NativeClosure() {
 	    @Override
@@ -165,26 +168,26 @@ public class ObjFactory {
 	Map<String, Property> ext = new HashMap<String, Property>();
 	store = Utilities.addProp("toString", -11, Address
 		.inject(StoreFactory.Object_proto_toString_Addr, Change.u(), Dependencies.bot()),
-		ext, store);
+		ext, store, new Name());
 	store = Utilities.addProp("toLocaleString", -12,
 		Address.inject(StoreFactory.Object_proto_toLocaleString_Addr, Change.u(),
 			Dependencies.bot()),
-		ext, store);
+		ext, store, new Name());
 	store = Utilities.addProp("valueOf", -13, Address
 		.inject(StoreFactory.Object_proto_valueOf_Addr, Change.u(), Dependencies.bot()),
-		ext, store);
+		ext, store, new Name());
 	store = Utilities.addProp("hasOwnPrpoerty", -14,
 		Address.inject(StoreFactory.Object_proto_hasOwnProperty_Addr, Change.u(),
 			Dependencies.bot()),
-		ext, store);
+		ext, store, new Name());
 	store = Utilities.addProp("isPrototypeOf", -15,
 		Address.inject(StoreFactory.Object_proto_isPrototypeOf_Addr, Change.u(),
 			Dependencies.bot()),
-		ext, store);
+		ext, store, new Name());
 	store = Utilities.addProp("propertyIsEnumerable", -16,
 		Address.inject(StoreFactory.Object_proto_propertyIsEnumerable_Addr, Change.u(),
 			Dependencies.bot()),
-		ext, store);
+		ext, store, new Name());
 
 	InternalObjectProperties internal = new InternalObjectProperties();
 
