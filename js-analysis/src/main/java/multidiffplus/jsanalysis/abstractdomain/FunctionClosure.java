@@ -124,8 +124,11 @@ public class FunctionClosure extends Closure {
 	    Map<String, Property> ext = new HashMap<String, Property>();
 	    int i = 0;
 	    for (BValue argVal : scratchpad.applyArgs()) {
+		AstNode dependentToken = i < function.getParams().size()
+			? function.getParams().get(i)
+			: new Name();
 		store = Helpers.addProp(function.getID(), String.valueOf(i), argVal, ext, store,
-			trace, function.getParams().get(i));
+			trace, dependentToken);
 		i++;
 	    }
 
