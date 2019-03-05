@@ -171,15 +171,14 @@ public class Helpers {
 	    // Initialize the variable.
 	    env.strongUpdateNoCopy(localVar.toSource(),
 		    Variable.inject(localVar.toSource(), address,
-			    Change.convU(localVar, Dependencies.injectVariableChange(localVar)),
+			    Change.convU(localVar, Dependencies::injectVariableChange),
 			    Dependencies.injectVariable(localVar)));
 
 	    // Initialize the value to undefined.
-	    Dependencies valChangeDeps = Change.testU(localVar)
-		    ? Dependencies.injectValueChange(localVar)
-		    : Dependencies.bot();
-	    store = store.alloc(address, Undefined.inject(Undefined.top(),
-		    Change.convU(localVar, valChangeDeps), Dependencies.injectValue(localVar)),
+	    store = store.alloc(address,
+		    Undefined.inject(Undefined.top(),
+			    Change.convU(localVar, Dependencies::injectValueChange),
+			    Dependencies.injectValue(localVar)),
 		    new Name());
 	}
 
@@ -198,9 +197,9 @@ public class Helpers {
 	    env.strongUpdateNoCopy(name,
 		    Variable.inject(name, address,
 			    Change.convU(child.getFunctionName(),
-				    Dependencies.injectVariableChange(child.getFunctionName())),
+				    Dependencies::injectVariableChange),
 			    Dependencies.injectVariable(child.getFunctionName())));
-	    Change valueChange = Change.convU(child, Dependencies.injectValue(child));
+	    Change valueChange = Change.convU(child, Dependencies::injectValue);
 	    store = store.alloc(address,
 		    Address.inject(address, valueChange, Dependencies.injectValue(child)),
 		    new Name());

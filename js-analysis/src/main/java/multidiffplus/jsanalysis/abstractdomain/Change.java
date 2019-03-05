@@ -106,12 +106,12 @@ public class Change {
      *            The change type will be extracted from node.
      * @return The change lattice element for the node.
      */
-    public static Change conv(AstNode node, Dependencies deps) {
+    public static Change conv(AstNode node, DependencyCreator depCreator) {
 	ChangeType ct = node.getChangeType();
 	switch (ct) {
 	case INSERTED:
 	case REMOVED:
-	    return c(deps);
+	    return c(depCreator.createFromAstNode(node));
 	default:
 	    return u();
 	}
@@ -125,13 +125,13 @@ public class Change {
      *            The change type will be extracted from node.
      * @return The change lattice element for the node.
      */
-    public static Change convU(AstNode node, Dependencies deps) {
+    public static Change convU(AstNode node, DependencyCreator depCreator) {
 	ChangeType ct = node.getChangeType();
 	switch (ct) {
 	case INSERTED:
 	case REMOVED:
 	case UPDATED:
-	    return c(deps);
+	    return c(depCreator.createFromAstNode(node));
 	default:
 	    return u();
 	}
@@ -185,6 +185,10 @@ public class Change {
 	    return true;
 	}
 	return false;
+    }
+
+    public interface DependencyCreator {
+	public Dependencies createFromAstNode(AstNode node);
     }
 
 }

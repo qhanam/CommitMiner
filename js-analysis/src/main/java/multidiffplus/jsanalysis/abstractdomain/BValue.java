@@ -44,12 +44,12 @@ public class BValue {
     }
 
     public BValue join(BValue state) {
-
-	return new BValue(this.stringAD.join(state.stringAD), this.numberAD.join(state.numberAD),
-		this.booleanAD.join(state.booleanAD), this.nullAD.join(state.nullAD),
-		this.undefinedAD.join(state.undefinedAD), this.addressAD.join(state.addressAD),
-		this.change.join(state.change), this.deps.join(state.deps));
-
+	BValue val = new BValue(this.stringAD.join(state.stringAD),
+		this.numberAD.join(state.numberAD), this.booleanAD.join(state.booleanAD),
+		this.nullAD.join(state.nullAD), this.undefinedAD.join(state.undefinedAD),
+		this.addressAD.join(state.addressAD), this.change.join(state.change),
+		this.deps.join(state.deps));
+	return val;
     }
 
     /**

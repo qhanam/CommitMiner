@@ -108,7 +108,7 @@ public class ExpEval {
 	}
 
 	/* We could not evaluate the expression. Return top. */
-	return BValue.top(Change.convU(node, Dependencies.injectValueChange(node)),
+	return BValue.top(Change.convU(node, Dependencies::injectValueChange),
 		Dependencies.injectValue(node));
 
     }
@@ -147,7 +147,7 @@ public class ExpEval {
 	Address addr = state.trace.makeAddr(f.getID(), "");
 	addr = state.trace.modAddr(addr, JSClass.CFunction);
 	state.store = Helpers.createFunctionObj(closure, state.store, state.trace, addr, f);
-	return Address.inject(addr, Change.convU(f, Dependencies.injectValueChange(f)),
+	return Address.inject(addr, Change.convU(f, Dependencies::injectValueChange),
 		Dependencies.injectValue(f));
     }
 
@@ -182,9 +182,7 @@ public class ExpEval {
 	Address objAddr = state.trace.makeAddr(ol.getID(), "");
 	state.store = state.store.alloc(objAddr, obj);
 
-	Dependencies valChangeDeps = Change.testU(ol) ? Dependencies.injectValueChange(ol)
-		: Dependencies.bot();
-	return Address.inject(objAddr, Change.convU(ol, valChangeDeps),
+	return Address.inject(objAddr, Change.convU(ol, Dependencies::injectValueChange),
 		Dependencies.injectValue(ol));
     }
 
@@ -213,7 +211,7 @@ public class ExpEval {
 	Address objAddr = state.trace.makeAddr(al.getID(), "");
 	state.store = state.store.alloc(objAddr, obj);
 
-	return Address.inject(objAddr, Change.convU(al, Dependencies.injectValueChange(al)),
+	return Address.inject(objAddr, Change.convU(al, Dependencies::injectValueChange),
 		Dependencies.injectValue(al));
 
     }
@@ -234,7 +232,7 @@ public class ExpEval {
 	//
 	// (2) If the operator has changed, the post-operator value has also changed and
 	// a new criterion (the unary-operator expression) is added.
-	Change operatorChange = Change.conv(ue, Dependencies.injectValueChange(ue));
+	Change operatorChange = Change.conv(ue, Dependencies::injectValueChange);
 
 	// Join the operand and operator changes.
 	operatorChange = operand.change.join(operatorChange);
@@ -321,7 +319,7 @@ public class ExpEval {
 	//
 	// (2) If the operator has changed, the post-operator value has also changed and
 	// a new criterion (the unary-operator expression) is added.
-	Change operatorChange = Change.conv(ie, Dependencies.injectValueChange(ie));
+	Change operatorChange = Change.conv(ie, Dependencies::injectValueChange);
 
 	// Join the operand and operator changes.
 	operatorChange = left.change.join(right.change).join(operatorChange);
@@ -347,7 +345,7 @@ public class ExpEval {
 	//
 	// (2) If the operator has changed, the post-operator value has also changed and
 	// a new criterion (the unary-operator expression) is added.
-	Change operatorChange = Change.conv(ie, Dependencies.injectValueChange(ie));
+	Change operatorChange = Change.conv(ie, Dependencies::injectValueChange);
 
 	// Join the operand and operator changes.
 	operatorChange = left.change.join(right.change).join(operatorChange);
@@ -409,7 +407,7 @@ public class ExpEval {
 	//
 	// (2) If the operator has changed, the post-operator value has also changed and
 	// a new criterion (the unary-operator expression) is added.
-	Change operatorChange = Change.conv(ie, Dependencies.injectValueChange(ie));
+	Change operatorChange = Change.conv(ie, Dependencies::injectValueChange);
 	if (operatorChange.isChanged()) {
 	    // Add a criterion ID to the AST node.
 	    ie.addCriterion("VALUE_CHANGE", ie.getID());
@@ -443,7 +441,7 @@ public class ExpEval {
      */
     public BValue evalNumberLiteral(NumberLiteral numl) {
 	return Num.inject(new Num(Num.LatticeElement.VAL, numl.getValue()),
-		Change.convU(numl, Dependencies.injectValueChange(numl)),
+		Change.convU(numl, Dependencies::injectValueChange),
 		Dependencies.injectValue(numl));
     }
 
@@ -456,7 +454,7 @@ public class ExpEval {
 
 	Str str = null;
 	String val = strl.getValue();
-	Change change = Change.convU(strl, Dependencies.injectValueChange(strl));
+	Change change = Change.convU(strl, Dependencies::injectValueChange);
 
 	if (val.equals(""))
 	    str = new Str(Str.LatticeElement.SBLANK);
@@ -476,7 +474,7 @@ public class ExpEval {
      * @return the abstract interpretation of the keyword literal.
      */
     public BValue evalKeywordLiteral(KeywordLiteral kwl) {
-	Change change = Change.conv(kwl, Dependencies.injectValueChange(kwl));
+	Change change = Change.conv(kwl, Dependencies::injectValueChange);
 	switch (kwl.getType()) {
 	case Token.THIS:
 	    return state.store.apply(state.selfAddr, kwl);
@@ -557,15 +555,19 @@ public class ExpEval {
 
 	/* Create the argument values. */
 	BValue[] args = new BValue[fc.getArguments().size()];
-	Dependencies argDeps = Dependencies.bot();
+	Dependencies argChangeDeps = Dependencies.bot();
 	int i = 0;
 	for (AstNode arg : fc.getArguments()) {
 
 	    /* Get the value of the object. It could be a function, object literal, etc. */
 	    BValue argVal = eval(arg);
 
+	    // Update the change value if the argument has changed.
+	    argVal = argVal.join(BValue.bottom(Change.convU(arg, Dependencies::injectValueChange),
+		    Dependencies.bot()));
+
 	    // Update the argument's dependencies.
-	    argDeps = argDeps.join(argVal.deps);
+	    argChangeDeps = argChangeDeps.join(argVal.change.getDependencies());
 
 	    if (arg instanceof ObjectLiteral) {
 		// If this is an object literal, make a fake var in the
@@ -628,17 +630,21 @@ public class ExpEval {
 	    }
 	}
 
-	// Get the call change type.
-	Change retValChange = Change.convU(fc, Dependencies.injectValueChange(fc));
-
 	if (newState == null) {
 	    // Because our analysis is not complete, the identifier may not
 	    // point to any function object. In this case, we assume the
 	    // (local) state is unchanged, but add BValue.TOP as the return
 	    // value.
 
+	    // CASE 1: Function does not resolve:
+	    // (1) If the function call is inserted, the return value is new.
+	    // (2) If the target function has changed, the return value has changed.
+	    // (3) If any of the argument values have changed, the return value has changed.
+	    Change retValChange = Change.convU(fc, Dependencies::injectValueChange);
+	    retValChange.getDependencies().join(argChangeDeps);
+
 	    // Create the return value.
-	    BValue retVal = BValue.top(retValChange, Dependencies.injectValue(fc).join(argDeps));
+	    BValue retVal = BValue.top(retValChange, Dependencies.injectValue(fc));
 
 	    // Add the return value to the scratch space.
 	    state.scratch = state.scratch.strongUpdate(retVal, null);
@@ -647,15 +653,22 @@ public class ExpEval {
 	} else {
 	    // The function exists and must be evaluated.
 
+	    // CASE 2: Function resolves.
+	    // (1) If the function call is inserted, the return value is new.
+	    // (2) If the target function has changed, the return value has changed.
+	    // (3) If the return value has changed, the return value has changed.
+	    Change retValChange = Change.conv(fc, Dependencies::injectValueChange)
+		    .join(Change.convU(fc.getTarget(), Dependencies::injectValueChange));
+
 	    BValue retVal = newState.scratch.applyReturn();
 	    if (retVal == null) {
 		// Functions with no return statement return undefined.
-		retVal = Undefined.inject(Undefined.top(), Change.u(),
+		retVal = Undefined.inject(Undefined.top(), retValChange,
 			Dependencies.injectValue(fc));
 		newState.scratch = newState.scratch.strongUpdate(retVal, null);
 	    } else {
 		// This could be a new value if the call is new.
-		newState.scratch.strongUpdate(
+		newState.scratch = newState.scratch.strongUpdate(
 			retVal.join(BValue.bottom(retValChange, Dependencies.bot())), null);
 	    }
 
@@ -839,22 +852,18 @@ public class ExpEval {
 		if (propAddr != null) {
 		    result.add(propAddr);
 		} else {
-		    /*
-		     * This property was not found, which means it is either undefined or was
-		     * initialized somewhere outside the analysis. Create it and give it the value
-		     * BValue.TOP.
-		     */
+		    // This property was not found, which means it is either undefined or was
+		    // initialized somewhere outside the analysis. Create it and give it the value
+		    // BValue.TOP.
 
-		    /*
-		     * Create a new address (BValue) for the property and put it in the store.
-		     */
+		    // Create a new address (BValue) for the property and put it in the store.
 		    propAddr = state.trace.makeAddr(ie.getRight().getID(),
 			    ie.getRight().toSource());
+
 		    // Create a dummy value. This will not exist in the output, because the value
 		    // and variable initialization exists outside the file.
 		    // AstNode dummyNode = new NumberLiteral();
-		    BValue propVal = Addresses.dummy(Change.bottom(),
-			    Dependencies.injectValue(ie.getRight()));
+		    BValue propVal = Addresses.dummy(Change.bottom(), Dependencies.injectValue(ie));
 		    state.store = state.store.alloc(propAddr, propVal, ie);
 
 		    /* Add the property to the external properties of the object. */

@@ -84,7 +84,8 @@ public class TransferNode {
 
 	/* Evaluate the return value from the return expression. */
 	if (rs.getReturnValue() == null) {
-	    retVal = Undefined.inject(Undefined.top(), Change.convU(rs, Dependencies.bot()),
+	    retVal = Undefined.inject(Undefined.top(),
+		    Change.convU(rs, Dependencies::injectValueChange),
 		    Dependencies.injectValue(rs));
 	} else {
 	    retVal = expEval.eval(rs.getReturnValue());

@@ -156,7 +156,7 @@ public class FunctionClosure extends Closure {
 
 			/* Add the argument address to the argument object. */
 			BValue argVal = BValue.top(
-				Change.convU(param, Dependencies.injectValueChange(param)),
+				Change.convU(param, (n) -> Dependencies.injectValueChange(n)),
 				Dependencies.injectValue(param));
 			store = Helpers.addProp(param.getID(), String.valueOf(i), argVal,
 				argObj.externalProperties, store, trace, param);
@@ -170,7 +170,7 @@ public class FunctionClosure extends Closure {
 
 		    String name = paramName.toSource();
 		    Variable identity = Variable.inject(name, prop.address,
-			    Change.convU(param, Dependencies.injectVariableChange(param)),
+			    Change.convU(param, (n) -> Dependencies.injectVariableChange(n)),
 			    Dependencies.injectVariable(param));
 		    env = env.strongUpdate(name, identity);
 		}

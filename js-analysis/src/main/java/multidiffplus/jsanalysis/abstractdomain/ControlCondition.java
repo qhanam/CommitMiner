@@ -56,7 +56,7 @@ public class ControlCondition implements DependencyIdentifier {
 	if (edge.getCondition() != null) {
 
 	    Change change = Change.convU((AstNode) edge.getCondition(),
-		    Dependencies.injectConditionChange((AstNode) edge.getCondition()));
+		    (n) -> Dependencies.injectConditionChange(n));
 
 	    if (change.isChanged()) {
 		conditions.add(new Condition((AstNode) edge.getCondition(), change));
@@ -75,7 +75,7 @@ public class ControlCondition implements DependencyIdentifier {
 	    if (child != edge && child.getCondition() != null) {
 
 		Change change = Change.convU((AstNode) child.getCondition(),
-			Dependencies.injectConditionChange((AstNode) child.getCondition()));
+			(n) -> Dependencies.injectConditionChange(n));
 
 		if (change.isChanged()) {
 		    negConditions.add(new Condition((AstNode) child.getCondition(), change));

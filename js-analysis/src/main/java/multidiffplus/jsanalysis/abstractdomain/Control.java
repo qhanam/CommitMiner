@@ -48,7 +48,7 @@ public class Control {
 	 * If this is a new function call, we interpret the control of the callee as
 	 * changed.
 	 */
-	Change change = Change.convU(fc, Dependencies.injectCallChange(fc));
+	Change change = Change.convU(fc, (node) -> Dependencies.injectCallChange(node));
 	if (change.isChanged())
 	    return Control.inject(call.update(change));
 

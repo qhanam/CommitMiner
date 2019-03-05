@@ -30,7 +30,6 @@ public class Analysis2 {
 	while (!callStack.isEmpty()) {
 	    StackFrame stackFrame = callStack.peek();
 	    if (stackFrame.hasInstruction()) {
-		System.out.println(stackFrame.peekInstruction().toString());
 		stackFrame.peekInstruction().transfer(callStack);
 	    } else {
 		Helpers.findReachableFunctions(callStack);
