@@ -819,12 +819,12 @@ public class ExpEval {
 		Map<String, Property> ext = new HashMap<String, Property>();
 		// Create a dummy value. This will not exist in the output, because the value
 		// and variable initialization exists outside the file.
-		AstNode dummyNode = new ObjectLiteral();
+		// AstNode dummyNode = new ObjectLiteral();
 		Obj dummy = new Obj(ext, new InternalObjectProperties());
 		Address addr = state.trace.makeAddr(ie.getLeft().getID(), "");
 		state.store = state.store.alloc(addr, dummy);
-		val = val.join(
-			Address.inject(addr, Change.bottom(), Dependencies.injectValue(dummyNode)));
+		val = val.join(Address.inject(addr, Change.bottom(),
+			Dependencies.injectValue(ie.getLeft())));
 		state.store = state.store.strongUpdate(valAddr, val, ie.getLeft());
 	    }
 
@@ -852,9 +852,9 @@ public class ExpEval {
 			    ie.getRight().toSource());
 		    // Create a dummy value. This will not exist in the output, because the value
 		    // and variable initialization exists outside the file.
-		    AstNode dummyNode = new NumberLiteral();
+		    // AstNode dummyNode = new NumberLiteral();
 		    BValue propVal = Addresses.dummy(Change.bottom(),
-			    Dependencies.injectValue(dummyNode));
+			    Dependencies.injectValue(ie.getRight()));
 		    state.store = state.store.alloc(propAddr, propVal, ie);
 
 		    /* Add the property to the external properties of the object. */

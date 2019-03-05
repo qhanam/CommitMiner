@@ -34,6 +34,8 @@ public class CandidateAnalysis {
 
     public void analyze() throws Exception {
 
+	System.out.println(candidate.getNewFile().getAbsolutePath());
+
 	/* Read the source files. */
 	SourceCodeFileChange sourceCodeFileChange = getSourceCodeFileChange(candidate.getFile(),
 		candidate.getOldFile(), candidate.getNewFile());

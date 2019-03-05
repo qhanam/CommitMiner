@@ -55,9 +55,9 @@ public class Main {
 
 		/* Parse the line into a Candidate object. */
 		String[] values = line.split(",");
-		Candidate candidate = new Candidate(values[0], values[1],
-			new File(options.getSourceDir(), values[2]),
-			new File(options.getSourceDir(), values[3]));
+		Candidate candidate = new Candidate(values[0], Integer.parseInt(values[1]),
+			values[2], new File(options.getSourceDir(), values[3]),
+			new File(options.getSourceDir(), values[4]));
 
 		/*
 		 * Add the candidate if it is is not already in the candidate set (we will

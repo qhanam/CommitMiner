@@ -18,6 +18,9 @@ public class Candidate {
     /** The url of the commit on GitHub. */
     private String uri;
 
+    /** The timestamp of the commit. */
+    private int timestamp;
+
     /** The path to the file in the project. */
     private String file;
 
@@ -27,9 +30,10 @@ public class Candidate {
     /** The local address of the post-commit file. */
     private File newFile;
 
-    public Candidate(String uri, String file, File oldFile, File newFile) {
+    public Candidate(String uri, int timestamp, String file, File oldFile, File newFile) {
 
 	this.uri = uri;
+	this.timestamp = timestamp;
 	this.file = file;
 	this.oldFile = oldFile;
 	this.newFile = newFile;
@@ -75,6 +79,10 @@ public class Candidate {
 
     public File getNewFile() {
 	return newFile;
+    }
+
+    public int getTimestamp() {
+	return timestamp;
     }
 
     @Override
