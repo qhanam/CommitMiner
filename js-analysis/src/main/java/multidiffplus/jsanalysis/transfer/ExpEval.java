@@ -172,6 +172,12 @@ public class ExpEval {
 	    else if (prop instanceof NumberLiteral)
 		propName = ((NumberLiteral) prop).getValue();
 	    BValue propVal = this.eval(property.getRight());
+	    if (!propVal.change.isChanged() && property.getRight().getType() != Token.OBJECTLIT
+		    && property.getRight().getType() != Token.ARRAYLIT
+		    && Change.testU(property.getRight())) {
+		propVal.change = propVal.change
+			.join(Change.convU(property.getRight(), Dependencies::injectValueChange));
+	    }
 	    Address propAddr = state.trace.makeAddr(property.getID(), propName);
 	    state.store = state.store.alloc(propAddr, propVal, property.getLeft());
 	    if (propName != null)
@@ -182,7 +188,7 @@ public class ExpEval {
 	Address objAddr = state.trace.makeAddr(ol.getID(), "");
 	state.store = state.store.alloc(objAddr, obj);
 
-	return Address.inject(objAddr, Change.convU(ol, Dependencies::injectValueChange),
+	return Address.inject(objAddr, Change.conv(ol, Dependencies::injectValueChange),
 		Dependencies.injectValue(ol));
     }
 
@@ -201,6 +207,11 @@ public class ExpEval {
 	Integer i = 0;
 	for (AstNode element : al.getElements()) {
 	    BValue propVal = this.eval(element);
+	    if (!propVal.change.isChanged() && element.getType() != Token.OBJECTLIT
+		    && element.getType() != Token.ARRAYLIT && Change.testU(element)) {
+		propVal.change = propVal.change
+			.join(Change.convU(element, Dependencies::injectValueChange));
+	    }
 	    Address propAddr = state.trace.makeAddr(element.getID(), "");
 	    state.store = state.store.alloc(propAddr, propVal, new Name());
 	    ext.put(i.toString(), new Property(element.getID(), i.toString(), propAddr));
@@ -211,7 +222,7 @@ public class ExpEval {
 	Address objAddr = state.trace.makeAddr(al.getID(), "");
 	state.store = state.store.alloc(objAddr, obj);
 
-	return Address.inject(objAddr, Change.convU(al, Dependencies::injectValueChange),
+	return Address.inject(objAddr, Change.conv(al, Dependencies::injectValueChange),
 		Dependencies.injectValue(al));
 
     }
@@ -516,7 +527,8 @@ public class ExpEval {
 	/* Resolve the right hand side to a value. */
 	BValue val = this.eval(rhs);
 
-	if (!val.change.isChanged() && Change.testU(rhs))
+	if (!val.change.isChanged() && rhs.getType() != Token.OBJECTLIT
+		&& rhs.getType() != Token.ARRAYLIT && Change.testU(rhs))
 	    // This expression points the lhs to a new value.
 	    val.change = val.change.join(Change.convU(rhs, Dependencies::injectValueChange));
 
