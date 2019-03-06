@@ -2,7 +2,7 @@ package multidiffplus.jsanalysis.abstractdomain;
 
 import java.util.Stack;
 
-import multidiffplus.jsanalysis.factories.StoreFactory;
+import multidiffplus.jsanalysis.initstate.StoreFactory;
 
 /**
  * Internal properties for an abstract Function object.

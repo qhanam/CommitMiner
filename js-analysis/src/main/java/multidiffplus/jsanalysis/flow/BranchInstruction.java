@@ -6,7 +6,9 @@ import multidiffplus.jsanalysis.transfer.ExpEval;
 import multidiffplus.jsanalysis.transfer.TransferEdge;
 
 /**
- * Stores the state of the flow analysis at one point in the program.
+ * An branch condition source code instruction.
+ * 
+ * Branch condition instructions appear within branch conditions.
  */
 public class BranchInstruction extends Instruction {
 

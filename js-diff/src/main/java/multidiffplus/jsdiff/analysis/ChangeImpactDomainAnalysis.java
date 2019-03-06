@@ -5,13 +5,13 @@ import java.util.regex.Matcher;
 import org.mozilla.javascript.EvaluatorException;
 import org.mozilla.javascript.ast.AstRoot;
 
-import changeimpact.InterleavedInterCIA;
 import multidiffplus.analysis.DomainAnalysis;
 import multidiffplus.commit.SourceCodeFileChange;
 import multidiffplus.diff.Diff;
 import multidiffplus.diff.DiffContext;
 import multidiffplus.factories.ICFGFactory;
 import multidiffplus.facts.JsonFactBase;
+import multidiffplus.jsanalysis.flow.InterleavedInterCIA;
 
 /**
  * Gathers change impact facts about one source code file.

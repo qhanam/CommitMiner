@@ -10,11 +10,11 @@ import org.mozilla.javascript.ast.ScriptNode;
 import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode;
 import multidiffplus.cfg.CFG;
 import multidiffplus.jsanalysis.abstractdomain.State;
-import multidiffplus.jsanalysis.factories.StateFactory;
+import multidiffplus.jsanalysis.initstate.StateFactory;
 import multidiffplus.jsanalysis.transfer.Helpers;
 
 /**
- * An analysis of a JavaScript file.
+ * A flow analysis of a JavaScript file.
  */
 public class Analysis {
 
@@ -51,7 +51,7 @@ public class Analysis {
     }
 
     /**
-     * @return a new instance of the analysis.
+     * Returns an initialized, but un-executed, analysis for the script.
      */
     public static Analysis build(ClassifiedASTNode root, List<CFG> cfgs) {
 

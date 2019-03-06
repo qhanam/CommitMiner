@@ -2,6 +2,9 @@ package multidiffplus.jsanalysis.flow;
 
 import multidiffplus.jsanalysis.abstractdomain.State;
 
+/**
+ * A source code instruction.
+ */
 public abstract class Instruction {
 
     /**
@@ -39,12 +42,24 @@ public abstract class Instruction {
      */
     public abstract void addInstructionsToKontinuation(CallStack callStack, State incomingState);
 
+    /**
+     * Updates the abstract state by evaluating the instruction.
+     */
     protected abstract void transferOverInstruction(CallStack callStack, State postTransferState);
 
+    /**
+     * Returns the state of the program before the instruction executes.
+     */
     protected abstract State getPreTransferState();
 
+    /**
+     * Assigns the state of the program before the instruction executes.
+     */
     protected abstract void setPreTransferState(State state);
 
+    /**
+     * Assigns the state of the program after the instruction executes.
+     */
     protected abstract void setPostTransferState(State state);
 
     /**

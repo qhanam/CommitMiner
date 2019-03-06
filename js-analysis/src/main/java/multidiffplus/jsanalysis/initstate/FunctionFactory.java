@@ -1,4 +1,4 @@
-package multidiffplus.jsanalysis.factories;
+package multidiffplus.jsanalysis.initstate;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -27,6 +27,10 @@ import multidiffplus.jsanalysis.abstractdomain.Str;
 import multidiffplus.jsanalysis.flow.CallStack;
 import multidiffplus.jsanalysis.trace.Trace;
 
+/**
+ * A factory which initializes the function object prototype in the abstract
+ * store.
+ */
 public class FunctionFactory {
 
     public Store store;

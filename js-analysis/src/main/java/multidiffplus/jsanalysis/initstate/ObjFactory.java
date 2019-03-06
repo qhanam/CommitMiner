@@ -1,4 +1,4 @@
-package multidiffplus.jsanalysis.factories;
+package multidiffplus.jsanalysis.initstate;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -27,6 +27,10 @@ import multidiffplus.jsanalysis.abstractdomain.Str;
 import multidiffplus.jsanalysis.flow.CallStack;
 import multidiffplus.jsanalysis.trace.Trace;
 
+/**
+ * A factory which initializes the abstract store with JavaScript built-in
+ * objects.
+ */
 public class ObjFactory {
 
     public Store store;

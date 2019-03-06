@@ -1,4 +1,4 @@
-package multidiffplus.jsanalysis.factories;
+package multidiffplus.jsanalysis.initstate;
 
 import java.util.Map;
 

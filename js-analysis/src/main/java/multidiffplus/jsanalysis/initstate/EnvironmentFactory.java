@@ -1,4 +1,4 @@
-package multidiffplus.jsanalysis.factories;
+package multidiffplus.jsanalysis.initstate;
 
 import java.util.Map;
 
@@ -16,11 +16,10 @@ import multidiffplus.jsanalysis.trace.Trace;
 import multidiffplus.jsanalysis.transfer.Helpers;
 
 /**
- * Initializes the environment from a JavaScript file AST.
+ * A factory which Initializes the abstract environment with JavaScript built-in
+ * global variables and globally defined script variables.
  */
 public class EnvironmentFactory {
-
-    private static final Integer GLOBAL_DEFINER_ID = -1;
 
     /**
      * Creates an initial environment for a function by lifting local variables and

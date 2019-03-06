@@ -7,7 +7,7 @@ import multidiffplus.analysis.CommitAnalysis;
 import multidiffplus.factories.IASTVisitorFactory;
 import multidiffplus.factories.ICommitAnalysisFactory;
 import multidiffplus.factories.IDomainAnalysisFactory;
-import multidiffplus.jsanalysis.factories.JavaScriptCFGFactory;
+import multidiffplus.jsanalysis.cfg.JavaScriptCFGFactory;
 import multidiffplus.mining.ast.analysis.criterion.trycallsite.TryCallsiteAstAnalysisFactory;
 
 public class MiningCommitAnalysisFactory implements ICommitAnalysisFactory {

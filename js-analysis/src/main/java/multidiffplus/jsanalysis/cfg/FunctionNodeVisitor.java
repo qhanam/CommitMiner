@@ -1,4 +1,4 @@
-package multidiffplus.jsanalysis.visitors;
+package multidiffplus.jsanalysis.cfg;
 
 import java.util.ArrayList;
 

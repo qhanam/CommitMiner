@@ -1,14 +1,12 @@
-package multidiffplus.jsanalysis.factories;
+package multidiffplus.jsanalysis.initstate;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import org.mozilla.javascript.ast.AstNode;
 import org.mozilla.javascript.ast.Name;
 import org.mozilla.javascript.ast.ObjectLiteral;
 
 import multidiffplus.jsanalysis.abstractdomain.Address;
-import multidiffplus.jsanalysis.abstractdomain.BValue;
 import multidiffplus.jsanalysis.abstractdomain.Change;
 import multidiffplus.jsanalysis.abstractdomain.Dependencies;
 import multidiffplus.jsanalysis.abstractdomain.InternalObjectProperties;
@@ -18,7 +16,8 @@ import multidiffplus.jsanalysis.abstractdomain.Store;
 import multidiffplus.jsanalysis.abstractdomain.Undefined;
 
 /**
- * Initializes the global environment with builtins.
+ * A factory which initializes the global Object with JavaScript built-in
+ * properties.
  */
 public class GlobalFactory {
 
@@ -42,9 +41,9 @@ public class GlobalFactory {
 				Dependencies.injectValue(new ObjectLiteral())),
 			ext, store, new Name());
 	Name undefined = new Name();
-	store = addProp("undefined", UNDEFINED_DEFINER_ID,
+	store = Utilities.addProp("undefined", UNDEFINED_DEFINER_ID,
 		Undefined.inject(Undefined.top(), Change.u(), Dependencies.injectValue(undefined)),
-		ext, store, undefined, UNDEFINED_ADDR);
+		ext, store, undefined);
 	Name module = new Name();
 	store = Utilities.addProp("module", MODULE_DEFINER_ID,
 		Undefined.inject(Undefined.top(), Change.u(), Dependencies.injectValue(module)),
@@ -52,13 +51,6 @@ public class GlobalFactory {
 
 	InternalObjectProperties internal = new InternalObjectProperties();
 	return new Obj(ext, internal);
-    }
-
-    public static Store addProp(String prop, Integer definerID, BValue propVal,
-	    Map<String, Property> ext, Store store, AstNode node, Address propAddr) {
-	store = store.alloc(propAddr, propVal, node);
-	ext.put(prop, new Property(definerID, prop, propAddr));
-	return store;
     }
 
 }

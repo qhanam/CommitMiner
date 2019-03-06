@@ -10,7 +10,7 @@ import org.mozilla.javascript.ast.AstNode;
 import multidiffplus.cfg.CFG;
 
 /**
- * The state of the control flow.
+ * An abstract call stack.
  */
 public class CallStack {
 

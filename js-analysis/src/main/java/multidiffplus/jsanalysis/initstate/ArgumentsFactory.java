@@ -1,4 +1,4 @@
-package multidiffplus.jsanalysis.factories;
+package multidiffplus.jsanalysis.initstate;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,6 +24,10 @@ import multidiffplus.jsanalysis.abstractdomain.Store;
 import multidiffplus.jsanalysis.flow.CallStack;
 import multidiffplus.jsanalysis.trace.Trace;
 
+/**
+ * A factory which initializes the global Arguments object with JavaScript
+ * built-in properties.
+ */
 public class ArgumentsFactory {
 
     private static final Integer ARG_DEFINER_ID = -2;

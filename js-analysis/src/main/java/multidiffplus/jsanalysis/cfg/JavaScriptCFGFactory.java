@@ -1,4 +1,4 @@
-package multidiffplus.jsanalysis.factories;
+package multidiffplus.jsanalysis.cfg;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -47,7 +47,6 @@ import multidiffplus.cfg.CFGEdge;
 import multidiffplus.cfg.CFGNode;
 import multidiffplus.cfg.IDGen;
 import multidiffplus.factories.ICFGFactory;
-import multidiffplus.jsanalysis.visitors.FunctionNodeVisitor;
 
 /**
  * A CFG factory for JavaScript NOTE: This class only works with the Mozilla

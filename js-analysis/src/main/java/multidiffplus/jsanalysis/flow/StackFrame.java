@@ -12,6 +12,9 @@ import multidiffplus.jsanalysis.abstractdomain.State;
 
 /**
  * A frame in a call stack.
+ * 
+ * A stack frame stores the state of a function being executed by the abstract
+ * machine.
  */
 public class StackFrame {
 

@@ -1,4 +1,4 @@
-package multidiffplus.jsanalysis.factories;
+package multidiffplus.jsanalysis.initstate;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -11,9 +11,8 @@ import multidiffplus.jsanalysis.abstractdomain.Obj;
 import multidiffplus.jsanalysis.abstractdomain.Store;
 
 /**
- * Initializes the store with builtins.
- *
- * TODO: Add the rest of the builtins (ie., Array, Number, String, etc.)
+ * A factory which initializes the abstract store with JavaScript built-in
+ * values.
  */
 public class StoreFactory {
 

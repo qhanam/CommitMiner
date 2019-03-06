@@ -1,4 +1,4 @@
-package multidiffplus.jsanalysis.visitors;
+package multidiffplus.jsanalysis.hoisting;
 
 import java.util.HashSet;
 import java.util.List;

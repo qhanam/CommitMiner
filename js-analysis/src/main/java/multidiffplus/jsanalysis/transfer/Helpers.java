@@ -32,14 +32,14 @@ import multidiffplus.jsanalysis.abstractdomain.State;
 import multidiffplus.jsanalysis.abstractdomain.Store;
 import multidiffplus.jsanalysis.abstractdomain.Undefined;
 import multidiffplus.jsanalysis.abstractdomain.Variable;
-import multidiffplus.jsanalysis.factories.StoreFactory;
 import multidiffplus.jsanalysis.flow.CallStack;
 import multidiffplus.jsanalysis.flow.ReachableFunction;
 import multidiffplus.jsanalysis.flow.StackFrame;
+import multidiffplus.jsanalysis.hoisting.FunctionLiftVisitor;
+import multidiffplus.jsanalysis.hoisting.GlobalVisitor;
+import multidiffplus.jsanalysis.hoisting.VariableLiftVisitor;
+import multidiffplus.jsanalysis.initstate.StoreFactory;
 import multidiffplus.jsanalysis.trace.Trace;
-import multidiffplus.jsanalysis.visitors.FunctionLiftVisitor;
-import multidiffplus.jsanalysis.visitors.GlobalVisitor;
-import multidiffplus.jsanalysis.visitors.VariableLiftVisitor;
 
 public class Helpers {
 
@@ -184,7 +184,8 @@ public class Helpers {
 	}
 
 	/*
-	 * Get a list of function declarations to lift into the function's environment.
+	 * Lift functions into the function's environment and initialize to function
+	 * objects.
 	 */
 	List<FunctionNode> children = FunctionLiftVisitor.getFunctionDeclarations(function);
 	for (FunctionNode child : children) {

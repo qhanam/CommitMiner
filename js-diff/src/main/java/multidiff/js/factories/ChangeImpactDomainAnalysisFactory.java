@@ -2,7 +2,7 @@ package multidiff.js.factories;
 
 import multidiffplus.analysis.DomainAnalysis;
 import multidiffplus.factories.IDomainAnalysisFactory;
-import multidiffplus.jsanalysis.factories.JavaScriptCFGFactory;
+import multidiffplus.jsanalysis.cfg.JavaScriptCFGFactory;
 import multidiffplus.jsdiff.analysis.ChangeImpactDomainAnalysis;
 
 public class ChangeImpactDomainAnalysisFactory implements IDomainAnalysisFactory {

@@ -1,4 +1,4 @@
-package multidiffplus.jsanalysis.factories;
+package multidiffplus.jsanalysis.initstate;
 
 import java.util.Map;
 import java.util.Set;
@@ -19,12 +19,12 @@ import multidiffplus.jsanalysis.abstractdomain.Scratchpad;
 import multidiffplus.jsanalysis.abstractdomain.State;
 import multidiffplus.jsanalysis.abstractdomain.Store;
 import multidiffplus.jsanalysis.abstractdomain.Variable;
+import multidiffplus.jsanalysis.hoisting.GlobalVisitor;
 import multidiffplus.jsanalysis.trace.FSCI;
 import multidiffplus.jsanalysis.trace.Trace;
-import multidiffplus.jsanalysis.visitors.GlobalVisitor;
 
 /**
- * Initializes the state from a JavaScript file AST.
+ * A factory which initializes the abstract state from a JavaScript file AST.
  */
 public class StateFactory {
 

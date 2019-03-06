@@ -6,6 +6,11 @@ import multidiffplus.jsanalysis.abstractdomain.State;
 import multidiffplus.jsanalysis.transfer.ExpEval;
 import multidiffplus.jsanalysis.transfer.TransferNode;
 
+/**
+ * An expression source code instruction.
+ * 
+ * Expression instructions appear outside of branch conditions.
+ */
 public class ExpressionInstruction extends Instruction {
 
     /** The node containing the instruction. */
