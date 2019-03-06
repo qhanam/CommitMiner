@@ -597,7 +597,7 @@ public class ExpEval {
 		// The target has changed.
 		argVal.change = argVal.change
 			.join(Change.convU(fc.getTarget(), Dependencies::injectValueChange));
-	    else if (funVal.change.isChanged())
+	    else if (funVal != null && funVal.change.isChanged())
 		// The target has changed.
 		argVal.change = argVal.change.join(funVal.change);
 	    else if (Change.testU(arg))
@@ -818,22 +818,19 @@ public class ExpEval {
 	Set<Address> result = new HashSet<Address>();
 
 	Addresses addrs = state.env.apply(node);
-	// if (addrs == null) {
-	// // TODO: Since we search for global variables beforehand, we should
-	// // never reach this.
-	//
-	// // Assume the variable exists in the environment (ie. not a
-	// // TypeError) and add it to the environment/store as BValue.TOP
-	// // since we know nothing about it.
-	// Address addr = state.trace.makeAddr(node.getID(), "");
-	// String name = node.toSource();
-	// state.env = state.env.strongUpdate(name,
-	// Variable.inject(name, addr, Change.bottom(), Dependencies.bot()));
-	// state.store = state.store.alloc(addr,
-	// Addresses.dummy(Change.bottom(), Dependencies.injectValue(node)), new
-	// Name());
-	// addrs = new Addresses(addr);
-	// }
+	if (addrs == null) {
+	    // Although globals which were not explicitly defined have already
+	    // been loaded by inspecting the AST, there are still undefined
+	    // variables created during CFG generation (e.g. ~exception) that
+	    // must be initialized here.
+	    Address addr = state.trace.makeAddr(node.getID(), "");
+	    String name = node.toSource();
+	    state.env = state.env.strongUpdate(name,
+		    Variable.inject(name, addr, Change.bottom(), Dependencies.bot()));
+	    state.store = state.store.alloc(addr,
+		    Addresses.dummy(Change.bottom(), Dependencies.injectValue(node)), new Name());
+	    addrs = new Addresses(addr);
+	}
 
 	result.addAll(addrs.addresses);
 	return result;
