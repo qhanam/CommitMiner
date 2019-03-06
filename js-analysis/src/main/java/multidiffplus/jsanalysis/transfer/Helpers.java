@@ -200,10 +200,9 @@ public class Helpers {
 			    Change.convU(child.getFunctionName(),
 				    Dependencies::injectVariableChange),
 			    Dependencies.injectVariable(child.getFunctionName())));
-	    Change valueChange = Change.convU(child, Dependencies::injectValue);
+	    Change valueChange = Change.conv(child, Dependencies::injectValueChange);
 	    store = store.alloc(address,
-		    Address.inject(address, valueChange, Dependencies.injectValue(child)),
-		    new Name());
+		    Address.inject(address, valueChange, Dependencies.injectValue(child)), child);
 
 	    /* Create a function object. */
 	    Closure closure = new FunctionClosure(cfgs.get(child), env);
