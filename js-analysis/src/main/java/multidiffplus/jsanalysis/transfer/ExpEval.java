@@ -572,8 +572,13 @@ public class ExpEval {
 	/* Keep track of callback functions. */
 	List<Address> callbacks = new LinkedList<Address>();
 
+	/* Attempt to resolve the function and its parent object. */
+	BValue funVal = resolveValue(fc.getTarget());
+	BValue objVal = resolveSelf(fc.getTarget());
+
 	/* Create the argument values. */
 	BValue[] args = new BValue[fc.getArguments().size()];
+	Scratchpad scratch = new Scratchpad(null, args);
 	Change argChange = Change.bottom();
 	int i = 0;
 	for (AstNode arg : fc.getArguments()) {
@@ -589,6 +594,9 @@ public class ExpEval {
 		// The target has changed.
 		argVal.change = argVal.change
 			.join(Change.convU(fc.getTarget(), Dependencies::injectValueChange));
+	    else if (funVal.change.isChanged())
+		// The target has changed.
+		argVal.change = argVal.change.join(funVal.change);
 	    else if (Change.testU(arg))
 		// The argument has changed.
 		argVal.change = argVal.change
@@ -620,12 +628,6 @@ public class ExpEval {
 	    i++;
 
 	}
-
-	Scratchpad scratch = new Scratchpad(null, args);
-
-	/* Attempt to resolve the function and its parent object. */
-	BValue funVal = resolveValue(fc.getTarget());
-	BValue objVal = resolveSelf(fc.getTarget());
 
 	/*
 	 * If the function is not a member variable, it is local and we use the object
@@ -697,6 +699,9 @@ public class ExpEval {
 	    else if (Change.testU(fc.getTarget()))
 		// The target has changed.
 		retValChange = Change.convU(fc.getTarget(), Dependencies::injectValueChange);
+	    else if (funVal.change.isChanged())
+		// The target has changed.
+		retValChange = funVal.change;
 	    else
 		retValChange = Change.u();
 
