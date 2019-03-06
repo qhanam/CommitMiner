@@ -555,7 +555,7 @@ public class ExpEval {
 
 	/* Create the argument values. */
 	BValue[] args = new BValue[fc.getArguments().size()];
-	Dependencies argChangeDeps = Dependencies.bot();
+	Change argChange = Change.bottom();
 	int i = 0;
 	for (AstNode arg : fc.getArguments()) {
 
@@ -575,8 +575,8 @@ public class ExpEval {
 		argVal.change = argVal.change
 			.join(Change.convU(arg, Dependencies::injectValueChange));
 
-	    // Update the argument's dependencies.
-	    argChangeDeps = argChangeDeps.join(argVal.change.getDependencies());
+	    // Aggregate the change across all args.
+	    argChange = argChange.join(argVal.change);
 
 	    if (arg instanceof ObjectLiteral) {
 		// If this is an object literal, make a fake var in the
@@ -649,8 +649,13 @@ public class ExpEval {
 	    // (1) If the function call is inserted, the return value is new.
 	    // (2) If the target function has changed, the return value has changed.
 	    // (3) If any of the argument values have changed, the return value has changed.
-	    Change retValChange = Change.convU(fc, Dependencies::injectValueChange);
-	    retValChange.getDependencies().join(argChangeDeps);
+	    Change retValChange;
+	    if (Change.test(fc))
+		retValChange = Change.conv(fc, Dependencies::injectValueChange);
+	    else if (Change.testU(fc.getTarget()))
+		retValChange = Change.convU(fc.getTarget(), Dependencies::injectValueChange);
+	    else
+		retValChange = argChange;
 
 	    // Create the return value.
 	    BValue retVal = BValue.top(retValChange, Dependencies.injectValue(fc));
