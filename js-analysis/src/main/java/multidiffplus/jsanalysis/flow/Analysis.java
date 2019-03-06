@@ -16,7 +16,7 @@ import multidiffplus.jsanalysis.transfer.Helpers;
 /**
  * An analysis of a JavaScript file.
  */
-public class Analysis2 {
+public class Analysis {
 
     /**
      * The virtual call stack.
@@ -53,7 +53,7 @@ public class Analysis2 {
     /**
      * @return a new instance of the analysis.
      */
-    public static Analysis2 build(ClassifiedASTNode root, List<CFG> cfgs) {
+    public static Analysis build(ClassifiedASTNode root, List<CFG> cfgs) {
 
 	/* Build a map of AstNodes to CFGs. Used for inter-proc CFA. */
 	Map<AstNode, CFG> cfgMap = new HashMap<AstNode, CFG>();
@@ -63,7 +63,7 @@ public class Analysis2 {
 
 	/* Setup the analysis with the root script and an initial state. */
 	State state = StateFactory.createInitialState((ScriptNode) root, cfgMap);
-	return new Analysis2(new StackFrame(cfgMap.get(root), state), cfgMap);
+	return new Analysis(new StackFrame(cfgMap.get(root), state), cfgMap);
 
     }
 
@@ -73,7 +73,7 @@ public class Analysis2 {
      * @param initialState
      *            The state before the program is run.
      */
-    private Analysis2(StackFrame initialState, Map<AstNode, CFG> cfgs) {
+    private Analysis(StackFrame initialState, Map<AstNode, CFG> cfgs) {
 	this.callStack = new CallStack(cfgs);
 	this.callStack.push(initialState);
     }

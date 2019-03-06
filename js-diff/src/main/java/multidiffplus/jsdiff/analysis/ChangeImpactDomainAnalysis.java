@@ -1,6 +1,5 @@
 package multidiffplus.jsdiff.analysis;
 
-import java.util.List;
 import java.util.regex.Matcher;
 
 import org.mozilla.javascript.EvaluatorException;
@@ -12,7 +11,6 @@ import multidiffplus.commit.SourceCodeFileChange;
 import multidiffplus.diff.Diff;
 import multidiffplus.diff.DiffContext;
 import multidiffplus.factories.ICFGFactory;
-import multidiffplus.factories.ICFGVisitorFactory;
 import multidiffplus.facts.JsonFactBase;
 
 /**
@@ -20,12 +18,9 @@ import multidiffplus.facts.JsonFactBase;
  */
 public class ChangeImpactDomainAnalysis extends DomainAnalysis {
 
-    public List<ICFGVisitorFactory> cfgVisitorFactories;
-
-    public ChangeImpactDomainAnalysis(List<ICFGVisitorFactory> cfgVisitorFactories,
-	    ICFGFactory cfgFactory, boolean preProcess, boolean measureRuntime) {
+    public ChangeImpactDomainAnalysis(ICFGFactory cfgFactory, boolean preProcess,
+	    boolean measureRuntime) {
 	super(null, null, cfgFactory, preProcess, measureRuntime);
-	this.cfgVisitorFactories = cfgVisitorFactories;
     }
 
     /**
@@ -81,8 +76,8 @@ public class ChangeImpactDomainAnalysis extends DomainAnalysis {
 	    /*
 	     * To co-ordinate interleaving, we need to setup an analysis one level higher.
 	     */
-	    InterleavedInterCIA interleavedAnalysis = new InterleavedInterCIA(cfgVisitorFactories,
-		    sourceCodeFileChange, diffContext);
+	    InterleavedInterCIA interleavedAnalysis = new InterleavedInterCIA(sourceCodeFileChange,
+		    diffContext);
 
 	    /* Run the analysis. */
 	    interleavedAnalysis.analyze();

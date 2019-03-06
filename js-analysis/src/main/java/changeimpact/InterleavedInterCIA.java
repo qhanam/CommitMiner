@@ -1,12 +1,12 @@
 package changeimpact;
 
-import java.util.List;
+import org.mozilla.javascript.ast.AstRoot;
 
-import multidiffplus.cfg.CFG;
 import multidiffplus.commit.SourceCodeFileChange;
 import multidiffplus.diff.DiffContext;
-import multidiffplus.factories.ICFGVisitorFactory;
-import multidiffplus.jsanalysis.flow.Analysis2;
+import multidiffplus.facts.AnnotationFactBase;
+import multidiffplus.jsanalysis.annotate.DependencyASTVisitor;
+import multidiffplus.jsanalysis.flow.Analysis;
 
 /**
  * Performs an inter-procedural analysis of a script (file). Synchronizes the
@@ -14,18 +14,14 @@ import multidiffplus.jsanalysis.flow.Analysis2;
  */
 public class InterleavedInterCIA {
 
-    List<ICFGVisitorFactory> cfgVisitorFactories;
     SourceCodeFileChange sourceCodeFileChange;
     DiffContext diffContext;
+    Analysis dstAnalysis;
 
-    Analysis2 dstAnalysis;
-
-    public InterleavedInterCIA(List<ICFGVisitorFactory> cfgVisitorFactories,
-	    SourceCodeFileChange sourceCodeFileChange, DiffContext diffContext) {
-	this.cfgVisitorFactories = cfgVisitorFactories;
+    public InterleavedInterCIA(SourceCodeFileChange sourceCodeFileChange, DiffContext diffContext) {
 	this.sourceCodeFileChange = sourceCodeFileChange;
 	this.diffContext = diffContext;
-	this.dstAnalysis = Analysis2.build(diffContext.dstScript, diffContext.dstCFGs);
+	this.dstAnalysis = Analysis.build(diffContext.dstScript, diffContext.dstCFGs);
     }
 
     /**
@@ -40,22 +36,9 @@ public class InterleavedInterCIA {
 	while (dstAnalysis.pushReachableFunction())
 	    dstAnalysis.run();
 
-	/* Generate desired facts for post-analysis processing. */
-	this.generateFacts(diffContext.dstCFGs);
-
-    }
-
-    /**
-     * Generate facts by accepting visitors to the CFGs.
-     */
-    private void generateFacts(List<CFG> cfgs) {
-
-	/* Generate facts from the results of the analysis. */
-	for (CFG cfg : cfgs) {
-	    for (ICFGVisitorFactory cfgVF : cfgVisitorFactories) {
-		cfg.accept(cfgVF.newInstance(sourceCodeFileChange));
-	    }
-	}
+	/* Create criterion/dependency annotations for GUI output. */
+	DependencyASTVisitor.registerAnnotations((AstRoot) diffContext.dstScript,
+		AnnotationFactBase.getInstance(sourceCodeFileChange));
 
     }
 

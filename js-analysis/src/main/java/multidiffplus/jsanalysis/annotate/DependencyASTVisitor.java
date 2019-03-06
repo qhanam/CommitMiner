@@ -1,4 +1,4 @@
-package multidiffplus.jsdiff.annotations;
+package multidiffplus.jsanalysis.annotate;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -10,8 +10,13 @@ import org.mozilla.javascript.ast.AstRoot;
 import org.mozilla.javascript.ast.NodeVisitor;
 
 import multidiffplus.facts.Annotation;
+import multidiffplus.facts.AnnotationFactBase;
 
-public class ValueASTVisitor implements NodeVisitor {
+/**
+ * A visitor for extracting criterion/dependency annotations from an
+ * {@code AstRoot} (script).
+ */
+public class DependencyASTVisitor implements NodeVisitor {
 
     /**
      * The set of changed variable annotations found in the statement.
@@ -19,23 +24,15 @@ public class ValueASTVisitor implements NodeVisitor {
     public Set<Annotation> annotations;
 
     /**
-     * Detects uses of the identifier.
-     * 
-     * @return the set of nodes where the identifier is used.
+     * Registers all criterion/dependency labels on AST nodes as code annotations.
      */
-    public static Set<Annotation> getAnnotations(AstNode statement) {
-	ValueASTVisitor visitor = new ValueASTVisitor();
-
-	if (statement instanceof AstRoot) {
-	    // We only need to visit the AST once,
-	    statement.visit(visitor);
-	    return visitor.annotations;
-	}
-
-	return visitor.annotations;
+    public static void registerAnnotations(AstRoot script, AnnotationFactBase factBase) {
+	DependencyASTVisitor visitor = new DependencyASTVisitor();
+	script.visit(visitor);
+	factBase.registerAnnotationFacts(visitor.annotations);
     }
 
-    public ValueASTVisitor() {
+    public DependencyASTVisitor() {
 	this.annotations = new HashSet<Annotation>();
     }
 
