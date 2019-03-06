@@ -562,9 +562,18 @@ public class ExpEval {
 	    /* Get the value of the object. It could be a function, object literal, etc. */
 	    BValue argVal = eval(arg);
 
-	    // Update the change value if the argument has changed.
-	    argVal = argVal.join(BValue.bottom(Change.convU(arg, Dependencies::injectValueChange),
-		    Dependencies.bot()));
+	    if (Change.test(fc))
+		// The entire call is new.
+		argVal.change = argVal.change
+			.join(Change.conv(fc, Dependencies::injectValueChange));
+	    else if (Change.testU(fc.getTarget()))
+		// The target has changed.
+		argVal.change = argVal.change
+			.join(Change.convU(fc.getTarget(), Dependencies::injectValueChange));
+	    else if (Change.testU(arg))
+		// The argument has changed.
+		argVal.change = argVal.change
+			.join(Change.convU(arg, Dependencies::injectValueChange));
 
 	    // Update the argument's dependencies.
 	    argChangeDeps = argChangeDeps.join(argVal.change.getDependencies());
@@ -657,8 +666,15 @@ public class ExpEval {
 	    // (1) If the function call is inserted, the return value is new.
 	    // (2) If the target function has changed, the return value has changed.
 	    // (3) If the return value has changed, the return value has changed.
-	    Change retValChange = Change.conv(fc, Dependencies::injectValueChange)
-		    .join(Change.convU(fc.getTarget(), Dependencies::injectValueChange));
+	    Change retValChange;
+	    if (Change.test(fc))
+		// The entire call is new.
+		retValChange = Change.conv(fc, Dependencies::injectValueChange);
+	    else if (Change.testU(fc.getTarget()))
+		// The target has changed.
+		retValChange = Change.convU(fc.getTarget(), Dependencies::injectValueChange);
+	    else
+		retValChange = Change.u();
 
 	    BValue retVal = newState.scratch.applyReturn();
 	    if (retVal == null) {

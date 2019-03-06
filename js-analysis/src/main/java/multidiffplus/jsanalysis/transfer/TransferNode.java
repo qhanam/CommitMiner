@@ -96,23 +96,6 @@ public class TransferNode {
 	if (oldVal != null)
 	    retVal = retVal.join(oldVal);
 
-	// /*
-	// * Conservatively add a dummy DefinerID to the BValue if there are currently
-	// no
-	// * DefinerIDs
-	// */
-	// if (retVal.deps.isEmpty()) {
-	// if (rs.getReturnValue() == null) {
-	// retVal.definerIDs = retVal.definerIDs.strongUpdate(rs.getID());
-	// rs.setDummy();
-	// } else {
-	// retVal.definerIDs =
-	// retVal.definerIDs.strongUpdate(rs.getReturnValue().getID());
-	// rs.getReturnValue().setDummy();
-	// }
-	// }
-	//
-
 	// Make a fake var in the environment and point it to the value so that
 	// if it contains a function, it will be analyzed during the 'accessible
 	// function' phase of the analysis.
