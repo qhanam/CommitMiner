@@ -244,8 +244,10 @@ public class ExpEval {
 		    Dependencies.injectValue(ue).join(operand.deps));
 	case Token.INC:
 	case Token.DEC:
-	    return Num.inject(Num.top(), operatorChange,
+	    BValue val = Num.inject(Num.top(), operatorChange,
 		    Dependencies.injectValue(ue).join(operand.deps));
+	    evalAssignment(ue.getOperand(), val);
+	    return val;
 	case Token.TYPEOF:
 	    return Str.inject(Str.top(), operatorChange,
 		    Dependencies.injectValue(ue).join(operand.deps));
@@ -268,8 +270,7 @@ public class ExpEval {
 	    /*
 	     * We need to interpret this assignment and propagate the value left.
 	     */
-	    this.evalAssignment((Assignment) ie);
-	    return this.eval(ie.getLeft());
+	    return this.evalAssignment((Assignment) ie);
 	case Token.GETPROPNOWARN:
 	case Token.GETPROP: {
 	    /* This is an identifier.. so we attempt to dereference it. */
@@ -407,7 +408,7 @@ public class ExpEval {
 	//
 	// (2) If the operator has changed, the post-operator value has also changed and
 	// a new criterion (the unary-operator expression) is added.
-	Change operatorChange = Change.conv(ie, Dependencies::injectValueChange);
+	Change operatorChange = Change.convNoProp(ie, Dependencies::injectValueChange);
 	if (operatorChange.isChanged()) {
 	    // Add a criterion ID to the AST node.
 	    ie.addCriterion("VALUE_CHANGE", ie.getID());
@@ -428,10 +429,11 @@ public class ExpEval {
      */
     public BValue evalName(Name name) {
 	BValue val = resolveValue(name);
-	if (val == null) {
-	    // TODO: We should never reach this point.
-	    return BValue.top(Change.u(), Dependencies.injectValue(name));
-	}
+	// if (val == null) {
+	// // TODO: We should never reach this point.
+	// return BValue.top(Change.u(), Dependencies.injectValue(name));
+	// }
+	val.change = val.change.join(Change.convNoPropU(name, Dependencies::injectValueChange));
 	return val;
     }
 
@@ -441,7 +443,7 @@ public class ExpEval {
      */
     public BValue evalNumberLiteral(NumberLiteral numl) {
 	return Num.inject(new Num(Num.LatticeElement.VAL, numl.getValue()),
-		Change.convU(numl, Dependencies::injectValueChange),
+		Change.convNoPropU(numl, Dependencies::injectValueChange),
 		Dependencies.injectValue(numl));
     }
 
@@ -454,7 +456,7 @@ public class ExpEval {
 
 	Str str = null;
 	String val = strl.getValue();
-	Change change = Change.convU(strl, Dependencies::injectValueChange);
+	Change change = Change.convNoPropU(strl, Dependencies::injectValueChange);
 
 	if (val.equals(""))
 	    str = new Str(Str.LatticeElement.SBLANK);
@@ -474,7 +476,7 @@ public class ExpEval {
      * @return the abstract interpretation of the keyword literal.
      */
     public BValue evalKeywordLiteral(KeywordLiteral kwl) {
-	Change change = Change.conv(kwl, Dependencies::injectValueChange);
+	Change change = Change.convNoProp(kwl, Dependencies::injectValueChange);
 	switch (kwl.getType()) {
 	case Token.THIS:
 	    return state.store.apply(state.selfAddr, kwl);
@@ -498,27 +500,32 @@ public class ExpEval {
      * @param a
      *            The assignment.
      */
-    public void evalAssignment(Assignment a) {
-	evalAssignment(a.getLeft(), a.getRight());
+    public BValue evalAssignment(Assignment a) {
+	return evalAssignment(a.getLeft(), a.getRight());
     }
 
     /**
      * Helper function since variable initializers and assignments do the same
      * thing.
      */
-    public void evalAssignment(AstNode lhs, AstNode rhs) {
+    public BValue evalAssignment(AstNode lhs, AstNode rhs) {
 
 	/* Resolve the left hand side to a set of addresses. */
-	// TODO: 'resolveOrCreate' shouldn't store the deps in the AST node.
 	Set<Address> addrs = this.resolveOrCreate(lhs);
 
 	/* Resolve the right hand side to a value. */
 	BValue val = this.eval(rhs);
 
+	if (!val.change.isChanged() && Change.testU(rhs))
+	    // This expression points the lhs to a new value.
+	    val.change = val.change.join(Change.convU(rhs, Dependencies::injectValueChange));
+
 	/* Update the values in the store. */
 	for (Address addr : addrs) {
 	    state.store = state.store.strongUpdate(addr, val, lhs);
 	}
+
+	return val;
 
     }
 
@@ -791,21 +798,22 @@ public class ExpEval {
 	Set<Address> result = new HashSet<Address>();
 
 	Addresses addrs = state.env.apply(node);
-	if (addrs == null) {
-	    // TODO: Since we search for global variables beforehand, we should
-	    // never reach this.
-
-	    // Assume the variable exists in the environment (ie. not a
-	    // TypeError) and add it to the environment/store as BValue.TOP
-	    // since we know nothing about it.
-	    Address addr = state.trace.makeAddr(node.getID(), "");
-	    String name = node.toSource();
-	    state.env = state.env.strongUpdate(name,
-		    Variable.inject(name, addr, Change.bottom(), Dependencies.bot()));
-	    state.store = state.store.alloc(addr,
-		    Addresses.dummy(Change.bottom(), Dependencies.injectValue(node)), new Name());
-	    addrs = new Addresses(addr);
-	}
+	// if (addrs == null) {
+	// // TODO: Since we search for global variables beforehand, we should
+	// // never reach this.
+	//
+	// // Assume the variable exists in the environment (ie. not a
+	// // TypeError) and add it to the environment/store as BValue.TOP
+	// // since we know nothing about it.
+	// Address addr = state.trace.makeAddr(node.getID(), "");
+	// String name = node.toSource();
+	// state.env = state.env.strongUpdate(name,
+	// Variable.inject(name, addr, Change.bottom(), Dependencies.bot()));
+	// state.store = state.store.alloc(addr,
+	// Addresses.dummy(Change.bottom(), Dependencies.injectValue(node)), new
+	// Name());
+	// addrs = new Addresses(addr);
+	// }
 
 	result.addAll(addrs.addresses);
 	return result;

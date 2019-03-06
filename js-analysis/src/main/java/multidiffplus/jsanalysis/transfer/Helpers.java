@@ -177,7 +177,8 @@ public class Helpers {
 	    // Initialize the value to undefined.
 	    store = store.alloc(address,
 		    Undefined.inject(Undefined.top(),
-			    Change.convU(localVar, Dependencies::injectValueChange),
+			    Change.convU(localVar,
+				    (node) -> Dependencies.injectValueChange(new Name())),
 			    Dependencies.injectValue(localVar)),
 		    new Name());
 	}

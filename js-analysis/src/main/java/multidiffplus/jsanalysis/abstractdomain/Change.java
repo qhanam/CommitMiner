@@ -119,6 +119,25 @@ public class Change {
 
     /**
      * Converts a change type to a change lattice element. Updated nodes are
+     * considered unchanged. Does not consider propagated changes as changes.
+     * 
+     * @param node
+     *            The change type will be extracted from node.
+     * @return The change lattice element for the node.
+     */
+    public static Change convNoProp(AstNode node, DependencyCreator depCreator) {
+	ChangeType ct = node.getChangeTypeNoProp();
+	switch (ct) {
+	case INSERTED:
+	case REMOVED:
+	    return c(depCreator.createFromAstNode(node));
+	default:
+	    return u();
+	}
+    }
+
+    /**
+     * Converts a change type to a change lattice element. Updated nodes are
      * considered changed.
      * 
      * @param node
@@ -127,6 +146,26 @@ public class Change {
      */
     public static Change convU(AstNode node, DependencyCreator depCreator) {
 	ChangeType ct = node.getChangeType();
+	switch (ct) {
+	case INSERTED:
+	case REMOVED:
+	case UPDATED:
+	    return c(depCreator.createFromAstNode(node));
+	default:
+	    return u();
+	}
+    }
+
+    /**
+     * Converts a change type to a change lattice element. Updated nodes are
+     * considered changed. Does not consider propagated changes as changes.
+     * 
+     * @param node
+     *            The change type will be extracted from node.
+     * @return The change lattice element for the node.
+     */
+    public static Change convNoPropU(AstNode node, DependencyCreator depCreator) {
+	ChangeType ct = node.getChangeTypeNoProp();
 	switch (ct) {
 	case INSERTED:
 	case REMOVED:
