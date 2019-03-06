@@ -174,6 +174,7 @@ public class ExpEval {
 	    BValue propVal = this.eval(property.getRight());
 	    if (!propVal.change.isChanged() && property.getRight().getType() != Token.OBJECTLIT
 		    && property.getRight().getType() != Token.ARRAYLIT
+		    && property.getRight().getType() != Token.CALL
 		    && Change.testU(property.getRight())) {
 		propVal.change = propVal.change
 			.join(Change.convU(property.getRight(), Dependencies::injectValueChange));
@@ -208,7 +209,8 @@ public class ExpEval {
 	for (AstNode element : al.getElements()) {
 	    BValue propVal = this.eval(element);
 	    if (!propVal.change.isChanged() && element.getType() != Token.OBJECTLIT
-		    && element.getType() != Token.ARRAYLIT && Change.testU(element)) {
+		    && element.getType() != Token.ARRAYLIT && element.getType() != Token.CALL
+		    && Change.testU(element)) {
 		propVal.change = propVal.change
 			.join(Change.convU(element, Dependencies::injectValueChange));
 	    }
@@ -528,7 +530,8 @@ public class ExpEval {
 	BValue val = this.eval(rhs);
 
 	if (!val.change.isChanged() && rhs.getType() != Token.OBJECTLIT
-		&& rhs.getType() != Token.ARRAYLIT && Change.testU(rhs))
+		&& rhs.getType() != Token.ARRAYLIT && Change.testU(rhs)
+		&& rhs.getType() != Token.CALL)
 	    // This expression points the lhs to a new value.
 	    val.change = val.change.join(Change.convU(rhs, Dependencies::injectValueChange));
 
