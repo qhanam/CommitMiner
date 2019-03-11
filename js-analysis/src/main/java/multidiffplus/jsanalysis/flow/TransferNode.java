@@ -1,4 +1,4 @@
-package multidiffplus.jsanalysis.transfer;
+package multidiffplus.jsanalysis.flow;
 
 import org.mozilla.javascript.Token;
 import org.mozilla.javascript.ast.AstNode;
@@ -17,6 +17,7 @@ import multidiffplus.jsanalysis.abstractdomain.Dependencies;
 import multidiffplus.jsanalysis.abstractdomain.State;
 import multidiffplus.jsanalysis.abstractdomain.Undefined;
 import multidiffplus.jsanalysis.abstractdomain.Variable;
+import multidiffplus.jsanalysis.interpreter.ExpEval;
 
 public class TransferNode {
 

@@ -12,8 +12,8 @@ import multidiffplus.jsanalysis.abstractdomain.Dependencies;
 import multidiffplus.jsanalysis.abstractdomain.Environment;
 import multidiffplus.jsanalysis.abstractdomain.Store;
 import multidiffplus.jsanalysis.abstractdomain.Variable;
+import multidiffplus.jsanalysis.interpreter.Helpers;
 import multidiffplus.jsanalysis.trace.Trace;
-import multidiffplus.jsanalysis.transfer.Helpers;
 
 /**
  * A factory which Initializes the abstract environment with JavaScript built-in

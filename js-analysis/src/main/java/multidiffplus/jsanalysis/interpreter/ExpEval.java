@@ -1,4 +1,4 @@
-package multidiffplus.jsanalysis.transfer;
+package multidiffplus.jsanalysis.interpreter;
 
 import java.util.HashMap;
 import java.util.HashSet;

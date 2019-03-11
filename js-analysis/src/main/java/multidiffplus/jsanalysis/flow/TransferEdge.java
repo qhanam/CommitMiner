@@ -1,4 +1,4 @@
-package multidiffplus.jsanalysis.transfer;
+package multidiffplus.jsanalysis.flow;
 
 import java.util.Set;
 
@@ -18,6 +18,7 @@ import multidiffplus.jsanalysis.abstractdomain.Num;
 import multidiffplus.jsanalysis.abstractdomain.State;
 import multidiffplus.jsanalysis.abstractdomain.Str;
 import multidiffplus.jsanalysis.abstractdomain.Undefined;
+import multidiffplus.jsanalysis.interpreter.ExpEval;
 
 /**
  * Transfers a state over an edge.

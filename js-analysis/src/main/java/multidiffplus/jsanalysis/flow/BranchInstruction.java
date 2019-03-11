@@ -2,8 +2,7 @@ package multidiffplus.jsanalysis.flow;
 
 import multidiffplus.cfg.CFGEdge;
 import multidiffplus.jsanalysis.abstractdomain.State;
-import multidiffplus.jsanalysis.transfer.ExpEval;
-import multidiffplus.jsanalysis.transfer.TransferEdge;
+import multidiffplus.jsanalysis.interpreter.ExpEval;
 
 /**
  * An branch condition source code instruction.

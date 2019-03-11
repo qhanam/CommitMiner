@@ -11,7 +11,7 @@ import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode;
 import multidiffplus.cfg.CFG;
 import multidiffplus.jsanalysis.abstractdomain.State;
 import multidiffplus.jsanalysis.initstate.StateFactory;
-import multidiffplus.jsanalysis.transfer.Helpers;
+import multidiffplus.jsanalysis.interpreter.Helpers;
 
 /**
  * A flow analysis of a JavaScript file.

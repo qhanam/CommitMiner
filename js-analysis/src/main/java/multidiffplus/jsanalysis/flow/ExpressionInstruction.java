@@ -3,8 +3,7 @@ package multidiffplus.jsanalysis.flow;
 import multidiffplus.cfg.CFGEdge;
 import multidiffplus.cfg.CFGNode;
 import multidiffplus.jsanalysis.abstractdomain.State;
-import multidiffplus.jsanalysis.transfer.ExpEval;
-import multidiffplus.jsanalysis.transfer.TransferNode;
+import multidiffplus.jsanalysis.interpreter.ExpEval;
 
 /**
  * An expression source code instruction.

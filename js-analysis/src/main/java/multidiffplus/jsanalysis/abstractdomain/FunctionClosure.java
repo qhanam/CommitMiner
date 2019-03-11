@@ -12,9 +12,9 @@ import multidiffplus.cfg.CFG;
 import multidiffplus.jsanalysis.flow.CallStack;
 import multidiffplus.jsanalysis.flow.StackFrame;
 import multidiffplus.jsanalysis.initstate.StoreFactory;
+import multidiffplus.jsanalysis.interpreter.Helpers;
+import multidiffplus.jsanalysis.interpreter.StateComparator;
 import multidiffplus.jsanalysis.trace.Trace;
-import multidiffplus.jsanalysis.transfer.Helpers;
-import multidiffplus.jsanalysis.transfer.StateComparator;
 
 /**
  * The abstract domain for function closures.
