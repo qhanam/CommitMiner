@@ -1,4 +1,4 @@
-package multidiffplus.jsanalysis.flow;
+package multidiffplus.jsanalysis.interpreter;
 
 import java.util.Set;
 
@@ -9,6 +9,7 @@ import org.mozilla.javascript.ast.Name;
 import org.mozilla.javascript.ast.ParenthesizedExpression;
 import org.mozilla.javascript.ast.UnaryExpression;
 
+import multidiff.analysis.flow.CallStack;
 import multidiffplus.cfg.CFGEdge;
 import multidiffplus.jsanalysis.abstractdomain.Address;
 import multidiffplus.jsanalysis.abstractdomain.BValue;
@@ -18,44 +19,23 @@ import multidiffplus.jsanalysis.abstractdomain.Num;
 import multidiffplus.jsanalysis.abstractdomain.State;
 import multidiffplus.jsanalysis.abstractdomain.Str;
 import multidiffplus.jsanalysis.abstractdomain.Undefined;
-import multidiffplus.jsanalysis.interpreter.ExpEval;
 
 /**
- * Transfers a state over an edge.
+ * An interpreter for transferring the analysis state over a branch condition.
  */
-public class TransferEdge {
+public class BranchConditionInterpreter {
 
     private State state;
-    private CFGEdge edge;
     private ExpEval expEval;
 
-    public TransferEdge(State state, CFGEdge edge, ExpEval expEval) {
+    private BranchConditionInterpreter(State state, CallStack callStack) {
 	this.state = state;
-	this.edge = edge;
-	this.expEval = expEval;
+	this.expEval = new ExpEval(callStack, state);
     }
 
-    public void transfer() {
-
-	/* Update the trace to the current condition. */
-	state.trace = state.trace.update(edge.getId());
-
-	/* The condition to transfer over. */
-	AstNode condition = (AstNode) edge.getCondition();
-
-	/* Interpret the effect of the edge on control flow. */
-	state.control = state.control.update(edge, edge.getFrom());
-
-	/* Nothing to interpret if there is no condition. */
-	if (condition == null)
-	    return;
-
-	/* Interpret the statement with respect to branch conditions. */
+    private void interpret(AstNode condition) {
 	interpretCondition(condition, false);
-
-	/* Interpret the effects of the expression. */
 	expEval.eval(condition);
-
     }
 
     /**
@@ -316,6 +296,23 @@ public class TransferEdge {
 	    interpretCondition(ie.getRight(), false);
 	}
 
+    }
+
+    /**
+     * Updates the {@code state} and {@code callStack} by interpreting
+     * {@code statement}.
+     */
+    public static void interpret(CFGEdge edge, State state, CallStack callStack) {
+	/* Interpret the effect of the edge on control flow. */
+	state.control = state.control.update(edge);
+
+	/* Nothing to interpret if there is no edge. */
+	if (edge == null)
+	    return;
+
+	/* Interpret the type refinements and the expression. */
+	BranchConditionInterpreter interpreter = new BranchConditionInterpreter(state, callStack);
+	interpreter.interpret((AstNode) edge.getCondition());
     }
 
 }

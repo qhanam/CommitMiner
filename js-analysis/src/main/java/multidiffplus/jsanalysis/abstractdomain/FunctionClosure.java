@@ -8,9 +8,9 @@ import org.mozilla.javascript.ast.FunctionNode;
 import org.mozilla.javascript.ast.Name;
 import org.mozilla.javascript.ast.ScriptNode;
 
+import multidiff.analysis.flow.CallStack;
+import multidiff.analysis.flow.StackFrame;
 import multidiffplus.cfg.CFG;
-import multidiffplus.jsanalysis.flow.CallStack;
-import multidiffplus.jsanalysis.flow.StackFrame;
 import multidiffplus.jsanalysis.initstate.StoreFactory;
 import multidiffplus.jsanalysis.interpreter.Helpers;
 import multidiffplus.jsanalysis.interpreter.StateComparator;

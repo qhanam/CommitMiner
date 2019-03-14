@@ -1,6 +1,6 @@
 package multidiffplus.jsanalysis.abstractdomain;
 
-import multidiffplus.jsanalysis.flow.CallStack;
+import multidiff.analysis.flow.CallStack;
 import multidiffplus.jsanalysis.trace.Trace;
 
 /**

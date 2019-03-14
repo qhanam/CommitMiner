@@ -69,7 +69,7 @@ public class CFG {
     /**
      * @return a copy of the CFG.
      */
-    public CFG copy(IDGen idgen) {
+    public CFG copy(IdGen idgen) {
 
 	CFGNode entryNodeCopy = CFGNode.copy(entryNode, idgen.getUniqueID());
 

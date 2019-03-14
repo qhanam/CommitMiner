@@ -1,6 +1,5 @@
-package multidiffplus.jsanalysis.cfg;
+package multidiffplus.jsanalysis.flow;
 
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -42,11 +41,15 @@ import com.github.gumtreediff.gen.js.RhinoTreeGenerator;
 
 import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode;
 import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode.ChangeType;
+import multidiff.analysis.flow.Analysis;
 import multidiffplus.cfg.CFG;
 import multidiffplus.cfg.CFGEdge;
 import multidiffplus.cfg.CFGNode;
-import multidiffplus.cfg.IDGen;
+import multidiffplus.cfg.CfgMap;
+import multidiffplus.cfg.IState;
+import multidiffplus.cfg.IdGen;
 import multidiffplus.factories.ICFGFactory;
+import multidiffplus.jsanalysis.cfg.FunctionNodeVisitor;
 
 /**
  * A CFG factory for JavaScript NOTE: This class only works with the Mozilla
@@ -54,20 +57,22 @@ import multidiffplus.factories.ICFGFactory;
  */
 public class JavaScriptCFGFactory implements ICFGFactory {
 
-    /**
-     * Builds intra-procedural control flow graphs for the given artifact.
-     * 
-     * @param root
-     * @return
-     */
     @Override
-    public List<CFG> createCFGs(ClassifiedASTNode root) {
+    public Analysis createAnalysis(ClassifiedASTNode root) {
+	CfgMap cfgMap = createCFGs(root);
+	IState initialState = JavaScriptAnalysisState.initializeAnalysisStateFrom(root, cfgMap);
+	CFG entryPoint = cfgMap.getCfgFor(root);
+	return new JavaScriptAnalysis(entryPoint, cfgMap, initialState);
+    }
+
+    @Override
+    public CfgMap createCFGs(ClassifiedASTNode root) {
 	if (!(root instanceof AstRoot))
 	    throw new IllegalArgumentException("The AST must be parsed from Apache Rhino.");
 	AstRoot script = (AstRoot) root;
 
 	CFGBuilder builder = new CFGBuilder(script);
-	return builder.getCFGs();
+	return builder.getCfgMap();
     }
 
     @Override
@@ -85,21 +90,21 @@ public class JavaScriptCFGFactory implements ICFGFactory {
     private class CFGBuilder {
 
 	/* Generates IDs for CFG nodes and edges. */
-	IDGen idgen;
+	private IdGen idgen;
 
 	/* Stores the CFGs from all the functions. */
-	List<CFG> cfgs;
+	private CfgMap cfgMap;
 
 	/* Stores the un-built `FunctionNode`s. */
-	Queue<FunctionNode> unbuilt;
+	private Queue<FunctionNode> unbuilt;
 
 	/**
 	 * @param root
 	 *            the script.
 	 */
 	public CFGBuilder(AstRoot root) {
-	    cfgs = new ArrayList<CFG>();
-	    idgen = new IDGen();
+	    cfgMap = new CfgMap();
+	    idgen = new IdGen();
 	    unbuilt = new LinkedList<FunctionNode>();
 	    build(root);
 	}
@@ -107,14 +112,14 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	/**
 	 * @return The list of CFGs for the script.
 	 */
-	public List<CFG> getCFGs() {
-	    return cfgs;
+	public CfgMap getCfgMap() {
+	    return cfgMap;
 	}
 
 	private void build(AstRoot script) {
 
 	    /* Start by getting the CFG for the script. */
-	    cfgs.add(buildScriptCFG(script, idgen));
+	    cfgMap.addCfg(script, buildScriptCFG(script, idgen));
 
 	    /* Get the list of functions in the script. */
 	    for (FunctionNode function : FunctionNodeVisitor.getFunctions(script)) {
@@ -123,7 +128,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 
 	    /* For each function, generate its CFG. */
 	    while (!unbuilt.isEmpty()) {
-		cfgs.add(buildScriptCFG(unbuilt.remove(), idgen));
+		FunctionNode nextFunction = unbuilt.remove();
+		cfgMap.addCfg(nextFunction, buildScriptCFG(nextFunction, idgen));
 	    }
 
 	}
@@ -137,7 +143,7 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	 *            Generates unique IDs for inserted statements.
 	 * @return The complete CFG.
 	 */
-	private CFG buildScriptCFG(ScriptNode scriptNode, IDGen idgen) {
+	private CFG buildScriptCFG(ScriptNode scriptNode, IdGen idgen) {
 
 	    String name = "FUNCTION";
 	    if (scriptNode instanceof AstRoot)
@@ -191,7 +197,7 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	 * @param block
 	 *            The block statement.
 	 */
-	private CFG build(Block block, IDGen idgen) {
+	private CFG build(Block block, IdGen idgen) {
 	    return buildBlock(block, idgen);
 	}
 
@@ -201,7 +207,7 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	 * @param block
 	 *            The block statement.
 	 */
-	private CFG build(Scope scope, IDGen idgen) {
+	private CFG build(Scope scope, IdGen idgen) {
 	    return buildBlock(scope, idgen);
 	}
 
@@ -211,7 +217,7 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	 * @param script
 	 *            The block statement ({@code AstRoot} or {@code FunctionNode}).
 	 */
-	private CFG build(ScriptNode script, IDGen idgen) {
+	private CFG build(ScriptNode script, IdGen idgen) {
 	    if (script instanceof AstRoot) {
 		return buildBlock(script, idgen);
 	    }
@@ -224,7 +230,7 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	 * @param block
 	 * @return The CFG for the block.
 	 */
-	private CFG buildBlock(Iterable<Node> block, IDGen idgen) {
+	private CFG buildBlock(Iterable<Node> block, IdGen idgen) {
 	    /*
 	     * Special cases: - First statement in block (set entry point for the CFG and
 	     * won't need to merge previous into it). - Last statement: The exit nodes for
@@ -281,7 +287,7 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	 * @param ifStatement
 	 * @return
 	 */
-	private CFG build(IfStatement ifStatement, IDGen idgen) {
+	private CFG build(IfStatement ifStatement, IdGen idgen) {
 
 	    CFGNode ifNode = new CFGNode(new EmptyStatement(), "IF", idgen.getUniqueID());
 	    CFG cfg = new CFG(ifNode);
@@ -349,7 +355,7 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	 * @param whileLoop
 	 * @return The CFG for the while loop.
 	 */
-	private CFG build(WhileLoop whileLoop, IDGen idgen) {
+	private CFG build(WhileLoop whileLoop, IdGen idgen) {
 
 	    CFGNode whileNode = new CFGNode(new EmptyStatement(), "WHILE", idgen.getUniqueID());
 	    CFG cfg = new CFG(whileNode);
@@ -411,7 +417,7 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	 * @param doLoop
 	 * @return The CFG for the do loop.
 	 */
-	private CFG build(DoLoop doLoop, IDGen idgen) {
+	private CFG build(DoLoop doLoop, IdGen idgen) {
 
 	    CFGNode doNode = new CFGNode(new EmptyStatement(), "DO", idgen.getUniqueID());
 	    CFGNode whileNode = new CFGNode(new EmptyStatement(), "WHILE", idgen.getUniqueID());
@@ -477,7 +483,7 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	 * @param forLoop
 	 * @return The CFG for the for loop.
 	 */
-	private CFG build(ForLoop forLoop, IDGen idgen) {
+	private CFG build(ForLoop forLoop, IdGen idgen) {
 
 	    CFGNode forNode = new CFGNode(forLoop.getInitializer(), idgen.getUniqueID());
 	    CFG cfg = new CFG(forNode);
@@ -551,7 +557,7 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	 * @param forInLoop
 	 * @return The CFG for the for-in loop.
 	 */
-	private CFG build(ForInLoop forInLoop, IDGen idgen) {
+	private CFG build(ForInLoop forInLoop, IdGen idgen) {
 
 	    /*
 	     * To represent key iteration, we make up two functions:
@@ -687,7 +693,7 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	 * @param forLoop
 	 * @return The CFG for the for loop.
 	 */
-	private CFG build(SwitchStatement switchStatement, IDGen idgen) {
+	private CFG build(SwitchStatement switchStatement, IdGen idgen) {
 
 	    CFGNode switchNode = new CFGNode(new EmptyStatement(), "SWITCH", idgen.getUniqueID());
 	    CFG cfg = new CFG(switchNode);
@@ -814,7 +820,7 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	 * @param withStatement
 	 * @return The CFG for the while loop.
 	 */
-	private CFG build(WithStatement withStatement, IDGen idgen) {
+	private CFG build(WithStatement withStatement, IdGen idgen) {
 
 	    /*
 	     * Create two functions to represent adding a scope: - One that loads the
@@ -873,7 +879,7 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	 * @param tryStatement
 	 * @return The CFG for the while loop.
 	 */
-	private CFG build(TryStatement tryStatement, IDGen idgen) {
+	private CFG build(TryStatement tryStatement, IdGen idgen) {
 
 	    CFGNode tryNode = new CFGNode(new EmptyStatement(), "TRY", idgen.getUniqueID());
 	    CFG cfg = new CFG(tryNode);
@@ -1033,7 +1039,7 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	 * @return The set of newly created jump nodes (to be propagated to the CFG).
 	 */
 	private List<CFGNode> moveJumpAfterFinally(CFG finallyBlock, List<CFGNode> jumpNodes,
-		AstNode condition, IDGen idgen) {
+		AstNode condition, IdGen idgen) {
 
 	    /* The list of newly created jump nodes to propagate to the cfg. */
 	    List<CFGNode> newJumpNodes = new LinkedList<CFGNode>();
@@ -1080,7 +1086,7 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	 *            The exit point for the subgraph.
 	 * @return A list of exit nodes for the subgraph.
 	 */
-	private CFG build(BreakStatement breakStatement, IDGen idgen) {
+	private CFG build(BreakStatement breakStatement, IdGen idgen) {
 
 	    CFGNode breakNode = new CFGNode(breakStatement, idgen.getUniqueID());
 	    CFG cfg = new CFG(breakNode);
@@ -1098,7 +1104,7 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	 *            The exit point for the subgraph.
 	 * @return A list of exit nodes for the subgraph.
 	 */
-	private CFG build(ContinueStatement continueStatement, IDGen idgen) {
+	private CFG build(ContinueStatement continueStatement, IdGen idgen) {
 
 	    CFGNode continueNode = new CFGNode(continueStatement, idgen.getUniqueID());
 	    CFG cfg = new CFG(continueNode);
@@ -1116,7 +1122,7 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	 *            The exit point for the subgraph.
 	 * @return A list of exit nodes for the subgraph.
 	 */
-	private CFG build(ReturnStatement returnStatement, IDGen idgen) {
+	private CFG build(ReturnStatement returnStatement, IdGen idgen) {
 
 	    CFGNode returnNode = new CFGNode(returnStatement, idgen.getUniqueID());
 	    CFG cfg = new CFG(returnNode);
@@ -1134,7 +1140,7 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	 *            The exit point for the subgraph.
 	 * @return A list of exit nodes for the subgraph.
 	 */
-	private CFG build(ThrowStatement throwStatement, IDGen idgen) {
+	private CFG build(ThrowStatement throwStatement, IdGen idgen) {
 
 	    CFGNode throwNode = new CFGNode(throwStatement, idgen.getUniqueID());
 	    CFG cfg = new CFG(throwNode);
@@ -1153,7 +1159,7 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	 *            The exit point for the subgraph.
 	 * @return A list of exit nodes for the subgraph.
 	 */
-	private CFG build(AstNode statement, IDGen idgen) {
+	private CFG build(AstNode statement, IdGen idgen) {
 
 	    CFGNode expressionNode = new CFGNode(statement, idgen.getUniqueID());
 	    CFG cfg = new CFG(expressionNode);
@@ -1165,7 +1171,7 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	/**
 	 * Calls the appropriate build method for the node type.
 	 */
-	private CFG buildSwitch(AstNode node, IDGen idgen) {
+	private CFG buildSwitch(AstNode node, IdGen idgen) {
 
 	    if (node == null)
 		return null;

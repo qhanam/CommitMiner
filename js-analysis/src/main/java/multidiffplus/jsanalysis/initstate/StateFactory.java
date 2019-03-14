@@ -1,14 +1,12 @@
 package multidiffplus.jsanalysis.initstate;
 
-import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.mozilla.javascript.ast.AstNode;
 import org.mozilla.javascript.ast.Name;
 import org.mozilla.javascript.ast.ScriptNode;
 
-import multidiffplus.cfg.CFG;
+import multidiffplus.cfg.CfgMap;
 import multidiffplus.jsanalysis.abstractdomain.Address;
 import multidiffplus.jsanalysis.abstractdomain.BValue;
 import multidiffplus.jsanalysis.abstractdomain.Change;
@@ -33,11 +31,11 @@ public class StateFactory {
      *            The file under analysis.
      * @return The initial state ς ∈ State := ρ x σ
      */
-    public static State createInitialState(ScriptNode script, Map<AstNode, CFG> cfgs) {
+    public static State createInitialState(ScriptNode script, CfgMap cfgMap) {
 	Trace trace = new FSCI(script.getID());
 	Store store = StoreFactory.createInitialStore();
 	Pair<Environment, Store> lifted = EnvironmentFactory.createInitialEnvironment(script, store,
-		cfgs, trace);
+		cfgMap, trace);
 	Scratchpad scratchpad = new Scratchpad();
 	Control control = Control.bottom();
 	Environment env = lifted.getLeft();

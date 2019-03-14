@@ -1,13 +1,10 @@
-package multidiffplus.jsanalysis.flow;
+package multidiff.analysis.flow;
 
 import java.util.ArrayDeque;
-import java.util.Map;
 import java.util.Queue;
 import java.util.Stack;
 
-import org.mozilla.javascript.ast.AstNode;
-
-import multidiffplus.cfg.CFG;
+import multidiffplus.cfg.CfgMap;
 
 /**
  * An abstract call stack.
@@ -15,7 +12,7 @@ import multidiffplus.cfg.CFG;
 public class CallStack {
 
     /** The CFGs of every function. */
-    private Map<AstNode, CFG> cfgs;
+    private CfgMap cfgMap;
 
     /** The virtual call stack. */
     private Stack<StackFrame> callStack;
@@ -23,8 +20,14 @@ public class CallStack {
     /** Reachable functions that have not been analyzed. */
     private Queue<ReachableFunction> reachables;
 
-    public CallStack(Map<AstNode, CFG> cfgs) {
-	this.cfgs = cfgs;
+    /**
+     * TODO: Add 'asyncFunctions' for functions that will be run from the JavaScript
+     * event loop.
+     */
+
+    public CallStack(CfgMap cfgMap) {
+	// TODO: Separate the CFG map from the CallStack. They aren't related.
+	this.cfgMap = cfgMap;
 	this.callStack = new Stack<StackFrame>();
 	this.reachables = new ArrayDeque<ReachableFunction>();
     }
@@ -33,8 +36,8 @@ public class CallStack {
 	return callStack.isEmpty();
     }
 
-    public Map<AstNode, CFG> getCFGs() {
-	return cfgs;
+    public CfgMap getCfgMap() {
+	return cfgMap;
     }
 
     public void push(StackFrame stackFrame) {

@@ -1,4 +1,4 @@
-package multidiffplus.jsanalysis.flow;
+package multidiff.analysis.flow;
 
 import multidiffplus.jsanalysis.abstractdomain.Address;
 import multidiffplus.jsanalysis.abstractdomain.FunctionClosure;

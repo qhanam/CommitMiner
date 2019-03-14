@@ -26,6 +26,9 @@ import org.mozilla.javascript.ast.PropertyGet;
 import org.mozilla.javascript.ast.StringLiteral;
 import org.mozilla.javascript.ast.UnaryExpression;
 
+import multidiff.analysis.flow.CallStack;
+import multidiff.analysis.flow.ReachableFunction;
+import multidiff.analysis.flow.StackFrame;
 import multidiffplus.jsanalysis.abstractdomain.Address;
 import multidiffplus.jsanalysis.abstractdomain.Addresses;
 import multidiffplus.jsanalysis.abstractdomain.BValue;
@@ -47,9 +50,6 @@ import multidiffplus.jsanalysis.abstractdomain.State;
 import multidiffplus.jsanalysis.abstractdomain.Str;
 import multidiffplus.jsanalysis.abstractdomain.Undefined;
 import multidiffplus.jsanalysis.abstractdomain.Variable;
-import multidiffplus.jsanalysis.flow.CallStack;
-import multidiffplus.jsanalysis.flow.ReachableFunction;
-import multidiffplus.jsanalysis.flow.StackFrame;
 
 public class ExpEval {
 

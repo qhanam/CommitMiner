@@ -1,9 +1,8 @@
-package multidiffplus.jsanalysis.flow;
+package multidiff.analysis.flow;
 
 import multidiffplus.cfg.CFGEdge;
 import multidiffplus.cfg.CFGNode;
-import multidiffplus.jsanalysis.abstractdomain.State;
-import multidiffplus.jsanalysis.interpreter.ExpEval;
+import multidiffplus.cfg.IState;
 
 /**
  * An expression source code instruction.
@@ -27,7 +26,7 @@ public class ExpressionInstruction extends Instruction {
     }
 
     @Override
-    public void addInstructionsToKontinuation(CallStack callStack, State incomingState) {
+    public void addInstructionsToKontinuation(CallStack callStack, IState incomingState) {
 	StackFrame stackFrame = callStack.peek();
 	for (CFGEdge edge : node.getOutgoingEdges()) {
 	    // Add an instruction (edge) to the stack frame if:
@@ -36,7 +35,7 @@ public class ExpressionInstruction extends Instruction {
 	    // Loops are executed once.
 	    if (!stackFrame.visited(edge.getId()) && (semaphore == 0 || edge.isLoopEdge)) {
 		Instruction instruction = new BranchInstruction(edge);
-		instruction.initPreTransferState(incomingState);
+		instruction.joinPreTransferState(incomingState);
 		stackFrame.visit(edge.getId());
 		stackFrame.pushInstruction(instruction);
 	    }
@@ -44,26 +43,32 @@ public class ExpressionInstruction extends Instruction {
     }
 
     @Override
-    protected void transferOverInstruction(CallStack callStack, State postTransferState) {
-	TransferNode transferFunction = new TransferNode(postTransferState, node,
-		new ExpEval(callStack, postTransferState));
-	transferFunction.transfer();
+    protected IState transferStateOverInstruction(CallStack callStack) {
+	IState postTransferState, preTransferState = node.getBeforeState();
+	postTransferState = preTransferState.clone().interpretStatement(node, callStack);
+	return postTransferState;
     }
 
     @Override
-    protected void setPostTransferState(State state) {
+    protected void joinPostTransferState(IState outgoingState) {
 	semaphore--;
-	node.setAfterState(state);
+	if (node.getAfterState() != null) {
+	    outgoingState = outgoingState.join(node.getAfterState());
+	}
+	node.setAfterState(outgoingState);
     }
 
     @Override
-    protected State getPreTransferState() {
-	return (State) node.getBeforeState();
+    protected IState getPreTransferState() {
+	return node.getBeforeState();
     }
 
     @Override
-    protected void setPreTransferState(State state) {
-	node.setBeforeState(state);
+    protected void joinPreTransferState(IState incomingState) {
+	if (node.getBeforeState() != null) {
+	    incomingState = incomingState.join(node.getBeforeState());
+	}
+	node.setBeforeState(incomingState);
     }
 
     @Override

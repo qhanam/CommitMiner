@@ -3,7 +3,6 @@ package multidiffplus.jsanalysis.abstractdomain;
 import org.mozilla.javascript.ast.AstNode;
 
 import multidiffplus.cfg.CFGEdge;
-import multidiffplus.cfg.CFGNode;
 
 /**
  * Stores the state of control flow changes.
@@ -33,8 +32,8 @@ public class Control {
      * 
      * @return The new control state after update.
      */
-    public Control update(CFGEdge edge, CFGNode node) {
-	return new Control(call, condition.update(edge, node));
+    public Control update(CFGEdge edge) {
+	return new Control(call, condition.update(edge));
     }
 
     /**

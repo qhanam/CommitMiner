@@ -1,12 +1,9 @@
 package multidiffplus.jsanalysis.initstate;
 
-import java.util.Map;
-
 import org.apache.commons.lang3.tuple.Pair;
-import org.mozilla.javascript.ast.AstNode;
 import org.mozilla.javascript.ast.ScriptNode;
 
-import multidiffplus.cfg.CFG;
+import multidiffplus.cfg.CfgMap;
 import multidiffplus.jsanalysis.abstractdomain.Change;
 import multidiffplus.jsanalysis.abstractdomain.Dependencies;
 import multidiffplus.jsanalysis.abstractdomain.Environment;
@@ -40,9 +37,9 @@ public class EnvironmentFactory {
      * @return The initial ρ ∈ Environment
      */
     public static Pair<Environment, Store> createInitialEnvironment(ScriptNode script, Store store,
-	    Map<AstNode, CFG> cfgs, Trace trace) {
+	    CfgMap cfgMap, Trace trace) {
 	Environment env = createBaseEnvironment();
-	store = Helpers.lift(env, store, script, cfgs, trace);
+	store = Helpers.lift(env, store, script, cfgMap, trace);
 	return Pair.of(env, store);
     }
 

@@ -1,16 +1,17 @@
 package multidiffplus.factories;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
 import com.github.gumtreediff.gen.TreeGenerator;
 
 import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode;
+import multidiff.analysis.flow.Analysis;
 import multidiffplus.cfg.CFG;
 import multidiffplus.cfg.CFGEdge;
 import multidiffplus.cfg.CFGNode;
+import multidiffplus.cfg.CfgMap;
 
 /**
  * Builds a CFG given some AST.
@@ -21,6 +22,14 @@ import multidiffplus.cfg.CFGNode;
 public interface ICFGFactory {
 
     /**
+     * Returns an inter-procedural flow analysis for the given entry point.
+     * 
+     * @param root
+     *            The entry point of the analysis.
+     */
+    Analysis createAnalysis(ClassifiedASTNode root);
+
+    /**
      * Builds intra-procedural control flow graphs for the given artifact.
      * 
      * @param root
@@ -29,7 +38,7 @@ public interface ICFGFactory {
      *            Generates unique IDs for AST nodes.
      * @return One CFG for each function in the class or script.
      */
-    List<CFG> createCFGs(ClassifiedASTNode root);
+    CfgMap createCFGs(ClassifiedASTNode root);
 
     /**
      * @param The

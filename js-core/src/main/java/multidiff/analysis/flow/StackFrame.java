@@ -1,4 +1,4 @@
-package multidiffplus.jsanalysis.flow;
+package multidiff.analysis.flow;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -8,7 +8,7 @@ import java.util.Stack;
 
 import multidiffplus.cfg.CFG;
 import multidiffplus.cfg.CFGNode;
-import multidiffplus.jsanalysis.abstractdomain.State;
+import multidiffplus.cfg.IState;
 
 /**
  * A frame in a call stack.
@@ -40,7 +40,7 @@ public class StackFrame {
      */
     private Stack<Instruction> kontinuation;
 
-    public StackFrame(CFG cfg, State initialState) {
+    public StackFrame(CFG cfg, IState initialState) {
 
 	// Initialize member vars.
 	this.cfg = cfg;
@@ -50,7 +50,7 @@ public class StackFrame {
 
 	// Add the first instruction for a depth-first traversal.
 	Instruction instruction = getInstructionForNode(cfg.getEntryNode());
-	instruction.initPreTransferState(initialState);
+	instruction.joinPreTransferState(initialState);
 	this.kontinuation.add(instruction);
 
     }

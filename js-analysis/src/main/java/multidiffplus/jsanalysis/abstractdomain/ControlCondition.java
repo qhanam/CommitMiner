@@ -11,7 +11,6 @@ import org.mozilla.javascript.ast.ParenthesizedExpression;
 import org.mozilla.javascript.ast.UnaryExpression;
 
 import multidiffplus.cfg.CFGEdge;
-import multidiffplus.cfg.CFGNode;
 import multidiffplus.commit.DependencyIdentifier;
 
 /**
@@ -45,7 +44,7 @@ public class ControlCondition implements DependencyIdentifier {
      * 
      * @return The new state (ControlFlowChange) after update.
      */
-    public ControlCondition update(CFGEdge edge, CFGNode node) {
+    public ControlCondition update(CFGEdge edge) {
 
 	Set<Condition> conditions = new HashSet<Condition>(this.conditions);
 	Set<Condition> negConditions = new HashSet<Condition>(this.negConditions);
@@ -61,7 +60,7 @@ public class ControlCondition implements DependencyIdentifier {
 	    if (change.isChanged()) {
 		conditions.add(new Condition((AstNode) edge.getCondition(), change));
 
-		for (CFGEdge child : node.getOutgoingEdges()) {
+		for (CFGEdge child : edge.getFrom().getOutgoingEdges()) {
 		    if (child != edge && child.getCondition() != null) {
 			negConditions.add(new Condition((AstNode) child.getCondition(), change));
 		    }
@@ -71,7 +70,7 @@ public class ControlCondition implements DependencyIdentifier {
 	}
 
 	/* Check the siblings for neg conditions. */
-	for (CFGEdge child : node.getOutgoingEdges()) {
+	for (CFGEdge child : edge.getFrom().getOutgoingEdges()) {
 	    if (child != edge && child.getCondition() != null) {
 
 		Change change = Change.convU((AstNode) child.getCondition(),

@@ -12,8 +12,12 @@ import org.mozilla.javascript.ast.FunctionNode;
 import org.mozilla.javascript.ast.Name;
 import org.mozilla.javascript.ast.ScriptNode;
 
+import multidiff.analysis.flow.CallStack;
+import multidiff.analysis.flow.ReachableFunction;
+import multidiff.analysis.flow.StackFrame;
 import multidiffplus.cfg.CFG;
 import multidiffplus.cfg.CFGNode;
+import multidiffplus.cfg.CfgMap;
 import multidiffplus.jsanalysis.abstractdomain.Address;
 import multidiffplus.jsanalysis.abstractdomain.BValue;
 import multidiffplus.jsanalysis.abstractdomain.Change;
@@ -32,9 +36,6 @@ import multidiffplus.jsanalysis.abstractdomain.State;
 import multidiffplus.jsanalysis.abstractdomain.Store;
 import multidiffplus.jsanalysis.abstractdomain.Undefined;
 import multidiffplus.jsanalysis.abstractdomain.Variable;
-import multidiffplus.jsanalysis.flow.CallStack;
-import multidiffplus.jsanalysis.flow.ReachableFunction;
-import multidiffplus.jsanalysis.flow.StackFrame;
 import multidiffplus.jsanalysis.hoisting.FunctionLiftVisitor;
 import multidiffplus.jsanalysis.hoisting.GlobalVisitor;
 import multidiffplus.jsanalysis.hoisting.VariableLiftVisitor;
@@ -158,8 +159,8 @@ public class Helpers {
      * @return The new store. The environment is updated directly (no new object is
      *         created)
      */
-    public static Store lift(Environment env, Store store, ScriptNode function,
-	    Map<AstNode, CFG> cfgs, Trace trace) {
+    public static Store lift(Environment env, Store store, ScriptNode function, CfgMap cfgMap,
+	    Trace trace) {
 
 	/*
 	 * Lift variables into the function's environment and initialize to undefined.
@@ -206,7 +207,7 @@ public class Helpers {
 		    Address.inject(address, valueChange, Dependencies.injectValue(child)), child);
 
 	    /* Create a function object. */
-	    Closure closure = new FunctionClosure(cfgs.get(child), env);
+	    Closure closure = new FunctionClosure(cfgMap.getCfgFor(child), env);
 	    store = createFunctionObj(closure, store, trace, address, child);
 
 	}

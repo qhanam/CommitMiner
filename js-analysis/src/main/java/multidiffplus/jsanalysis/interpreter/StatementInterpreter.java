@@ -1,4 +1,4 @@
-package multidiffplus.jsanalysis.flow;
+package multidiffplus.jsanalysis.interpreter;
 
 import org.mozilla.javascript.Token;
 import org.mozilla.javascript.ast.AstNode;
@@ -9,6 +9,7 @@ import org.mozilla.javascript.ast.ThrowStatement;
 import org.mozilla.javascript.ast.VariableDeclaration;
 import org.mozilla.javascript.ast.VariableInitializer;
 
+import multidiff.analysis.flow.CallStack;
 import multidiffplus.cfg.CFGNode;
 import multidiffplus.jsanalysis.abstractdomain.Address;
 import multidiffplus.jsanalysis.abstractdomain.BValue;
@@ -17,41 +18,24 @@ import multidiffplus.jsanalysis.abstractdomain.Dependencies;
 import multidiffplus.jsanalysis.abstractdomain.State;
 import multidiffplus.jsanalysis.abstractdomain.Undefined;
 import multidiffplus.jsanalysis.abstractdomain.Variable;
-import multidiffplus.jsanalysis.interpreter.ExpEval;
 
-public class TransferNode {
+/**
+ * An interpreter for transferring the analysis state over a statement.
+ */
+public class StatementInterpreter {
 
     private State state;
-    private CFGNode node;
     private ExpEval expEval;
 
-    public TransferNode(State state, CFGNode node, ExpEval expEval) {
+    private StatementInterpreter(State state, CallStack callStack) {
 	this.state = state;
-	this.node = node;
-	this.expEval = expEval;
-    }
-
-    /**
-     * @return An {@code AnalysisState} if a call needs to be evaluated, or
-     *         {@code null} other if the transfer was successful.
-     */
-    public void transfer() {
-
-	/* Update the trace to the current statement. */
-	state.trace = state.trace.update(node.getId());
-
-	/* The statement to transfer over. */
-	AstNode statement = (AstNode) node.getStatement();
-
-	/* Interpret the statement. */
-	interpretStatement(statement);
-
+	this.expEval = new ExpEval(callStack, state);
     }
 
     /**
      * Performs an abstract interpretation on the node.
      */
-    private void interpretStatement(AstNode node) {
+    private void interpret(AstNode node) {
 
 	switch (node.getType()) {
 	case Token.EMPTY:
@@ -79,7 +63,7 @@ public class TransferNode {
      * Evaluates the return expression and stores the value in the scratchpad for
      * use by the caller.
      */
-    public void interpretReturn(ReturnStatement rs) {
+    private void interpretReturn(ReturnStatement rs) {
 
 	BValue retVal = null;
 
@@ -115,7 +99,7 @@ public class TransferNode {
      * Evaluates the thrown expression. Error paths are not tracked, so we don't
      * need to do anything with scratch.
      */
-    public void interpretThrow(ThrowStatement ts) {
+    private void interpretThrow(ThrowStatement ts) {
 	expEval.eval(ts.getExpression());
     }
 
@@ -126,12 +110,21 @@ public class TransferNode {
      *            The variable declaration. Variables have already been lifted into
      *            the environment.
      */
-    public void interpretVariableDeclaration(VariableDeclaration vd) {
+    private void interpretVariableDeclaration(VariableDeclaration vd) {
 	for (VariableInitializer vi : vd.getVariables()) {
 	    if (vi.getInitializer() != null) {
 		expEval.evalAssignment(vi.getTarget(), vi.getInitializer());
 	    }
 	}
+    }
+
+    /**
+     * Updates the {@code state} and {@code callStack} by interpreting
+     * {@code statement}.
+     */
+    public static void interpret(CFGNode node, State state, CallStack callStack) {
+	StatementInterpreter interpreter = new StatementInterpreter(state, callStack);
+	interpreter.interpret((AstNode) node.getStatement());
     }
 
 }

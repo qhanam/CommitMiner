@@ -6,6 +6,7 @@ import java.util.Stack;
 
 import org.mozilla.javascript.ast.Name;
 
+import multidiff.analysis.flow.CallStack;
 import multidiffplus.jsanalysis.abstractdomain.Address;
 import multidiffplus.jsanalysis.abstractdomain.Change;
 import multidiffplus.jsanalysis.abstractdomain.Closure;
@@ -21,7 +22,6 @@ import multidiffplus.jsanalysis.abstractdomain.Property;
 import multidiffplus.jsanalysis.abstractdomain.Scratchpad;
 import multidiffplus.jsanalysis.abstractdomain.State;
 import multidiffplus.jsanalysis.abstractdomain.Store;
-import multidiffplus.jsanalysis.flow.CallStack;
 import multidiffplus.jsanalysis.trace.Trace;
 
 /**

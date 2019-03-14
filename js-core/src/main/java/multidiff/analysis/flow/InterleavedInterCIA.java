@@ -1,4 +1,4 @@
-package multidiffplus.jsanalysis.flow;
+package multidiff.analysis.flow;
 
 import org.mozilla.javascript.ast.AstRoot;
 
@@ -16,10 +16,9 @@ public class InterleavedInterCIA {
     DiffContext diffContext;
     Analysis dstAnalysis;
 
-    public InterleavedInterCIA(SourceCodeFileChange sourceCodeFileChange, DiffContext diffContext) {
+    public InterleavedInterCIA(SourceCodeFileChange sourceCodeFileChange, Analysis dstAnalysis) {
 	this.sourceCodeFileChange = sourceCodeFileChange;
-	this.diffContext = diffContext;
-	this.dstAnalysis = Analysis.build(diffContext.dstScript, diffContext.dstCFGs);
+	this.dstAnalysis = dstAnalysis;
     }
 
     /**
