@@ -27,7 +27,6 @@ import org.mozilla.javascript.ast.StringLiteral;
 import org.mozilla.javascript.ast.UnaryExpression;
 
 import multidiff.analysis.flow.CallStack;
-import multidiff.analysis.flow.ReachableFunction;
 import multidiff.analysis.flow.StackFrame;
 import multidiffplus.jsanalysis.abstractdomain.Address;
 import multidiffplus.jsanalysis.abstractdomain.Addresses;
@@ -50,6 +49,7 @@ import multidiffplus.jsanalysis.abstractdomain.State;
 import multidiffplus.jsanalysis.abstractdomain.Str;
 import multidiffplus.jsanalysis.abstractdomain.Undefined;
 import multidiffplus.jsanalysis.abstractdomain.Variable;
+import multidiffplus.jsanalysis.flow.JavaScriptAsyncFunctionCall;
 
 public class ExpEval {
 
@@ -143,7 +143,7 @@ public class ExpEval {
      * @return A BValue that points to the new function object.
      */
     public BValue evalFunctionNode(FunctionNode f) {
-	Closure closure = new FunctionClosure(callStack.getCFGs().get(f), state.env);
+	Closure closure = new FunctionClosure(callStack.getCfgMap().getCfgFor(f), state.env);
 	Address addr = state.trace.makeAddr(f.getID(), "");
 	addr = state.trace.modAddr(addr, JSClass.CFunction);
 	state.store = Helpers.createFunctionObj(closure, state.store, state.trace, addr, f);
@@ -729,8 +729,8 @@ public class ExpEval {
 		Obj funct = newState.store.getObj(addr);
 		InternalFunctionProperties ifp = (InternalFunctionProperties) funct.internalProperties;
 		FunctionClosure closure = (FunctionClosure) ifp.closure;
-		callStack.addReachableFunction(
-			new ReachableFunction(closure, state.selfAddr, state.store, state.trace));
+		callStack.addAsync(
+			new JavaScriptAsyncFunctionCall(closure, state.selfAddr, state.store, state.trace));
 	    }
 	}
 

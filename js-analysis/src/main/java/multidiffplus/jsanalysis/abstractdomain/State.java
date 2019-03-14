@@ -1,12 +1,11 @@
 package multidiffplus.jsanalysis.abstractdomain;
 
-import multidiffplus.cfg.IState;
 import multidiffplus.jsanalysis.trace.Trace;
 
 /**
  * Stores the state of the function analysis at a point in the CFG.
  */
-public class State implements IState {
+public class State {
 
     /*
      * The abstract domains that make up the program state. The abstract domains

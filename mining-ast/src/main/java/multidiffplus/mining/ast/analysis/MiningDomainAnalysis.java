@@ -92,7 +92,7 @@ public class MiningDomainAnalysis extends DomainAnalysis {
     private void analyzeAST(SourceCodeFileChange sourceCodeFileChange, DiffContext diffContext) {
 
 	/* Generate facts by analyzing the source functions. */
-	for (CFG cfg : diffContext.srcCFGs) {
+	for (CFG cfg : diffContext.srcCFGs.getCfgs()) {
 	    for (IASTVisitorFactory astVF : srcVisitorFactories) {
 		AstNode root = (AstNode) cfg.getEntryNode().getStatement();
 		root.visit(astVF.newInstance(sourceCodeFileChange, root));
@@ -100,7 +100,7 @@ public class MiningDomainAnalysis extends DomainAnalysis {
 	}
 
 	/* Generate facts by analyzing the destination functions. */
-	for (CFG cfg : diffContext.dstCFGs) {
+	for (CFG cfg : diffContext.dstCFGs.getCfgs()) {
 	    for (IASTVisitorFactory astVF : dstVisitorFactories) {
 		AstNode root = (AstNode) cfg.getEntryNode().getStatement();
 		root.visit(astVF.newInstance(sourceCodeFileChange, root));

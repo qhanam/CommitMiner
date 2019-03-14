@@ -59,12 +59,21 @@ public class JavaScriptAnalysisState implements IState {
     }
 
     /**
-     * Creates an initial AnalysisState.
+     * Creates an initial AnalysisState for a function.
+     * 
+     * This should be called whenever a new frame is being added to a call stack.
+     */
+    public static IState initializeFunctionState(State state) {
+	return new JavaScriptAnalysisState(state);
+    }
+
+    /**
+     * Creates an initial AnalysisState for a script.
      * 
      * This should only be called once per analysis. All other states should be
      * created by either interpreting statements or joining two states.
      */
-    public static IState initializeAnalysisStateFrom(ClassifiedASTNode root, CfgMap cfgMap) {
+    public static IState initializeScriptState(ClassifiedASTNode root, CfgMap cfgMap) {
 	State state = StateFactory.createInitialState((ScriptNode) root, cfgMap);
 	return new JavaScriptAnalysisState(state);
     }

@@ -1,5 +1,6 @@
 package multidiffplus.cfg;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -38,6 +39,13 @@ public class CfgMap {
      */
     public void addCfg(ClassifiedASTNode function, CFG cfg) {
 	cfgMap.put(function, cfg);
+    }
+
+    /**
+     * Returns the CFGs as a collection.
+     */
+    public Collection<CFG> getCfgs() {
+	return cfgMap.values();
     }
 
 }

@@ -1,9 +1,7 @@
 package multidiffplus.analysis;
 
-import java.util.List;
-
 import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode;
-import multidiffplus.cfg.CFG;
+import multidiffplus.cfg.CfgMap;
 import multidiffplus.commit.SourceCodeFileChange;
 
 /**
@@ -12,15 +10,18 @@ import multidiffplus.commit.SourceCodeFileChange;
  */
 public abstract class SourceFileAnalysis {
 
-	/**
-	 * Perform a single-file analysis.
-	 * @param sourceCodeFileChange The source code file change information.
-	 * @param root The script.
-	 * @param cfgs The list of CFGs in the script (one for each function plus
-	 * 			   one for the script).
-	 */
-	public abstract void analyze(SourceCodeFileChange sourceCodeFileChange,
-								 ClassifiedASTNode root,
-								 List<CFG> cfgs) throws Exception;
+    /**
+     * Perform a single-file analysis.
+     * 
+     * @param sourceCodeFileChange
+     *            The source code file change information.
+     * @param root
+     *            The script.
+     * @param cfgMap
+     *            The list of CFGs in the script (one for each function plus one for
+     *            the script).
+     */
+    public abstract void analyze(SourceCodeFileChange sourceCodeFileChange, ClassifiedASTNode root,
+	    CfgMap cfgMap) throws Exception;
 
 }

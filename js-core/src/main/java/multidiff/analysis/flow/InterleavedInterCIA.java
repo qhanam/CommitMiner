@@ -1,14 +1,12 @@
 package multidiff.analysis.flow;
 
-import org.mozilla.javascript.ast.AstRoot;
-
 import multidiffplus.commit.SourceCodeFileChange;
 import multidiffplus.diff.DiffContext;
 import multidiffplus.facts.AnnotationFactBase;
-import multidiffplus.jsanalysis.annotate.DependencyASTVisitor;
 
 /**
- * An analysis which performs inter-procedural analysis of a script (file).
+ * An analysis which performs interleaved, inter-procedural change impact
+ * analysis of a script.
  */
 public class InterleavedInterCIA {
 
@@ -34,7 +32,7 @@ public class InterleavedInterCIA {
 	    dstAnalysis.run();
 
 	/* Create criterion/dependency annotations for GUI output. */
-	DependencyASTVisitor.registerAnnotations((AstRoot) diffContext.dstScript,
+	dstAnalysis.registerAnnotations(diffContext.dstScript,
 		AnnotationFactBase.getInstance(sourceCodeFileChange));
 
     }

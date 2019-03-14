@@ -17,8 +17,11 @@ public class CallStack {
     /** The virtual call stack. */
     private Stack<StackFrame> callStack;
 
-    /** Reachable functions that have not been analyzed. */
-    private Queue<ReachableFunction> reachables;
+    /**
+     * Calls to async functions that are be executed from the event loop (ie. they
+     * must be analyzed with a fresh call stack).
+     */
+    private Queue<AsyncFunctionCall> eventLoop;
 
     /**
      * TODO: Add 'asyncFunctions' for functions that will be run from the JavaScript
@@ -29,7 +32,7 @@ public class CallStack {
 	// TODO: Separate the CFG map from the CallStack. They aren't related.
 	this.cfgMap = cfgMap;
 	this.callStack = new Stack<StackFrame>();
-	this.reachables = new ArrayDeque<ReachableFunction>();
+	this.eventLoop = new ArrayDeque<AsyncFunctionCall>();
     }
 
     public boolean isEmpty() {
@@ -52,16 +55,29 @@ public class CallStack {
 	return callStack.pop();
     }
 
-    public void addReachableFunction(ReachableFunction rf) {
-	reachables.add(rf);
+    /**
+     * Adds an {@code AsyncFunctionCall} to the event loop.
+     * 
+     * The call will be analyzed sometime in the future after the analysis beginning
+     * at the entry point has finished.
+     */
+    public void addAsync(AsyncFunctionCall asyncCall) {
+	eventLoop.add(asyncCall);
     }
 
-    public boolean hasReachableFunction() {
-	return !reachables.isEmpty();
+    /**
+     * Returns {@code true} if there is an async call currently in the event loop.
+     */
+    public boolean hasAsync() {
+	return !eventLoop.isEmpty();
     }
 
-    public ReachableFunction removeReachableFunction() {
-	return reachables.poll();
+    /**
+     * Pops an un-analyzed function from the event loop and adds it as a new frame
+     * to the call stack.
+     */
+    public void runNextAsync() {
+	eventLoop.poll().run(this);
     }
 
     public boolean isScriptLevel() {

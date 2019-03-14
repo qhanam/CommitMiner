@@ -7,6 +7,9 @@ import multidiff.analysis.flow.Analysis;
 import multidiffplus.cfg.CFG;
 import multidiffplus.cfg.CfgMap;
 import multidiffplus.cfg.IState;
+import multidiffplus.facts.AnnotationFactBase;
+import multidiffplus.jsanalysis.annotate.DependencyASTVisitor;
+import multidiffplus.jsanalysis.interpreter.Helpers;
 
 public class JavaScriptAnalysis extends Analysis {
 
@@ -16,26 +19,18 @@ public class JavaScriptAnalysis extends Analysis {
 
     @Override
     protected void addReachableFunctions() {
-	// TODO Auto-generated method stub
-
+	Helpers.findReachableFunctions(callStack);
     }
 
     @Override
-    protected void runNextReachableFunction() {
-	// TODO Auto-generated method stub
-
+    public void registerAnnotations(ClassifiedASTNode root, AnnotationFactBase annotationFactBase) {
+	DependencyASTVisitor.registerAnnotations((AstRoot) root, annotationFactBase);
     }
 
-    @Override
-    protected void registerAnnotations(ClassifiedASTNode root) {
-	// TODO Auto-generated method stub
-
-    }
-
-    public static JavaScriptAnalysis InitializeJavaScriptAnalysis(AstRoot root) {
+    public static JavaScriptAnalysis InitializeJavaScriptAnalysis(ClassifiedASTNode root) {
 	JavaScriptCFGFactory cfgFactory = new JavaScriptCFGFactory();
 	CfgMap cfgMap = cfgFactory.createCFGs(root);
-	IState initialState = JavaScriptAnalysisState.initializeAnalysisStateFrom(root, cfgMap);
+	IState initialState = JavaScriptAnalysisState.initializeScriptState(root, cfgMap);
 	CFG entryPoint = cfgMap.getCfgFor(root);
 	return new JavaScriptAnalysis(entryPoint, cfgMap, initialState);
     }

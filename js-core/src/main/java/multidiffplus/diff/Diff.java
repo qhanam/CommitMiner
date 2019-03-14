@@ -2,7 +2,6 @@ package multidiffplus.diff;
 
 import java.io.IOException;
 import java.io.InvalidClassException;
-import java.util.List;
 
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
@@ -18,7 +17,7 @@ import com.github.gumtreediff.tree.TreeContext;
 
 import ca.ubc.ece.salt.gumtree.ast.ASTClassifier;
 import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode;
-import multidiffplus.cfg.CFG;
+import multidiffplus.cfg.CfgMap;
 import multidiffplus.factories.ICFGFactory;
 
 /**
@@ -142,12 +141,8 @@ public class Diff {
 	Diff.classifyTreeNodes(src, dst, matcher);
 
 	/* Create the CFGs. */
-	List<CFG> srcCFGs = cfgFactory.createCFGs(src.getRoot().getClassifiedASTNode());
-	List<CFG> dstCFGs = cfgFactory.createCFGs(dst.getRoot().getClassifiedASTNode());
-
-	/* Find a good execution interleaving for each CFG-pair. */
-	Interleaving interleaving = new Interleaving(srcCFGs, dstCFGs);
-	interleaving.computeInterleavings();
+	CfgMap srcCFGs = cfgFactory.createCFGs(src.getRoot().getClassifiedASTNode());
+	CfgMap dstCFGs = cfgFactory.createCFGs(dst.getRoot().getClassifiedASTNode());
 
 	/* Return the set up results (the context for a CFD analysis) */
 	ClassifiedASTNode srcRoot = src.getRoot().getClassifiedASTNode();

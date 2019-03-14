@@ -4,6 +4,7 @@ import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode;
 import multidiffplus.cfg.CFG;
 import multidiffplus.cfg.CfgMap;
 import multidiffplus.cfg.IState;
+import multidiffplus.facts.AnnotationFactBase;
 
 /**
  * A utility which runs an inter-procedural, flow sensitive, context insensitive
@@ -14,7 +15,7 @@ public abstract class Analysis {
     /**
      * The virtual call stack.
      */
-    private CallStack callStack;
+    protected CallStack callStack;
 
     /**
      * @param entryPoint
@@ -37,7 +38,6 @@ public abstract class Analysis {
 	    if (stackFrame.hasInstruction()) {
 		stackFrame.peekInstruction().transfer(callStack);
 	    } else {
-		// Helpers.findReachableFunctions(callStack);
 		addReachableFunctions();
 		callStack.pop();
 	    }
@@ -56,18 +56,11 @@ public abstract class Analysis {
      *         the call stack.
      */
     public boolean pushReachableFunction() {
-	if (!callStack.hasReachableFunction())
+	if (!callStack.hasAsync())
 	    return false;
-	// Helpers.runNextReachable(callStack);
-	runNextReachableFunction();
+	callStack.runNextAsync();
 	return true;
     }
-
-    /**
-     * Pops an un-analyzed function from the event loop and adds it as a new frame
-     * to the call stack.
-     */
-    protected abstract void runNextReachableFunction();
 
     /**
      * Creates criterion/dependency annotations for GUI output.
@@ -75,6 +68,7 @@ public abstract class Analysis {
      * @param root
      *            The root of the entry point's AST.
      */
-    protected abstract void registerAnnotations(ClassifiedASTNode root);
+    public abstract void registerAnnotations(ClassifiedASTNode root,
+	    AnnotationFactBase annotationFactBase);
 
 }

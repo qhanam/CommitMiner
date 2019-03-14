@@ -60,7 +60,7 @@ public class JavaScriptCFGFactory implements ICFGFactory {
     @Override
     public Analysis createAnalysis(ClassifiedASTNode root) {
 	CfgMap cfgMap = createCFGs(root);
-	IState initialState = JavaScriptAnalysisState.initializeAnalysisStateFrom(root, cfgMap);
+	IState initialState = JavaScriptAnalysisState.initializeScriptState(root, cfgMap);
 	CFG entryPoint = cfgMap.getCfgFor(root);
 	return new JavaScriptAnalysis(entryPoint, cfgMap, initialState);
     }

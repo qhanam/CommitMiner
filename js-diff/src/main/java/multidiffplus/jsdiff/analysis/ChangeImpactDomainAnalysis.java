@@ -5,6 +5,7 @@ import java.util.regex.Matcher;
 import org.mozilla.javascript.EvaluatorException;
 import org.mozilla.javascript.ast.AstRoot;
 
+import multidiff.analysis.flow.Analysis;
 import multidiff.analysis.flow.InterleavedInterCIA;
 import multidiffplus.analysis.DomainAnalysis;
 import multidiffplus.commit.SourceCodeFileChange;
@@ -12,6 +13,7 @@ import multidiffplus.diff.Diff;
 import multidiffplus.diff.DiffContext;
 import multidiffplus.factories.ICFGFactory;
 import multidiffplus.facts.JsonFactBase;
+import multidiffplus.jsanalysis.flow.JavaScriptAnalysis;
 
 /**
  * Gathers change impact facts about one source code file.
@@ -73,11 +75,14 @@ public class ChangeImpactDomainAnalysis extends DomainAnalysis {
 	     */
 	    DiffContext diffContext = diff.getContext();
 
+	    Analysis analysis = JavaScriptAnalysis
+		    .InitializeJavaScriptAnalysis(diffContext.dstScript);
+
 	    /*
 	     * To co-ordinate interleaving, we need to setup an analysis one level higher.
 	     */
 	    InterleavedInterCIA interleavedAnalysis = new InterleavedInterCIA(sourceCodeFileChange,
-		    diffContext);
+		    analysis);
 
 	    /* Run the analysis. */
 	    interleavedAnalysis.analyze();

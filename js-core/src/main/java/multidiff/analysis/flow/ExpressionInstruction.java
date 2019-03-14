@@ -45,7 +45,7 @@ public class ExpressionInstruction extends Instruction {
     @Override
     protected IState transferStateOverInstruction(CallStack callStack) {
 	IState postTransferState, preTransferState = node.getBeforeState();
-	postTransferState = preTransferState.clone().interpretStatement(node, callStack);
+	postTransferState = preTransferState.interpretStatement(node, callStack);
 	return postTransferState;
     }
 

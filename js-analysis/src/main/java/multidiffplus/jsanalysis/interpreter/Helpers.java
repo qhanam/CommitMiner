@@ -13,7 +13,6 @@ import org.mozilla.javascript.ast.Name;
 import org.mozilla.javascript.ast.ScriptNode;
 
 import multidiff.analysis.flow.CallStack;
-import multidiff.analysis.flow.ReachableFunction;
 import multidiff.analysis.flow.StackFrame;
 import multidiffplus.cfg.CFG;
 import multidiffplus.cfg.CFGNode;
@@ -36,6 +35,7 @@ import multidiffplus.jsanalysis.abstractdomain.State;
 import multidiffplus.jsanalysis.abstractdomain.Store;
 import multidiffplus.jsanalysis.abstractdomain.Undefined;
 import multidiffplus.jsanalysis.abstractdomain.Variable;
+import multidiffplus.jsanalysis.flow.JavaScriptAsyncFunctionCall;
 import multidiffplus.jsanalysis.hoisting.FunctionLiftVisitor;
 import multidiffplus.jsanalysis.hoisting.GlobalVisitor;
 import multidiffplus.jsanalysis.hoisting.VariableLiftVisitor;
@@ -332,34 +332,6 @@ public class Helpers {
     }
 
     /**
-     * Analyze the reachable function using the given state information.
-     */
-    public static void runNextReachable(CallStack callStack) {
-	ReachableFunction reachable = callStack.removeReachableFunction();
-
-	if (reachable.functionClosure.cfg.getEntryNode().getBeforeState() == null) {
-
-	    /* Create the control domain. */
-	    Control control = Control.bottom();
-
-	    /* Create the argument object. */
-	    Scratchpad scratch = new Scratchpad(null, new BValue[0]);
-
-	    /*
-	     * Analyze the function. Use a fresh call stack because we don't have any
-	     * knowledge of it.
-	     */
-	    reachable.functionClosure.run(reachable.selfAddr, reachable.store, scratch,
-		    reachable.trace, control, callStack);
-
-	    /* Check the function object. */
-	    // TODO: We ignore this for now. We would have to assume the function is being
-	    // run as a constructor.
-
-	}
-    }
-
-    /**
      * Analyze functions which are reachable from an object property and that have
      * not already been analyzed.
      * 
@@ -406,8 +378,8 @@ public class Helpers {
 		    continue;
 
 		if (fc.cfg.getEntryNode().getBeforeState() == null) {
-		    callStack.addReachableFunction(
-			    new ReachableFunction(fc, selfAddr, state.store, state.trace));
+		    callStack.addAsync(
+			    new JavaScriptAsyncFunctionCall(fc, selfAddr, state.store, state.trace));
 		}
 	    }
 

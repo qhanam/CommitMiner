@@ -11,6 +11,7 @@ import org.mozilla.javascript.ast.ScriptNode;
 import multidiff.analysis.flow.CallStack;
 import multidiff.analysis.flow.StackFrame;
 import multidiffplus.cfg.CFG;
+import multidiffplus.jsanalysis.flow.JavaScriptAnalysisState;
 import multidiffplus.jsanalysis.initstate.StoreFactory;
 import multidiffplus.jsanalysis.interpreter.Helpers;
 import multidiffplus.jsanalysis.interpreter.StateComparator;
@@ -70,7 +71,7 @@ public class FunctionClosure extends Closure {
 	     * If newState does not change initState, we do not need to re-analyze the
 	     * function.
 	     */
-	    newState = oldState.join(primeState);
+	    newState = (State) oldState.join(primeState);
 
 	    StateComparator comparator = new StateComparator(oldState, newState);
 
@@ -91,14 +92,14 @@ public class FunctionClosure extends Closure {
 		return newState;
 
 	    } else {
-		/* We have a new initial state for the function. */
-		cfg.getEntryNode().setBeforeState(newState);
+		// We have a new initial state for the function.
 	    }
 
 	}
 
 	/* Add a new frame to the call stack so that the callee is executed next. */
-	callStack.push(new StackFrame(cfg, newState));
+	callStack.push(
+		new StackFrame(cfg, JavaScriptAnalysisState.initializeFunctionState(newState)));
 
 	return exitState;
 
@@ -185,7 +186,7 @@ public class FunctionClosure extends Closure {
 	 * function.
 	 */
 	store = Helpers.lift(env, store, (ScriptNode) cfg.getEntryNode().getStatement(),
-		callStack.getCFGs(), trace);
+		callStack.getCfgMap(), trace);
 
 	/* Add 'this' to environment (points to caller's object or new object). */
 	env = env.strongUpdate("this", Variable.inject("this", selfAddr, Change.u(),

@@ -28,7 +28,7 @@ public class BranchInstruction extends Instruction {
     @Override
     protected IState transferStateOverInstruction(CallStack callStack) {
 	IState postTransferState, preTransferState = edge.getBeforeState();
-	postTransferState = preTransferState.clone().interpretBranchCondition(edge, callStack);
+	postTransferState = preTransferState.interpretBranchCondition(edge, callStack);
 	return postTransferState;
     }
 
