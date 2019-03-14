@@ -51,4 +51,9 @@ public interface IState {
      */
     IState join(IState that);
 
+    /**
+     * Returns true if this state is equivalent to that state.
+     */
+    boolean equivalentTo(IState that);
+
 }

@@ -306,8 +306,8 @@ public class BranchConditionInterpreter {
 	/* Interpret the effect of the edge on control flow. */
 	state.control = state.control.update(edge);
 
-	/* Nothing to interpret if there is no edge. */
-	if (edge == null)
+	/* Nothing to interpret if there is no branch condition. */
+	if (edge.getCondition() == null)
 	    return;
 
 	/* Interpret the type refinements and the expression. */

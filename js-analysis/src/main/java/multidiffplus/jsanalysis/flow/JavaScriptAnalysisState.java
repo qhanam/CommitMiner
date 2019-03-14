@@ -11,6 +11,7 @@ import multidiffplus.cfg.IState;
 import multidiffplus.jsanalysis.abstractdomain.State;
 import multidiffplus.jsanalysis.initstate.StateFactory;
 import multidiffplus.jsanalysis.interpreter.BranchConditionInterpreter;
+import multidiffplus.jsanalysis.interpreter.StateComparator;
 import multidiffplus.jsanalysis.interpreter.StatementInterpreter;
 
 /**
@@ -56,6 +57,17 @@ public class JavaScriptAnalysisState implements IState {
     @Override
     public IState clone() {
 	return new JavaScriptAnalysisState(state.clone());
+    }
+
+    @Override
+    public boolean equivalentTo(IState state) {
+	JavaScriptAnalysisState that = (JavaScriptAnalysisState) state;
+	StateComparator comparator = new StateComparator(this.state, that.state);
+	return comparator.isEqual();
+    }
+
+    public State getUnderlyingState() {
+	return state;
     }
 
     /**

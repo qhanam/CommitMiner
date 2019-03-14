@@ -11,10 +11,10 @@ import org.mozilla.javascript.ast.ScriptNode;
 import multidiff.analysis.flow.CallStack;
 import multidiff.analysis.flow.StackFrame;
 import multidiffplus.cfg.CFG;
+import multidiffplus.cfg.IState;
 import multidiffplus.jsanalysis.flow.JavaScriptAnalysisState;
 import multidiffplus.jsanalysis.initstate.StoreFactory;
 import multidiffplus.jsanalysis.interpreter.Helpers;
-import multidiffplus.jsanalysis.interpreter.StateComparator;
 import multidiffplus.jsanalysis.trace.Trace;
 
 /**
@@ -41,67 +41,58 @@ public class FunctionClosure extends Closure {
     }
 
     @Override
-    public State run(Address selfAddr, Store store, Scratchpad scratchpad, Trace trace,
-	    Control control) {
-	return Helpers.getMergedExitState(cfg);
+    public JavaScriptAnalysisState run(Address selfAddr, Store store, Scratchpad scratchpad,
+	    Trace trace, Control control) {
+	// return Helpers.getMergedExitState(cfg);
+	return (JavaScriptAnalysisState) cfg.getMergedExitState();
     }
 
     @Override
-    public State run(Address selfAddr, Store store, Scratchpad scratchpad, Trace trace,
-	    Control control, CallStack callStack) {
+    public JavaScriptAnalysisState run(Address selfAddr, Store store, Scratchpad scratchpad,
+	    Trace trace, Control control, CallStack callStack) {
 
-	/* Advance the trace. */
+	// Advance the trace.
 	trace = trace.update(environment, store, selfAddr,
 		(ScriptNode) cfg.getEntryNode().getStatement());
 
-	/* Create the initial state if needed. */
-	State newState = null;
-	State oldState = (State) cfg.getEntryNode().getBeforeState();
-	State primeState = initState(selfAddr, store, scratchpad, trace, control, callStack);
-	State exitState = null;
+	// Create the initial state if needed.
+	IState newState = null;
+	IState oldState = cfg.getEntryNode().getBeforeState();
+	IState primeState = JavaScriptAnalysisState.initializeFunctionState(
+		initState(selfAddr, store, scratchpad, trace, control, callStack));
+	IState exitState = null;
 
 	if (oldState == null) {
-	    /*
-	     * Create the initial state for the function call by lifting local vars and
-	     * functions into the environment.
-	     */
+	    // Create the initial state for the function call by lifting local vars and
+	    // functions into the environment.
 	    newState = primeState;
-	} else {
-	    /*
-	     * If newState does not change initState, we do not need to re-analyze the
-	     * function.
-	     */
-	    newState = (State) oldState.join(primeState);
-
-	    StateComparator comparator = new StateComparator(oldState, newState);
-
-	    if (comparator.isEqual()) {
-
-		exitState = Helpers.getMergedExitState(cfg);
-
-		if (exitState != null) {
-		    /*
-		     * Finally, merge the store from the exit state with the store from the entry
-		     * state.
-		     */
-		    exitState.store = exitState.store.join(store);
-		    return exitState;
-		}
-
-		/* We must be in a recursive loop. Don't update the state. */
-		return newState;
-
-	    } else {
-		// We have a new initial state for the function.
-	    }
-
+	    // Add a new frame to the call stack so that the callee is executed next.
+	    callStack.push(new StackFrame(cfg, newState));
+	    // We do not have an exit state, because we must first evaluate the new call.
+	    return null;
 	}
 
-	/* Add a new frame to the call stack so that the callee is executed next. */
-	callStack.push(
-		new StackFrame(cfg, JavaScriptAnalysisState.initializeFunctionState(newState)));
+	newState = oldState.join(primeState);
 
-	return exitState;
+	if (!oldState.equivalentTo(newState)) {
+	    // We have a new initial state for the function. Add a new frame to the call
+	    // stack so that
+	    // the callee is analyzed next.
+	    callStack.push(new StackFrame(cfg, newState));
+	    // We do not have an exit state, because we must first evaluate the new call.
+	    return null;
+	}
+
+	// The initial state of the function has not changed, do we don't
+	// need to re-analyze the function.
+	exitState = cfg.getMergedExitState();
+
+	if (exitState == null) {
+	    // We are in a recursive loop. Don't update the state.
+	    return (JavaScriptAnalysisState) newState;
+	}
+
+	return (JavaScriptAnalysisState) exitState;
 
     }
 

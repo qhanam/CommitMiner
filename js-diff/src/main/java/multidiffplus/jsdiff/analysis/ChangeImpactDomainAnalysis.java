@@ -82,7 +82,7 @@ public class ChangeImpactDomainAnalysis extends DomainAnalysis {
 	     * To co-ordinate interleaving, we need to setup an analysis one level higher.
 	     */
 	    InterleavedInterCIA interleavedAnalysis = new InterleavedInterCIA(sourceCodeFileChange,
-		    analysis);
+		    diffContext, analysis);
 
 	    /* Run the analysis. */
 	    interleavedAnalysis.analyze();

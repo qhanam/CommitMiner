@@ -14,8 +14,10 @@ public class InterleavedInterCIA {
     DiffContext diffContext;
     Analysis dstAnalysis;
 
-    public InterleavedInterCIA(SourceCodeFileChange sourceCodeFileChange, Analysis dstAnalysis) {
+    public InterleavedInterCIA(SourceCodeFileChange sourceCodeFileChange, DiffContext diffContext,
+	    Analysis dstAnalysis) {
 	this.sourceCodeFileChange = sourceCodeFileChange;
+	this.diffContext = diffContext;
 	this.dstAnalysis = dstAnalysis;
     }
 

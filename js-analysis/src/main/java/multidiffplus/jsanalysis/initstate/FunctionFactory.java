@@ -25,6 +25,7 @@ import multidiffplus.jsanalysis.abstractdomain.Scratchpad;
 import multidiffplus.jsanalysis.abstractdomain.State;
 import multidiffplus.jsanalysis.abstractdomain.Store;
 import multidiffplus.jsanalysis.abstractdomain.Str;
+import multidiffplus.jsanalysis.flow.JavaScriptAnalysisState;
 import multidiffplus.jsanalysis.trace.Trace;
 
 /**
@@ -85,16 +86,18 @@ public class FunctionFactory {
 
 	Closure closure = new NativeClosure() {
 	    @Override
-	    public State run(Address selfAddr, Store store, Scratchpad scratchpad, Trace trace,
-		    Control control, CallStack callStack) {
+	    public JavaScriptAnalysisState run(Address selfAddr, Store store, Scratchpad scratchpad,
+		    Trace trace, Control control, CallStack callStack) {
 		scratchpad.strongUpdate(retVal, null);
-		return new State(store, new Environment(), scratchpad, trace, control, selfAddr);
+		return (JavaScriptAnalysisState) JavaScriptAnalysisState.initializeFunctionState(
+			new State(store, new Environment(), scratchpad, trace, control, selfAddr));
 	    }
 
 	    @Override
-	    public State run(Address selfAddr, Store store, Scratchpad scratchpad, Trace trace,
-		    Control control) {
-		return new State(store, null, scratchpad, trace, control, selfAddr);
+	    public JavaScriptAnalysisState run(Address selfAddr, Store store, Scratchpad scratchpad,
+		    Trace trace, Control control) {
+		return (JavaScriptAnalysisState) JavaScriptAnalysisState.initializeFunctionState(
+			new State(store, new Environment(), scratchpad, trace, control, selfAddr));
 	    }
 	};
 

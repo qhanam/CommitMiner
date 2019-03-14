@@ -1,6 +1,7 @@
 package multidiffplus.jsanalysis.abstractdomain;
 
 import multidiff.analysis.flow.CallStack;
+import multidiffplus.jsanalysis.flow.JavaScriptAnalysisState;
 import multidiffplus.jsanalysis.trace.Trace;
 
 /**
@@ -13,8 +14,8 @@ public abstract class Closure {
      * Returns the end state of the function. This should be used only after the
      * analysis has completed.
      */
-    public abstract State run(Address selfAddr, Store store, Scratchpad scratchpad, Trace trace,
-	    Control control);
+    public abstract JavaScriptAnalysisState run(Address selfAddr, Store store,
+	    Scratchpad scratchpad, Trace trace, Control control);
 
     /**
      * @param selfAddr
@@ -33,8 +34,8 @@ public abstract class Closure {
      *            The top level analysis for pushing new calls.
      * @return The new state after executing the function.
      */
-    public abstract State run(Address selfAddr, Store store, Scratchpad scratchpad, Trace trace,
-	    Control control, CallStack callStack);
+    public abstract JavaScriptAnalysisState run(Address selfAddr, Store store,
+	    Scratchpad scratchpad, Trace trace, Control control, CallStack callStack);
 
     /**
      * Compare states to determine if the closure needs to be re-analyzed.

@@ -22,6 +22,7 @@ import multidiffplus.jsanalysis.abstractdomain.Property;
 import multidiffplus.jsanalysis.abstractdomain.Scratchpad;
 import multidiffplus.jsanalysis.abstractdomain.State;
 import multidiffplus.jsanalysis.abstractdomain.Store;
+import multidiffplus.jsanalysis.flow.JavaScriptAnalysisState;
 import multidiffplus.jsanalysis.trace.Trace;
 
 /**
@@ -48,15 +49,17 @@ public class ArgumentsFactory {
 
 	NativeClosure closure = new NativeClosure() {
 	    @Override
-	    public State run(Address selfAddr, Store store, Scratchpad scratchpad, Trace trace,
-		    Control control, CallStack callStack) {
-		return new State(store, null, scratchpad, trace, control, selfAddr);
+	    public JavaScriptAnalysisState run(Address selfAddr, Store store, Scratchpad scratchpad,
+		    Trace trace, Control control, CallStack callStack) {
+		return (JavaScriptAnalysisState) JavaScriptAnalysisState.initializeFunctionState(
+			new State(store, null, scratchpad, trace, control, selfAddr));
 	    }
 
 	    @Override
-	    public State run(Address selfAddr, Store store, Scratchpad scratchpad, Trace trace,
-		    Control control) {
-		return new State(store, null, scratchpad, trace, control, selfAddr);
+	    public JavaScriptAnalysisState run(Address selfAddr, Store store, Scratchpad scratchpad,
+		    Trace trace, Control control) {
+		return (JavaScriptAnalysisState) JavaScriptAnalysisState.initializeFunctionState(
+			new State(store, null, scratchpad, trace, control, selfAddr));
 	    }
 	};
 

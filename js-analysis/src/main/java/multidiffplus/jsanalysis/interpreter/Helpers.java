@@ -14,8 +14,6 @@ import org.mozilla.javascript.ast.ScriptNode;
 
 import multidiff.analysis.flow.CallStack;
 import multidiff.analysis.flow.StackFrame;
-import multidiffplus.cfg.CFG;
-import multidiffplus.cfg.CFGNode;
 import multidiffplus.cfg.CfgMap;
 import multidiffplus.jsanalysis.abstractdomain.Address;
 import multidiffplus.jsanalysis.abstractdomain.BValue;
@@ -35,6 +33,7 @@ import multidiffplus.jsanalysis.abstractdomain.State;
 import multidiffplus.jsanalysis.abstractdomain.Store;
 import multidiffplus.jsanalysis.abstractdomain.Undefined;
 import multidiffplus.jsanalysis.abstractdomain.Variable;
+import multidiffplus.jsanalysis.flow.JavaScriptAnalysisState;
 import multidiffplus.jsanalysis.flow.JavaScriptAsyncFunctionCall;
 import multidiffplus.jsanalysis.hoisting.FunctionLiftVisitor;
 import multidiffplus.jsanalysis.hoisting.GlobalVisitor;
@@ -118,7 +117,7 @@ public class Helpers {
 	    InternalFunctionProperties ifp = (InternalFunctionProperties) functObj.internalProperties;
 
 	    /* Run the function. */
-	    State endState = callStack == null
+	    JavaScriptAnalysisState endState = callStack == null
 		    ? ifp.closure.run(selfAddr, store, sp, trace, control)
 		    : ifp.closure.run(selfAddr, store, sp, trace, control, callStack);
 
@@ -127,13 +126,13 @@ public class Helpers {
 		continue;
 	    if (state == null)
 		// This is the first function to be resolved.
-		state = endState;
+		state = endState.getUnderlyingState();
 	    else {
 		// This is not the first function to be resolved. For example,
 		// callback parameters frequently point to more than one
 		// function definition. In this case, we must join states.
-		state.store = state.store.join(endState.store);
-		state.scratch = state.scratch.join(endState.scratch);
+		state.store = state.store.join(endState.getUnderlyingState().store);
+		state.scratch = state.scratch.join(endState.getUnderlyingState().scratch);
 	    }
 
 	}
@@ -217,22 +216,6 @@ public class Helpers {
     }
 
     /**
-     * Merges the exit states of a function into one single state.
-     * 
-     * @return The merged exit states of the function.
-     */
-    public static State getMergedExitState(CFG cfg) {
-	State exitState = null;
-	for (CFGNode exitNode : cfg.getExitNodes()) {
-	    if (exitState == null)
-		exitState = (State) exitNode.getBeforeState();
-	    else
-		exitState = exitState.join((State) exitNode.getBeforeState());
-	}
-	return exitState;
-    }
-
-    /**
      * Finds functions which are reachable from the current scope and have not yet
      * been analyzed and adds them to a set to be analyzed later.
      */
@@ -280,7 +263,8 @@ public class Helpers {
 	    return;
 
 	/* Analyze reachable functions. */
-	State exitState = Helpers.getMergedExitState(stackFrame.getCFG());
+	State exitState = ((JavaScriptAnalysisState) stackFrame.getCFG().getMergedExitState())
+		.getUnderlyingState();
 	Helpers.analyzeEnvReachable(exitState, exitState.env.environment, exitState.selfAddr,
 		new HashSet<Address>(), localVars, callStack);
     }
@@ -378,8 +362,8 @@ public class Helpers {
 		    continue;
 
 		if (fc.cfg.getEntryNode().getBeforeState() == null) {
-		    callStack.addAsync(
-			    new JavaScriptAsyncFunctionCall(fc, selfAddr, state.store, state.trace));
+		    callStack.addAsync(new JavaScriptAsyncFunctionCall(fc, selfAddr, state.store,
+			    state.trace));
 		}
 	    }
 

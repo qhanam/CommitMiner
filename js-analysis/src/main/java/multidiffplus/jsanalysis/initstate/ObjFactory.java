@@ -22,9 +22,9 @@ import multidiffplus.jsanalysis.abstractdomain.Num;
 import multidiffplus.jsanalysis.abstractdomain.Obj;
 import multidiffplus.jsanalysis.abstractdomain.Property;
 import multidiffplus.jsanalysis.abstractdomain.Scratchpad;
-import multidiffplus.jsanalysis.abstractdomain.State;
 import multidiffplus.jsanalysis.abstractdomain.Store;
 import multidiffplus.jsanalysis.abstractdomain.Str;
+import multidiffplus.jsanalysis.flow.JavaScriptAnalysisState;
 import multidiffplus.jsanalysis.trace.Trace;
 
 /**
@@ -92,15 +92,15 @@ public class ObjFactory {
 
 	NativeClosure closure = new NativeClosure() {
 	    @Override
-	    public State run(Address selfAddr, Store store, Scratchpad scratchpad, Trace trace,
-		    Control control, CallStack callStack) {
+	    public JavaScriptAnalysisState run(Address selfAddr, Store store, Scratchpad scratchpad,
+		    Trace trace, Control control, CallStack callStack) {
 		// TODO: Update the state
 		return null;
 	    }
 
 	    @Override
-	    public State run(Address selfAddr, Store store, Scratchpad scratchpad, Trace trace,
-		    Control control) {
+	    public JavaScriptAnalysisState run(Address selfAddr, Store store, Scratchpad scratchpad,
+		    Trace trace, Control control) {
 		// TODO: Update the state
 		return null;
 	    }
