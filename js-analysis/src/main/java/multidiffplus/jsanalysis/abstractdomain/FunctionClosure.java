@@ -51,6 +51,11 @@ public class FunctionClosure extends Closure {
     public JavaScriptAnalysisState run(Address selfAddr, Store store, Scratchpad scratchpad,
 	    Trace trace, Control control, CallStack callStack) {
 
+	// Store any callsite dependencies.
+	control.getCall().change.getDependencies().getDependencies()
+		.forEach(criterion -> ((AstNode) cfg.getEntryNode().getStatement())
+			.addDependency(criterion.getType().toString(), criterion.getId()));
+
 	// Advance the trace.
 	trace = trace.update(environment, store, selfAddr,
 		(ScriptNode) cfg.getEntryNode().getStatement());
