@@ -1,4 +1,4 @@
-package multidiffplus.jsanalysis.cfg;
+package multidiffplus.jsanalysis.flow;
 
 import java.util.ArrayList;
 
@@ -9,16 +9,16 @@ import org.mozilla.javascript.ast.NodeVisitor;
 /**
  * Generates a list of all the functions in an AST.
  */
-public class FunctionNodeVisitor implements NodeVisitor {
+public class FunctionVisitor implements NodeVisitor {
 
     ArrayList<FunctionNode> functionNodes;
 
-    public FunctionNodeVisitor() {
+    public FunctionVisitor() {
 	this.functionNodes = new ArrayList<FunctionNode>();
     }
 
     public static ArrayList<FunctionNode> getFunctions(AstNode node) {
-	FunctionNodeVisitor visitor = new FunctionNodeVisitor();
+	FunctionVisitor visitor = new FunctionVisitor();
 	node.visit(visitor);
 	return visitor.functionNodes;
     }

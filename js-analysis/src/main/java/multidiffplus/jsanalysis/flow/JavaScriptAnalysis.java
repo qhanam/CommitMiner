@@ -8,7 +8,6 @@ import multidiffplus.cfg.CFG;
 import multidiffplus.cfg.CfgMap;
 import multidiffplus.cfg.IState;
 import multidiffplus.facts.AnnotationFactBase;
-import multidiffplus.jsanalysis.annotate.DependencyASTVisitor;
 import multidiffplus.jsanalysis.interpreter.Helpers;
 
 public class JavaScriptAnalysis extends Analysis {
@@ -24,7 +23,7 @@ public class JavaScriptAnalysis extends Analysis {
 
     @Override
     public void registerAnnotations(ClassifiedASTNode root, AnnotationFactBase annotationFactBase) {
-	DependencyASTVisitor.registerAnnotations((AstRoot) root, annotationFactBase);
+	AnnotationVisitor.registerAnnotations((AstRoot) root, annotationFactBase);
     }
 
     public static JavaScriptAnalysis InitializeJavaScriptAnalysis(ClassifiedASTNode root) {

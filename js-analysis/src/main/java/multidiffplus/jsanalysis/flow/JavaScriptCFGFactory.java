@@ -49,7 +49,6 @@ import multidiffplus.cfg.CfgMap;
 import multidiffplus.cfg.IState;
 import multidiffplus.cfg.IdGen;
 import multidiffplus.factories.ICFGFactory;
-import multidiffplus.jsanalysis.cfg.FunctionNodeVisitor;
 
 /**
  * A CFG factory for JavaScript NOTE: This class only works with the Mozilla
@@ -122,7 +121,7 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	    cfgMap.addCfg(script, buildScriptCFG(script, idgen));
 
 	    /* Get the list of functions in the script. */
-	    for (FunctionNode function : FunctionNodeVisitor.getFunctions(script)) {
+	    for (FunctionNode function : FunctionVisitor.getFunctions(script)) {
 		unbuilt.add(function);
 	    }
 
@@ -328,7 +327,7 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	     */
 	    ParenthesizedExpression pe = new ParenthesizedExpression();
 	    pe.setExpression(ifStatement.getCondition().clone(pe));
-	    for (FunctionNode function : FunctionNodeVisitor.getFunctions(pe)) {
+	    for (FunctionNode function : FunctionVisitor.getFunctions(pe)) {
 		unbuilt.add(function);
 	    }
 	    AstNode falseBranchCondition = new UnaryExpression(Token.NOT, 0, pe);
