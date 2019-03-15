@@ -2,9 +2,10 @@ package multidiff.analysis.flow;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
-import java.util.Stack;
 
 import multidiffplus.cfg.CFG;
 import multidiffplus.cfg.CFGNode;
@@ -38,13 +39,13 @@ public class StackFrame {
     /**
      * Stack of instructions to traverse.
      */
-    private Stack<Instruction> kontinuation;
+    private Queue<Instruction> kontinuation;
 
     public StackFrame(CFG cfg, IState initialState) {
 
 	// Initialize member vars.
 	this.cfg = cfg;
-	this.kontinuation = new Stack<Instruction>();
+	this.kontinuation = new LinkedList<Instruction>();
 	this.visitedEdges = new HashSet<Integer>();
 	this.visitedNodes = new HashMap<Integer, ExpressionInstruction>();
 
@@ -108,7 +109,7 @@ public class StackFrame {
      * Pushes the instruction onto the stack frame.
      */
     public void pushInstruction(Instruction instruction) {
-	kontinuation.push(instruction);
+	kontinuation.add(instruction);
     }
 
     /**
@@ -122,7 +123,7 @@ public class StackFrame {
      * @return The next instruction in the stack frame.
      */
     public Instruction popInstruction() {
-	return kontinuation.pop();
+	return kontinuation.poll();
     }
 
     /**

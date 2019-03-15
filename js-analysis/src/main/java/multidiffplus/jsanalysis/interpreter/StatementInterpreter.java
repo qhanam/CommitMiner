@@ -37,6 +37,13 @@ public class StatementInterpreter {
      */
     private void interpret(AstNode node) {
 
+	// Add control dependencies.
+	state.control.getCondition().conditions.forEach(condition -> {
+	    condition.getChange().getDependencies().getDependencies().forEach(criterion -> {
+		node.addDependency(criterion.getType().toString(), criterion.getId());
+	    });
+	});
+
 	switch (node.getType()) {
 	case Token.EMPTY:
 	    break;
