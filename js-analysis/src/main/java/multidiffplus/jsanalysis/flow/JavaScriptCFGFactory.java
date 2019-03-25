@@ -1,5 +1,6 @@
 package multidiffplus.jsanalysis.flow;
 
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -57,9 +58,10 @@ import multidiffplus.factories.ICFGFactory;
 public class JavaScriptCFGFactory implements ICFGFactory {
 
     @Override
-    public Analysis createAnalysis(ClassifiedASTNode root) {
+    public Analysis createAnalysis(ClassifiedASTNode root, IState[] userStates) {
 	CfgMap cfgMap = createCFGs(root);
-	IState initialState = JavaScriptAnalysisState.initializeScriptState(root, cfgMap);
+	IState initialState = JavaScriptAnalysisState.initializeScriptState(root, cfgMap,
+		userStates);
 	CFG entryPoint = cfgMap.getCfgFor(root);
 	return new JavaScriptAnalysis(entryPoint, cfgMap, initialState);
     }
@@ -153,9 +155,10 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	     * exit point for a script and function.
 	     */
 
-	    CFGNode scriptEntry = new CFGNode(scriptNode, name + "_ENTRY", idgen.getUniqueID());
-	    CFGNode scriptExit = new CFGNode(new EmptyStatement(), name + "_EXIT",
+	    CFGNode scriptEntry = new CFGNode(scriptNode, Collections.emptyList(), name + "_ENTRY",
 		    idgen.getUniqueID());
+	    CFGNode scriptExit = new CFGNode(new EmptyStatement(), Collections.emptyList(),
+		    name + "_EXIT", idgen.getUniqueID());
 
 	    /* Build the CFG for the script. */
 	    CFG cfg = new CFG(scriptEntry);
@@ -165,7 +168,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	    CFG subGraph = build(scriptNode, idgen);
 
 	    if (subGraph == null) {
-		CFGNode empty = new CFGNode(new EmptyStatement(), idgen.getUniqueID());
+		CFGNode empty = new CFGNode(new EmptyStatement(), Collections.emptyList(),
+			idgen.getUniqueID());
 		subGraph = new CFG(empty);
 		subGraph.addExitNode(empty);
 	    }
@@ -288,7 +292,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	 */
 	private CFG build(IfStatement ifStatement, IdGen idgen) {
 
-	    CFGNode ifNode = new CFGNode(new EmptyStatement(), "IF", idgen.getUniqueID());
+	    CFGNode ifNode = new CFGNode(new EmptyStatement(), Collections.emptyList(), "IF",
+		    idgen.getUniqueID());
 	    CFG cfg = new CFG(ifNode);
 
 	    /* Build the true branch. */
@@ -296,7 +301,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	    CFG trueBranch = buildSwitch(ifStatement.getThenPart(), idgen);
 
 	    if (trueBranch == null) {
-		CFGNode empty = new CFGNode(new EmptyStatement(), idgen.getUniqueID());
+		CFGNode empty = new CFGNode(new EmptyStatement(), Collections.emptyList(),
+			idgen.getUniqueID());
 		trueBranch = new CFG(empty);
 		trueBranch.addExitNode(empty);
 	    }
@@ -316,7 +322,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	    CFG falseBranch = buildSwitch(ifStatement.getElsePart(), idgen);
 
 	    if (falseBranch == null) {
-		CFGNode empty = new CFGNode(new EmptyStatement(), idgen.getUniqueID());
+		CFGNode empty = new CFGNode(new EmptyStatement(), Collections.emptyList(),
+			idgen.getUniqueID());
 		falseBranch = new CFG(empty);
 		falseBranch.addExitNode(empty);
 	    }
@@ -356,7 +363,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	 */
 	private CFG build(WhileLoop whileLoop, IdGen idgen) {
 
-	    CFGNode whileNode = new CFGNode(new EmptyStatement(), "WHILE", idgen.getUniqueID());
+	    CFGNode whileNode = new CFGNode(new EmptyStatement(), Collections.emptyList(), "WHILE",
+		    idgen.getUniqueID());
 	    CFG cfg = new CFG(whileNode);
 
 	    /* Build the true branch. */
@@ -364,7 +372,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	    CFG trueBranch = buildSwitch(whileLoop.getBody(), idgen);
 
 	    if (trueBranch == null) {
-		CFGNode empty = new CFGNode(new EmptyStatement(), idgen.getUniqueID());
+		CFGNode empty = new CFGNode(new EmptyStatement(), Collections.emptyList(),
+			idgen.getUniqueID());
 		trueBranch = new CFG(empty);
 		trueBranch.addExitNode(empty);
 	    }
@@ -401,7 +410,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	    falseBranchCondition.setChangeType(whileLoop.getCondition().getChangeType());
 	    falseBranchCondition.setParent(whileLoop);
 
-	    CFGNode empty = new CFGNode(new EmptyStatement(), idgen.getUniqueID());
+	    CFGNode empty = new CFGNode(new EmptyStatement(), Collections.emptyList(),
+		    idgen.getUniqueID());
 	    whileNode.addOutgoingEdge(
 		    new CFGEdge(falseBranchCondition, whileNode, empty, idgen.getUniqueID()));
 	    cfg.addExitNode(empty);
@@ -418,8 +428,10 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	 */
 	private CFG build(DoLoop doLoop, IdGen idgen) {
 
-	    CFGNode doNode = new CFGNode(new EmptyStatement(), "DO", idgen.getUniqueID());
-	    CFGNode whileNode = new CFGNode(new EmptyStatement(), "WHILE", idgen.getUniqueID());
+	    CFGNode doNode = new CFGNode(new EmptyStatement(), Collections.emptyList(), "DO",
+		    idgen.getUniqueID());
+	    CFGNode whileNode = new CFGNode(new EmptyStatement(), Collections.emptyList(), "WHILE",
+		    idgen.getUniqueID());
 	    CFG cfg = new CFG(doNode);
 
 	    /* Build the loop branch. */
@@ -427,7 +439,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	    CFG loopBranch = buildSwitch(doLoop.getBody(), idgen);
 
 	    if (loopBranch == null) {
-		CFGNode empty = new CFGNode(new EmptyStatement(), idgen.getUniqueID());
+		CFGNode empty = new CFGNode(new EmptyStatement(), Collections.emptyList(),
+			idgen.getUniqueID());
 		loopBranch = new CFG(empty);
 		loopBranch.addExitNode(empty);
 	    }
@@ -467,7 +480,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	    falseBranchCondition.setChangeType(doLoop.getCondition().getChangeType());
 	    falseBranchCondition.setParent(doLoop);
 
-	    CFGNode empty = new CFGNode(new EmptyStatement(), idgen.getUniqueID());
+	    CFGNode empty = new CFGNode(new EmptyStatement(), Collections.emptyList(),
+		    idgen.getUniqueID());
 	    whileNode.addOutgoingEdge(falseBranchCondition, empty, idgen.getUniqueID());
 	    cfg.addExitNode(empty);
 
@@ -484,17 +498,20 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	 */
 	private CFG build(ForLoop forLoop, IdGen idgen) {
 
-	    CFGNode forNode = new CFGNode(forLoop.getInitializer(), idgen.getUniqueID());
+	    CFGNode forNode = new CFGNode(forLoop.getInitializer(),
+		    CallSiteVisitor.getCallSites(forLoop.getInitializer()), idgen.getUniqueID());
 	    CFG cfg = new CFG(forNode);
 
 	    /* After variables are declared, add an empty node with two edges. */
-	    CFGNode condition = new CFGNode(new EmptyStatement(), "FOR", idgen.getUniqueID());
+	    CFGNode condition = new CFGNode(new EmptyStatement(), Collections.emptyList(), "FOR",
+		    idgen.getUniqueID());
 	    forNode.addOutgoingEdge(null, condition, idgen.getUniqueID());
 
 	    /*
 	     * After the body of the loop executes, add the node to perform the increment.
 	     */
-	    CFGNode increment = new CFGNode(forLoop.getIncrement(), idgen.getUniqueID());
+	    CFGNode increment = new CFGNode(forLoop.getIncrement(),
+		    CallSiteVisitor.getCallSites(forLoop.getIncrement()), idgen.getUniqueID());
 	    increment.addOutgoingEdge(null, condition, idgen.getUniqueID());
 
 	    /* Build the true branch. */
@@ -502,7 +519,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	    CFG trueBranch = buildSwitch(forLoop.getBody(), idgen);
 
 	    if (trueBranch == null) {
-		CFGNode empty = new CFGNode(new EmptyStatement(), idgen.getUniqueID());
+		CFGNode empty = new CFGNode(new EmptyStatement(), Collections.emptyList(),
+			idgen.getUniqueID());
 		trueBranch = new CFG(empty);
 		trueBranch.addExitNode(empty);
 	    }
@@ -539,7 +557,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	    falseBranchCondition.setChangeType(forLoop.getCondition().getChangeType());
 	    falseBranchCondition.setParent(forLoop);
 
-	    CFGNode empty = new CFGNode(new EmptyStatement(), idgen.getUniqueID());
+	    CFGNode empty = new CFGNode(new EmptyStatement(), Collections.emptyList(),
+		    idgen.getUniqueID());
 	    condition.addOutgoingEdge(falseBranchCondition, empty, idgen.getUniqueID());
 	    cfg.addExitNode(empty);
 
@@ -570,7 +589,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 
 	    /* Start with the variable declaration. */
 	    AstNode iterator = forInLoop.getIterator();
-	    CFGNode forInNode = new CFGNode(iterator, idgen.getUniqueID());
+	    CFGNode forInNode = new CFGNode(iterator, CallSiteVisitor.getCallSites(iterator),
+		    idgen.getUniqueID());
 	    CFG cfg = new CFG(forInNode);
 
 	    /* Get the variable being assigned. */
@@ -604,7 +624,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	    targetAssignment.setChangeType(target.getChangeType());
 	    targetAssignment.setVersion(forInLoop.getVersion());
 
-	    CFGNode assignment = new CFGNode(targetAssignment, idgen.getUniqueID());
+	    CFGNode assignment = new CFGNode(targetAssignment,
+		    CallSiteVisitor.getCallSites(targetAssignment), idgen.getUniqueID());
 
 	    /*
 	     * Create the the condition that checks if an object still has keys. The
@@ -622,7 +643,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	    keyConditionFunction.setVersion(forInLoop.getVersion());
 	    keyConditionFunction.setParent(forInLoop);
 
-	    CFGNode condition = new CFGNode(new EmptyStatement(), "FORIN", idgen.getUniqueID());
+	    CFGNode condition = new CFGNode(new EmptyStatement(), Collections.emptyList(), "FORIN",
+		    idgen.getUniqueID());
 
 	    /*
 	     * Add the edges connecting the entry point to the assignment and assignment to
@@ -637,7 +659,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	    CFG trueBranch = buildSwitch(forInLoop.getBody(), idgen);
 
 	    if (trueBranch == null) {
-		CFGNode empty = new CFGNode(new EmptyStatement(), idgen.getUniqueID());
+		CFGNode empty = new CFGNode(new EmptyStatement(), Collections.emptyList(),
+			idgen.getUniqueID());
 		trueBranch = new CFG(empty);
 		trueBranch.addExitNode(empty);
 	    }
@@ -660,7 +683,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	    }
 
 	    /* Create a node for the false branch to exit the loop. */
-	    CFGNode falseBranch = new CFGNode(new EmptyStatement(), idgen.getUniqueID());
+	    CFGNode falseBranch = new CFGNode(new EmptyStatement(), Collections.emptyList(),
+		    idgen.getUniqueID());
 	    cfg.addExitNode(falseBranch);
 
 	    /*
@@ -694,7 +718,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	 */
 	private CFG build(SwitchStatement switchStatement, IdGen idgen) {
 
-	    CFGNode switchNode = new CFGNode(new EmptyStatement(), "SWITCH", idgen.getUniqueID());
+	    CFGNode switchNode = new CFGNode(new EmptyStatement(), Collections.emptyList(),
+		    "SWITCH", idgen.getUniqueID());
 	    CFG cfg = new CFG(switchNode);
 
 	    /* Keep track of the default edge so we can update the condition later. */
@@ -718,7 +743,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 		 * the entry and exit node.
 		 */
 		if (subGraph == null) {
-		    CFGNode empty = new CFGNode(new EmptyStatement(), idgen.getUniqueID());
+		    CFGNode empty = new CFGNode(new EmptyStatement(), Collections.emptyList(),
+			    idgen.getUniqueID());
 		    subGraph = new CFG(empty);
 		    subGraph.addExitNode(empty);
 		}
@@ -783,10 +809,10 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 
 	    /* Setup the default path if wasn't explicitly given in the switch statement. */
 	    if (defaultEdge == null) {
-		CFGNode defaultPath = new CFGNode(new EmptyStatement(), idgen.getUniqueID());
-		defaultEdge = new CFGEdge(null, switchNode,
-			new CFGNode(new EmptyStatement(), idgen.getUniqueID()),
+		CFGNode defaultPath = new CFGNode(new EmptyStatement(), Collections.emptyList(),
 			idgen.getUniqueID());
+		defaultEdge = new CFGEdge(null, switchNode, new CFGNode(new EmptyStatement(),
+			Collections.emptyList(), idgen.getUniqueID()), idgen.getUniqueID());
 		cfg.addExitNode(defaultPath);
 	    }
 
@@ -836,8 +862,11 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	    destroyScopeFunction.setTarget(new Name(0, "~destroySceop"));
 	    destroyScopeFunction.addArgument(withStatement.getExpression());
 
-	    CFGNode withNode = new CFGNode(createScopeFunction, "BEGIN_SCOPE", idgen.getUniqueID());
-	    CFGNode endWithNode = new CFGNode(destroyScopeFunction, "END_SCOPE",
+	    CFGNode withNode = new CFGNode(createScopeFunction,
+		    Collections.singletonList(createScopeFunction), "BEGIN_SCOPE",
+		    idgen.getUniqueID());
+	    CFGNode endWithNode = new CFGNode(destroyScopeFunction,
+		    Collections.singletonList(destroyScopeFunction), "END_SCOPE",
 		    idgen.getUniqueID());
 
 	    CFG cfg = new CFG(withNode);
@@ -846,7 +875,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	    CFG scopeBlock = buildSwitch(withStatement.getStatement(), idgen);
 
 	    if (scopeBlock == null) {
-		CFGNode empty = new CFGNode(new EmptyStatement(), idgen.getUniqueID());
+		CFGNode empty = new CFGNode(new EmptyStatement(), Collections.emptyList(),
+			idgen.getUniqueID());
 		scopeBlock = new CFG(empty);
 		scopeBlock.addExitNode(empty);
 	    }
@@ -880,11 +910,13 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	 */
 	private CFG build(TryStatement tryStatement, IdGen idgen) {
 
-	    CFGNode tryNode = new CFGNode(new EmptyStatement(), "TRY", idgen.getUniqueID());
+	    CFGNode tryNode = new CFGNode(new EmptyStatement(), Collections.emptyList(), "TRY",
+		    idgen.getUniqueID());
 	    CFG cfg = new CFG(tryNode);
 
 	    /* To make life easier, add a node that represents the exit of the try. */
-	    CFGNode exit = new CFGNode(new EmptyStatement(), idgen.getUniqueID());
+	    CFGNode exit = new CFGNode(new EmptyStatement(), Collections.emptyList(),
+		    idgen.getUniqueID());
 	    cfg.addExitNode(exit);
 
 	    /* Set up the finally block. */
@@ -892,7 +924,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	    CFG finallyBlock = buildSwitch(tryStatement.getFinallyBlock(), idgen);
 
 	    if (finallyBlock == null) {
-		CFGNode empty = new CFGNode(new EmptyStatement(), idgen.getUniqueID());
+		CFGNode empty = new CFGNode(new EmptyStatement(), Collections.emptyList(),
+			idgen.getUniqueID());
 		finallyBlock = new CFG(empty);
 		finallyBlock.addExitNode(empty);
 	    } else {
@@ -912,7 +945,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	    CFG tryBlock = buildSwitch(tryStatement.getTryBlock(), idgen);
 
 	    if (tryBlock == null) {
-		CFGNode empty = new CFGNode(new EmptyStatement(), idgen.getUniqueID());
+		CFGNode empty = new CFGNode(new EmptyStatement(), Collections.emptyList(),
+			idgen.getUniqueID());
 		tryBlock = new CFG(empty);
 		tryBlock.addExitNode(finallyBlock.getEntryNode());
 	    } else {
@@ -920,7 +954,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 		 * Create empty exit nodes so there is an edge from each exit node in the
 		 * finally block for the catch block.
 		 */
-		CFGNode empty = new CFGNode(new EmptyStatement(), idgen.getUniqueID());
+		CFGNode empty = new CFGNode(new EmptyStatement(), Collections.emptyList(),
+			idgen.getUniqueID());
 		cfg.addExitNode(empty);
 
 		for (CFGNode exitNode : finallyBlock.getExitNodes()) {
@@ -980,7 +1015,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 		}
 
 		if (catchBlock == null) {
-		    CFGNode empty = new CFGNode(new EmptyStatement(), idgen.getUniqueID());
+		    CFGNode empty = new CFGNode(new EmptyStatement(), Collections.emptyList(),
+			    idgen.getUniqueID());
 		    catchBlock = new CFG(empty);
 		    catchBlock.addExitNode(empty);
 		} else {
@@ -989,7 +1025,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 		     * Create empty exit nodes so there is an edge from each exit node in the
 		     * finally block for each clause.
 		     */
-		    CFGNode empty = new CFGNode(new EmptyStatement(), idgen.getUniqueID());
+		    CFGNode empty = new CFGNode(new EmptyStatement(), Collections.emptyList(),
+			    idgen.getUniqueID());
 		    cfg.addExitNode(empty);
 
 		    for (CFGNode exitNode : finallyBlock.getExitNodes()) {
@@ -1060,7 +1097,7 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 		}
 
 		/* Change the original jump node to do nothing. */
-		jumpNode.setStatement(new EmptyStatement());
+		jumpNode.setStatement(new EmptyStatement(), Collections.emptyList());
 
 		/* Remove any previous edges from the jump node. */
 		jumpNode.getOutgoingEdges().clear();
@@ -1087,7 +1124,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	 */
 	private CFG build(BreakStatement breakStatement, IdGen idgen) {
 
-	    CFGNode breakNode = new CFGNode(breakStatement, idgen.getUniqueID());
+	    CFGNode breakNode = new CFGNode(breakStatement, Collections.emptyList(),
+		    idgen.getUniqueID());
 	    CFG cfg = new CFG(breakNode);
 	    cfg.addBreakNode(breakNode);
 	    return cfg;
@@ -1105,7 +1143,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	 */
 	private CFG build(ContinueStatement continueStatement, IdGen idgen) {
 
-	    CFGNode continueNode = new CFGNode(continueStatement, idgen.getUniqueID());
+	    CFGNode continueNode = new CFGNode(continueStatement, Collections.emptyList(),
+		    idgen.getUniqueID());
 	    CFG cfg = new CFG(continueNode);
 	    cfg.addContinueNode(continueNode);
 	    return cfg;
@@ -1123,7 +1162,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	 */
 	private CFG build(ReturnStatement returnStatement, IdGen idgen) {
 
-	    CFGNode returnNode = new CFGNode(returnStatement, idgen.getUniqueID());
+	    CFGNode returnNode = new CFGNode(returnStatement,
+		    CallSiteVisitor.getCallSites(returnStatement), idgen.getUniqueID());
 	    CFG cfg = new CFG(returnNode);
 	    cfg.addReturnNode(returnNode);
 	    return cfg;
@@ -1141,7 +1181,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	 */
 	private CFG build(ThrowStatement throwStatement, IdGen idgen) {
 
-	    CFGNode throwNode = new CFGNode(throwStatement, idgen.getUniqueID());
+	    CFGNode throwNode = new CFGNode(throwStatement,
+		    CallSiteVisitor.getCallSites(throwStatement), idgen.getUniqueID());
 	    CFG cfg = new CFG(throwNode);
 	    cfg.addThrowNode(throwNode);
 	    return cfg;
@@ -1160,7 +1201,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	 */
 	private CFG build(AstNode statement, IdGen idgen) {
 
-	    CFGNode expressionNode = new CFGNode(statement, idgen.getUniqueID());
+	    CFGNode expressionNode = new CFGNode(statement, CallSiteVisitor.getCallSites(statement),
+		    idgen.getUniqueID());
 	    CFG cfg = new CFG(expressionNode);
 	    cfg.addExitNode(expressionNode);
 	    return cfg;

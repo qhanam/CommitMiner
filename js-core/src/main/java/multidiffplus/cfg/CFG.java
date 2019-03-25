@@ -69,8 +69,8 @@ public class CFG {
     /**
      * Returns a merged {@code IState} of all exit states for the CFG.
      */
-    public IState getMergedExitState() {
-	IState exitState = null;
+    public AnalysisState getMergedExitState() {
+	AnalysisState exitState = null;
 	for (CFGNode exitNode : exitNodes) {
 	    if (exitState == null) {
 		exitState = exitNode.getBeforeState();

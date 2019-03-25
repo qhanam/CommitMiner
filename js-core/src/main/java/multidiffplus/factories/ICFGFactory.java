@@ -12,6 +12,7 @@ import multidiffplus.cfg.CFG;
 import multidiffplus.cfg.CFGEdge;
 import multidiffplus.cfg.CFGNode;
 import multidiffplus.cfg.CfgMap;
+import multidiffplus.cfg.IState;
 
 /**
  * Builds a CFG given some AST.
@@ -26,8 +27,10 @@ public interface ICFGFactory {
      * 
      * @param root
      *            The entry point of the analysis.
+     * @param userStates
+     *            The user specified analyses.
      */
-    Analysis createAnalysis(ClassifiedASTNode root);
+    Analysis createAnalysis(ClassifiedASTNode root, IState[] userStates);
 
     /**
      * Builds intra-procedural control flow graphs for the given artifact.

@@ -19,7 +19,6 @@ import multidiffplus.jsanalysis.abstractdomain.Address;
 import multidiffplus.jsanalysis.abstractdomain.BValue;
 import multidiffplus.jsanalysis.abstractdomain.Change;
 import multidiffplus.jsanalysis.abstractdomain.Closure;
-import multidiffplus.jsanalysis.abstractdomain.Control;
 import multidiffplus.jsanalysis.abstractdomain.Dependencies;
 import multidiffplus.jsanalysis.abstractdomain.Environment;
 import multidiffplus.jsanalysis.abstractdomain.FunctionClosure;
@@ -28,7 +27,6 @@ import multidiffplus.jsanalysis.abstractdomain.JSClass;
 import multidiffplus.jsanalysis.abstractdomain.Num;
 import multidiffplus.jsanalysis.abstractdomain.Obj;
 import multidiffplus.jsanalysis.abstractdomain.Property;
-import multidiffplus.jsanalysis.abstractdomain.Scratchpad;
 import multidiffplus.jsanalysis.abstractdomain.State;
 import multidiffplus.jsanalysis.abstractdomain.Store;
 import multidiffplus.jsanalysis.abstractdomain.Undefined;
@@ -82,62 +80,6 @@ public class Helpers {
 	store = store.alloc(address, new Obj(external, internal));
 
 	return store;
-
-    }
-
-    /**
-     * @param funVal
-     *            The address(es) of the function object to execute.
-     * @param selfAddr
-     *            The value of the 'this' identifier (a set of objects).
-     * @param store
-     *            The store at the caller.
-     * @param sp
-     *            Scratchpad memory.
-     * @param trace
-     *            The trace at the caller.
-     * @return The final state of the closure.
-     */
-    public static State applyClosure(BValue funVal, Address selfAddr, Store store, Scratchpad sp,
-	    Trace trace, Control control, CallStack callStack) {
-
-	State state = null;
-
-	/* Get the results for each possible function. */
-	for (Address address : funVal.addressAD.addresses) {
-
-	    /* Get the function object to execute. */
-	    Obj functObj = store.getObj(address);
-
-	    /* Ignore addresses that don't resolve to objects. */
-	    if (functObj == null
-		    || !(functObj.internalProperties instanceof InternalFunctionProperties)) {
-		continue;
-	    }
-	    InternalFunctionProperties ifp = (InternalFunctionProperties) functObj.internalProperties;
-
-	    /* Run the function. */
-	    JavaScriptAnalysisState endState = callStack == null
-		    ? ifp.closure.run(selfAddr, store, sp, trace, control)
-		    : ifp.closure.run(selfAddr, store, sp, trace, control, callStack);
-
-	    if (endState == null)
-		// The function could not be resolved by the store.
-		continue;
-	    if (state == null)
-		// This is the first function to be resolved.
-		state = endState.getUnderlyingState();
-	    else {
-		// This is not the first function to be resolved. For example,
-		// callback parameters frequently point to more than one
-		// function definition. In this case, we must join states.
-		state.store = state.store.join(endState.getUnderlyingState().store);
-		state.scratch = state.scratch.join(endState.getUnderlyingState().scratch);
-	    }
-
-	}
-
-	return state;
 
     }
 
@@ -206,9 +148,8 @@ public class Helpers {
 		    Address.inject(address, valueChange, Dependencies.injectValue(child)), child);
 
 	    /* Create a function object. */
-	    Closure closure = new FunctionClosure(cfgMap.getCfgFor(child), env);
+	    Closure closure = new FunctionClosure(cfgMap.getCfgFor(child), env, cfgMap);
 	    store = createFunctionObj(closure, store, trace, address, child);
-
 	}
 
 	return store;

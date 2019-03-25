@@ -1,8 +1,8 @@
 package multidiff.analysis.flow;
 
+import multidiffplus.cfg.AnalysisState;
 import multidiffplus.cfg.CFGEdge;
 import multidiffplus.cfg.CFGNode;
-import multidiffplus.cfg.IState;
 
 /**
  * An expression source code instruction.
@@ -26,7 +26,7 @@ public class ExpressionInstruction extends Instruction {
     }
 
     @Override
-    public void addInstructionsToKontinuation(CallStack callStack, IState incomingState) {
+    public void addInstructionsToKontinuation(CallStack callStack, AnalysisState incomingState) {
 	StackFrame stackFrame = callStack.peek();
 	for (CFGEdge edge : node.getOutgoingEdges()) {
 	    // Add an instruction (edge) to the stack frame if:
@@ -43,14 +43,14 @@ public class ExpressionInstruction extends Instruction {
     }
 
     @Override
-    protected IState transferStateOverInstruction(CallStack callStack) {
-	IState postTransferState, preTransferState = node.getBeforeState();
-	postTransferState = preTransferState.interpretStatement(node, callStack);
+    protected AnalysisState transferStateOverInstruction(CallStack callStack) {
+	AnalysisState postTransferState, preTransferState = node.getBeforeState();
+	postTransferState = preTransferState.interpretStatement(node.getStatement());
 	return postTransferState;
     }
 
     @Override
-    protected void joinPostTransferState(IState outgoingState) {
+    protected void joinPostTransferState(AnalysisState outgoingState) {
 	semaphore--;
 	if (node.getAfterState() != null) {
 	    outgoingState = outgoingState.join(node.getAfterState());
@@ -59,12 +59,12 @@ public class ExpressionInstruction extends Instruction {
     }
 
     @Override
-    protected IState getPreTransferState() {
+    protected AnalysisState getPreTransferState() {
 	return node.getBeforeState();
     }
 
     @Override
-    protected void joinPreTransferState(IState incomingState) {
+    protected void joinPreTransferState(AnalysisState incomingState) {
 	if (node.getBeforeState() != null) {
 	    incomingState = incomingState.join(node.getBeforeState());
 	}

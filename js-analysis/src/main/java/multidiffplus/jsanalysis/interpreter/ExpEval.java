@@ -2,7 +2,6 @@ package multidiffplus.jsanalysis.interpreter;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -13,7 +12,6 @@ import org.mozilla.javascript.ast.ArrayLiteral;
 import org.mozilla.javascript.ast.Assignment;
 import org.mozilla.javascript.ast.AstNode;
 import org.mozilla.javascript.ast.ElementGet;
-import org.mozilla.javascript.ast.FunctionCall;
 import org.mozilla.javascript.ast.FunctionNode;
 import org.mozilla.javascript.ast.InfixExpression;
 import org.mozilla.javascript.ast.KeywordLiteral;
@@ -26,15 +24,13 @@ import org.mozilla.javascript.ast.PropertyGet;
 import org.mozilla.javascript.ast.StringLiteral;
 import org.mozilla.javascript.ast.UnaryExpression;
 
-import multidiff.analysis.flow.CallStack;
-import multidiff.analysis.flow.StackFrame;
+import multidiffplus.cfg.CfgMap;
 import multidiffplus.jsanalysis.abstractdomain.Address;
 import multidiffplus.jsanalysis.abstractdomain.Addresses;
 import multidiffplus.jsanalysis.abstractdomain.BValue;
 import multidiffplus.jsanalysis.abstractdomain.Bool;
 import multidiffplus.jsanalysis.abstractdomain.Change;
 import multidiffplus.jsanalysis.abstractdomain.Closure;
-import multidiffplus.jsanalysis.abstractdomain.Control;
 import multidiffplus.jsanalysis.abstractdomain.Dependencies;
 import multidiffplus.jsanalysis.abstractdomain.FunctionClosure;
 import multidiffplus.jsanalysis.abstractdomain.InternalFunctionProperties;
@@ -44,32 +40,22 @@ import multidiffplus.jsanalysis.abstractdomain.Null;
 import multidiffplus.jsanalysis.abstractdomain.Num;
 import multidiffplus.jsanalysis.abstractdomain.Obj;
 import multidiffplus.jsanalysis.abstractdomain.Property;
-import multidiffplus.jsanalysis.abstractdomain.Scratchpad;
 import multidiffplus.jsanalysis.abstractdomain.State;
 import multidiffplus.jsanalysis.abstractdomain.Str;
 import multidiffplus.jsanalysis.abstractdomain.Undefined;
 import multidiffplus.jsanalysis.abstractdomain.Variable;
-import multidiffplus.jsanalysis.flow.JavaScriptAsyncFunctionCall;
 
 public class ExpEval {
 
-    private CallStack callStack;
     private State state;
+    private CfgMap cfgs;
 
     /**
      * Use inside transfer functions.
      */
-    public ExpEval(CallStack callStack, State state) {
-	this.callStack = callStack;
+    public ExpEval(State state, CfgMap cfgs) {
 	this.state = state;
-    }
-
-    /**
-     * Only use when functions are not called (ie. by CFG visitors).
-     */
-    public ExpEval(State state) {
-	this.callStack = null;
-	this.state = state;
+	this.cfgs = cfgs;
     }
 
     /**
@@ -101,8 +87,6 @@ public class ExpEval {
 	    return evalArrayLiteral((ArrayLiteral) node);
 	} else if (node instanceof FunctionNode) {
 	    return evalFunctionNode((FunctionNode) node);
-	} else if (node instanceof FunctionCall) {
-	    return evalFunctionCall((FunctionCall) node);
 	} else if (node instanceof ParenthesizedExpression) {
 	    return evalParenthesizedExpression((ParenthesizedExpression) node);
 	}
@@ -143,7 +127,7 @@ public class ExpEval {
      * @return A BValue that points to the new function object.
      */
     public BValue evalFunctionNode(FunctionNode f) {
-	Closure closure = new FunctionClosure(callStack.getCfgMap().getCfgFor(f), state.env);
+	Closure closure = new FunctionClosure(cfgs.getCfgFor(f), state.env);
 	Address addr = state.trace.makeAddr(f.getID(), "");
 	addr = state.trace.modAddr(addr, JSClass.CFunction);
 	state.store = Helpers.createFunctionObj(closure, state.store, state.trace, addr, f);
@@ -557,185 +541,6 @@ public class ExpEval {
 	for (Address addr : addrs) {
 	    state.store = state.store.strongUpdate(addr, val, lhs);
 	}
-
-    }
-
-    /**
-     * Evaluate a function call expression to a BValue.
-     * 
-     * @param fc
-     *            The function call.
-     * @return The return value of the function call.
-     */
-    public BValue evalFunctionCall(FunctionCall fc) {
-
-	/* The state after the function call. */
-	State newState = null;
-
-	/* Keep track of callback functions. */
-	List<Address> callbacks = new LinkedList<Address>();
-
-	/* Attempt to resolve the function and its parent object. */
-	BValue funVal = resolveValue(fc.getTarget());
-	BValue objVal = resolveSelf(fc.getTarget());
-
-	/* Create the argument values. */
-	BValue[] args = new BValue[fc.getArguments().size()];
-	Scratchpad scratch = new Scratchpad(null, args);
-	Change argChange = Change.bottom();
-	int i = 0;
-	for (AstNode arg : fc.getArguments()) {
-
-	    /* Get the value of the object. It could be a function, object literal, etc. */
-	    BValue argVal = eval(arg);
-
-	    if (Change.test(fc))
-		// The entire call is new.
-		argVal.change = argVal.change
-			.join(Change.conv(fc, Dependencies::injectValueChange));
-	    else if (Change.testU(fc.getTarget()))
-		// The target has changed.
-		argVal.change = argVal.change
-			.join(Change.convU(fc.getTarget(), Dependencies::injectValueChange));
-	    else if (funVal != null && funVal.change.isChanged())
-		// The target has changed.
-		argVal.change = argVal.change.join(funVal.change);
-	    else if (Change.testU(arg))
-		// The argument has changed.
-		argVal.change = argVal.change
-			.join(Change.convU(arg, Dependencies::injectValueChange));
-
-	    // Aggregate the change across all args.
-	    argChange = argChange.join(argVal.change);
-
-	    if (arg instanceof ObjectLiteral) {
-		// If this is an object literal, make a fake var in the
-		// environment and point it to the object literal. This is
-		// useful for function reachability.
-		Address address = state.trace.makeAddr(arg.getID(), "");
-		String argName = arg.getID().toString();
-		state.env.strongUpdateNoCopy(argName,
-			Variable.inject(argName, address, Change.bottom(), Dependencies.bot()));
-		state.store = state.store.alloc(address, argVal, new Name());
-	    }
-
-	    args[i] = argVal;
-
-	    /* Arguments of bind, call or apply are not callbacks. */
-	    AstNode target = fc.getTarget();
-	    if (!(target instanceof PropertyGet
-		    && ((PropertyGet) target).getRight().toSource().equals("bind")))
-		callbacks.addAll(extractFunctions(argVal, new LinkedList<Address>(),
-			new HashSet<Address>()));
-
-	    i++;
-
-	}
-
-	/*
-	 * If the function is not a member variable, it is local and we use the object
-	 * of the currently executing function as self.
-	 */
-	Address objAddr = state.trace.toAddr("this");
-	if (objVal == null)
-	    objAddr = state.selfAddr;
-	else
-	    state.store = state.store.alloc(objAddr, objVal, new Name());
-
-	if (funVal != null) {
-
-	    /* Update the control-call domain for the function call. */
-	    Control control = state.control;
-	    control = control.update(fc);
-
-	    // Save the current stack frame so that we can check if a new stack frame has
-	    // been added.
-	    StackFrame current = callStack.peek();
-
-	    /* Call the function and get a join of the new states. */
-	    newState = Helpers.applyClosure(funVal, objAddr, state.store, scratch, state.trace,
-		    control, callStack);
-
-	    // If a stack frame has been added, we must evaluate it in the next analysis
-	    // iteration before we can continue.
-	    if (callStack.peek() != current) {
-		return BValue.bottom();
-	    }
-	}
-
-	if (newState == null) {
-	    // Because our analysis is not complete, the identifier may not
-	    // point to any function object. In this case, we assume the
-	    // (local) state is unchanged, but add BValue.TOP as the return
-	    // value.
-
-	    // CASE 1: Function does not resolve:
-	    // (1) If the function call is inserted, the return value is new.
-	    // (2) If the target function has changed, the return value has changed.
-	    // (3) If any of the argument values have changed, the return value has changed.
-	    Change retValChange;
-	    if (Change.test(fc))
-		retValChange = Change.conv(fc, Dependencies::injectValueChange);
-	    else if (Change.testU(fc.getTarget()))
-		retValChange = Change.convU(fc.getTarget(), Dependencies::injectValueChange);
-	    else
-		retValChange = argChange;
-
-	    // Create the return value.
-	    BValue retVal = BValue.top(retValChange, Dependencies.injectValue(fc));
-
-	    // Add the return value to the scratch space.
-	    state.scratch = state.scratch.strongUpdate(retVal, null);
-	    newState = new State(state.store, state.env, state.scratch, state.trace, state.control,
-		    state.selfAddr);
-	} else {
-	    // The function exists and must be evaluated.
-
-	    // CASE 2: Function resolves.
-	    // (1) If the function call is inserted, the return value is new.
-	    // (2) If the target function has changed, the return value has changed.
-	    // (3) If the return value has changed, the return value has changed.
-	    Change retValChange;
-	    if (Change.test(fc))
-		// The entire call is new.
-		retValChange = Change.conv(fc, Dependencies::injectValueChange);
-	    else if (Change.testU(fc.getTarget()))
-		// The target has changed.
-		retValChange = Change.convU(fc.getTarget(), Dependencies::injectValueChange);
-	    else if (funVal.change.isChanged())
-		// The target has changed.
-		retValChange = funVal.change;
-	    else
-		retValChange = Change.u();
-
-	    BValue retVal = newState.scratch.applyReturn();
-	    if (retVal == null) {
-		// Functions with no return statement return undefined.
-		retVal = Undefined.inject(Undefined.top(), retValChange,
-			Dependencies.injectValue(fc));
-		newState.scratch = newState.scratch.strongUpdate(retVal, null);
-	    } else {
-		// This could be a new value if the call is new.
-		newState.scratch = newState.scratch.strongUpdate(
-			retVal.join(BValue.bottom(retValChange, Dependencies.bot())), null);
-	    }
-
-	}
-
-	// Analyze any callbacks if we are running an analysis. We are running
-	// an analysis if there is a callstack.
-	if (callStack != null) {
-	    for (Address addr : callbacks) {
-		Obj funct = newState.store.getObj(addr);
-		InternalFunctionProperties ifp = (InternalFunctionProperties) funct.internalProperties;
-		FunctionClosure closure = (FunctionClosure) ifp.closure;
-		callStack.addAsync(
-			new JavaScriptAsyncFunctionCall(closure, state.selfAddr, state.store, state.trace));
-	    }
-	}
-
-	this.state.store = newState.store;
-	return newState.scratch.applyReturn();
 
     }
 

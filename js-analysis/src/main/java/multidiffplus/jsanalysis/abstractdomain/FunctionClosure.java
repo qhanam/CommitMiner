@@ -3,14 +3,14 @@ package multidiffplus.jsanalysis.abstractdomain;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.mozilla.javascript.ast.AstNode;
 import org.mozilla.javascript.ast.FunctionNode;
 import org.mozilla.javascript.ast.Name;
 import org.mozilla.javascript.ast.ScriptNode;
 
-import multidiff.analysis.flow.CallStack;
-import multidiff.analysis.flow.StackFrame;
 import multidiffplus.cfg.CFG;
+import multidiffplus.cfg.CfgMap;
 import multidiffplus.cfg.IState;
 import multidiffplus.jsanalysis.flow.JavaScriptAnalysisState;
 import multidiffplus.jsanalysis.initstate.StoreFactory;
@@ -28,6 +28,9 @@ public class FunctionClosure extends Closure {
     /** The closure environment? **/
     public Environment environment;
 
+    /** A map of AstNode -> CFG. */
+    public CfgMap cfgs;
+
     /**
      * @param cfg
      *            The control flow graph for the function.
@@ -35,21 +38,15 @@ public class FunctionClosure extends Closure {
      *            The environment of the parent closure. Does not yet contain local
      *            variables of this function.
      */
-    public FunctionClosure(CFG cfg, Environment environment) {
+    public FunctionClosure(CFG cfg, Environment environment, CfgMap cfgs) {
 	this.cfg = cfg;
 	this.environment = environment;
+	this.cfgs = cfgs;
     }
 
     @Override
-    public JavaScriptAnalysisState run(Address selfAddr, Store store, Scratchpad scratchpad,
+    public FunctionOrSummary initializeOrRun(Address selfAddr, Store store, Scratchpad scratchpad,
 	    Trace trace, Control control) {
-	// return Helpers.getMergedExitState(cfg);
-	return (JavaScriptAnalysisState) cfg.getMergedExitState();
-    }
-
-    @Override
-    public JavaScriptAnalysisState run(Address selfAddr, Store store, Scratchpad scratchpad,
-	    Trace trace, Control control, CallStack callStack) {
 
 	// Store any callsite dependencies.
 	control.getCall().change.getDependencies().getDependencies()
@@ -60,46 +57,123 @@ public class FunctionClosure extends Closure {
 	trace = trace.update(environment, store, selfAddr,
 		(ScriptNode) cfg.getEntryNode().getStatement());
 
-	// Create the initial state if needed.
-	IState newState = null;
-	IState oldState = cfg.getEntryNode().getBeforeState();
-	IState primeState = JavaScriptAnalysisState.initializeFunctionState(
-		initState(selfAddr, store, scratchpad, trace, control, callStack));
-	IState exitState = null;
-
-	if (oldState == null) {
-	    // Create the initial state for the function call by lifting local vars and
-	    // functions into the environment.
-	    newState = primeState;
-	    // Add a new frame to the call stack so that the callee is executed next.
-	    callStack.push(new StackFrame(cfg, newState));
-	    // We do not have an exit state, because we must first evaluate the new call.
-	    return null;
-	}
-
-	newState = oldState.join(primeState);
-
-	if (!oldState.equivalentTo(newState)) {
-	    // We have a new initial state for the function. Add a new frame to the call
-	    // stack so that
-	    // the callee is analyzed next.
-	    callStack.push(new StackFrame(cfg, newState));
-	    // We do not have an exit state, because we must first evaluate the new call.
-	    return null;
-	}
-
-	// The initial state of the function has not changed, do we don't
-	// need to re-analyze the function.
-	exitState = cfg.getMergedExitState();
-
-	if (exitState == null) {
-	    // We are in a recursive loop. Don't update the state.
-	    return (JavaScriptAnalysisState) newState;
-	}
-
-	return (JavaScriptAnalysisState) exitState;
+	// Return initial state.
+	return new FunctionOrSummary(Pair.of(cfg, JavaScriptAnalysisState.initializeFunctionState(
+		initState(selfAddr, store, scratchpad, trace, control), new IState[0])));
 
     }
+
+    // @Override
+    // public JavaScriptAnalysisState run(Address selfAddr, Store store, Scratchpad
+    // scratchpad,
+    // Trace trace, Control control) {
+    // // return Helpers.getMergedExitState(cfg);
+    // return (JavaScriptAnalysisState) cfg.getMergedExitState();
+    // }
+    //
+    // public IState createInitialFunctionState(Address selfAddr, Store store,
+    // Scratchpad scratchpad,
+    // Trace trace, Control control, FunctionEvalRequestRegistry callRegistry) {
+    //
+    // // Store any callsite dependencies.
+    // control.getCall().change.getDependencies().getDependencies()
+    // .forEach(criterion -> ((AstNode) cfg.getEntryNode().getStatement())
+    // .addDependency(criterion.getType().toString(), criterion.getId()));
+    //
+    // // Advance the trace.
+    // trace = trace.update(environment, store, selfAddr,
+    // (ScriptNode) cfg.getEntryNode().getStatement());
+    //
+    // // Create the initial state.
+    // return JavaScriptAnalysisState.initializeFunctionState(
+    // initState(selfAddr, store, scratchpad, trace, control, callRegistry));
+    //
+    // }
+
+    // /**
+    // * Computes the initial state of the analysis.
+    // *
+    // * @param oldState
+    // * The initial state of the stack frame before reaching this call
+    // * site.
+    // * @param primeState
+    // * The initial state of the stack frame at this call site.
+    // * @return the initial state of the stack frame, or {@code null} if the states
+    // * are the same and no analysis is required.
+    // */
+    // private IState getInitialState(IState oldState, IState primeState) {
+    //
+    // if (oldState == null)
+    // return primeState;
+    //
+    // IState newState = oldState.join(primeState);
+    //
+    // if (!oldState.equivalentTo(newState))
+    // return newState;
+    //
+    // return null;
+    //
+    // }
+
+    // @Override
+    // public boolean requiresEvaluation(Address selfAddr, Store store, Scratchpad
+    // scratchpad,
+    // Trace trace, Control control, FunctionEvalRequestRegistry callRegistry) {
+    // IState oldState = cfg.getEntryNode().getBeforeState();
+    // IState primeState = createInitialFunctionState(selfAddr, store, scratchpad,
+    // trace, control,
+    // callRegistry);
+    // IState initialState = getInitialState(oldState, primeState);
+    // return initialState != null;
+    // }
+
+    // @Override
+    // public JavaScriptAnalysisState run(Address selfAddr, Store store, Scratchpad
+    // scratchpad,
+    // Trace trace, Control control, FunctionEvalRequestRegistry callRegistry) {
+    //
+    // // Create the initial state if needed.
+    // IState newState = null;
+    // IState oldState = cfg.getEntryNode().getBeforeState();
+    // IState primeState = createInitialFunctionState(selfAddr, store, scratchpad,
+    // trace, control,
+    // callRegistry);
+    // IState exitState = null;
+    //
+    // if (oldState == null) {
+    // // Create the initial state for the function call by lifting local vars and
+    // // functions into the environment.
+    // newState = primeState;
+    // // Add a new frame to the call stack so that the callee is executed next.
+    // callRegistry.request(newState, caller, callee);
+    // callStack.push(new StackFrame(cfg, newState));
+    // // We do not have an exit state, because we must first evaluate the new call.
+    // return null;
+    // }
+    //
+    // newState = oldState.join(primeState);
+    //
+    // if (!oldState.equivalentTo(newState)) {
+    // // We have a new initial state for the function. Add a new frame to the call
+    // // stack so that
+    // // the callee is analyzed next.
+    // callStack.push(new StackFrame(cfg, newState));
+    // // We do not have an exit state, because we must first evaluate the new call.
+    // return null;
+    // }
+    //
+    // // The initial state of the function has not changed, do we don't
+    // // need to re-analyze the function.
+    // exitState = cfg.getMergedExitState();
+    //
+    // if (exitState == null) {
+    // // We are in a recursive loop. Don't update the state.
+    // return (JavaScriptAnalysisState) newState;
+    // }
+    //
+    // return (JavaScriptAnalysisState) exitState;
+    //
+    // }
 
     /**
      * Lift local variables and function declarations into the environment and
@@ -109,7 +183,7 @@ public class FunctionClosure extends Closure {
      *         {@code this}.
      */
     private State initState(Address selfAddr, Store store, Scratchpad scratchpad, Trace trace,
-	    Control control, CallStack callStack) {
+	    Control control) {
 
 	Environment env = this.environment.clone();
 
@@ -181,8 +255,8 @@ public class FunctionClosure extends Closure {
 	 * parameters are available in the closure of functions declared within this
 	 * function.
 	 */
-	store = Helpers.lift(env, store, (ScriptNode) cfg.getEntryNode().getStatement(),
-		callStack.getCfgMap(), trace);
+	store = Helpers.lift(env, store, (ScriptNode) cfg.getEntryNode().getStatement(), cfgs,
+		trace);
 
 	/* Add 'this' to environment (points to caller's object or new object). */
 	env = env.strongUpdate("this", Variable.inject("this", selfAddr, Change.u(),

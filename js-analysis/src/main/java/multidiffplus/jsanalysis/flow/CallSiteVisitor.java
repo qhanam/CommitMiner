@@ -1,0 +1,54 @@
+package multidiffplus.jsanalysis.flow;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.mozilla.javascript.Node;
+import org.mozilla.javascript.ast.AstNode;
+import org.mozilla.javascript.ast.FunctionCall;
+
+import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode;
+
+/**
+ * A utility for creating an ordered list of function calls within a statement.
+ */
+public class CallSiteVisitor {
+
+    /**
+     * Returns an ordered list of function calls within a statement. Function calls
+     * are sorted in topological order, so that the call sites that have
+     * dependencies occur in the list before their dependencies, and can therefore
+     * be evaluated first.
+     */
+    public static List<ClassifiedASTNode> getCallSites(AstNode statement) {
+	CallSiteVisitor visitor = new CallSiteVisitor();
+	visitor.topsort(statement);
+	return visitor.callSites;
+    }
+
+    private List<ClassifiedASTNode> callSites;
+
+    private CallSiteVisitor() {
+	callSites = new ArrayList<>();
+    }
+
+    public void topsort(AstNode node) {
+	if (node instanceof FunctionCall) {
+	    topsort((FunctionCall) node);
+	} else {
+	    for (Node child : node) {
+		topsort((AstNode) child);
+	    }
+	}
+
+    }
+
+    private void topsort(FunctionCall fc) {
+	topsort(fc.getTarget());
+	for (AstNode arg : fc.getArguments()) {
+	    topsort(arg);
+	}
+	callSites.add(fc);
+    }
+
+}

@@ -1,7 +1,7 @@
 package multidiff.analysis.flow;
 
+import multidiffplus.cfg.AnalysisState;
 import multidiffplus.cfg.CFGEdge;
-import multidiffplus.cfg.IState;
 
 /**
  * An branch condition source code instruction.
@@ -18,7 +18,7 @@ public class BranchInstruction extends Instruction {
     }
 
     @Override
-    public void addInstructionsToKontinuation(CallStack callStack, IState incomingState) {
+    public void addInstructionsToKontinuation(CallStack callStack, AnalysisState incomingState) {
 	StackFrame stackFrame = callStack.peek();
 	Instruction instruction = stackFrame.getInstructionForNode(edge.getTo());
 	instruction.joinPreTransferState(incomingState);
@@ -26,14 +26,14 @@ public class BranchInstruction extends Instruction {
     }
 
     @Override
-    protected IState transferStateOverInstruction(CallStack callStack) {
-	IState postTransferState, preTransferState = edge.getBeforeState();
-	postTransferState = preTransferState.interpretBranchCondition(edge, callStack);
+    protected AnalysisState transferStateOverInstruction(CallStack callStack) {
+	AnalysisState postTransferState, preTransferState = edge.getBeforeState();
+	postTransferState = preTransferState.interpretBranchCondition(edge.getCondition());
 	return postTransferState;
     }
 
     @Override
-    protected void joinPostTransferState(IState outgoingState) {
+    protected void joinPostTransferState(AnalysisState outgoingState) {
 	if (edge.getAfterState() != null) {
 	    outgoingState = outgoingState.join(edge.getAfterState());
 	}
@@ -41,12 +41,12 @@ public class BranchInstruction extends Instruction {
     }
 
     @Override
-    protected IState getPreTransferState() {
+    protected AnalysisState getPreTransferState() {
 	return edge.getBeforeState();
     }
 
     @Override
-    protected void joinPreTransferState(IState incomingState) {
+    protected void joinPreTransferState(AnalysisState incomingState) {
 	if (edge.getBeforeState() != null) {
 	    incomingState = incomingState.join(edge.getAfterState());
 	}

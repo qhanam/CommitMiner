@@ -1,7 +1,9 @@
 package multidiffplus.jsanalysis.abstractdomain;
 
-import multidiff.analysis.flow.CallStack;
-import multidiffplus.jsanalysis.flow.JavaScriptAnalysisState;
+import org.apache.commons.lang3.tuple.Pair;
+
+import multidiffplus.cfg.CFG;
+import multidiffplus.cfg.IState;
 import multidiffplus.jsanalysis.trace.Trace;
 
 /**
@@ -11,47 +13,55 @@ import multidiffplus.jsanalysis.trace.Trace;
 public abstract class Closure {
 
     /**
-     * Returns the end state of the function. This should be used only after the
-     * analysis has completed.
-     */
-    public abstract JavaScriptAnalysisState run(Address selfAddr, Store store,
-	    Scratchpad scratchpad, Trace trace, Control control);
-
-    /**
+     * Evaluates a function as follows: (1) if the closure is a function summary,
+     * returns the function's exit state, or (2) if the closure is a CFG, returns
+     * the function (ie. its CFG) and its initial state.
+     * 
+     * 
      * @param selfAddr
      *            The value of the 'this' variable (a set of objects).
-     * @param arbObj
-     *            The argument array object.
      * @param store
      *            Main memory.
      * @param scratchpad
-     *            Scratchpad memory.
+     *            Scratchpad memory containing the argument array object.
      * @param trace
      *            The execution trace.
      * @param control
      *            Tracks control flow changes.
-     * @param analysis
-     *            The top level analysis for pushing new calls.
-     * @return The new state after executing the function.
      */
-    public abstract JavaScriptAnalysisState run(Address selfAddr, Store store,
-	    Scratchpad scratchpad, Trace trace, Control control, CallStack callStack);
+    public abstract FunctionOrSummary initializeOrRun(Address selfAddr, Store store,
+	    Scratchpad scratchpad, Trace trace, Control control);
 
     /**
-     * Compare states to determine if the closure needs to be re-analyzed.
-     * 
-     * @param envClo
-     *            The environment for the closure, including parameters.
-     * @param storeClo
-     *            The store for the closure, including parameter values.
-     * @param controlClo
-     *            The control change environment for the closure.
-     * @return {@code true} if the states are not equivalent and the function needs
-     *         to be re-analyzed. {@code false} otherwise.
+     * Contains (1) a function (ie. a CFG and an initial state) to evaluate, or (2)
+     * the state after evaluating a function summary.
      */
-    protected boolean reAnalyze(Environment envClo, Store storeClo, Control controlClo,
-	    Environment envCall, Store storeCall, Control controlCall) {
-	return false;
+    public class FunctionOrSummary {
+	private Pair<CFG, IState> initState;
+	private IState newState;
+
+	public FunctionOrSummary(Pair<CFG, IState> initState) {
+	    this.initState = initState;
+	    this.newState = null;
+	}
+
+	public FunctionOrSummary(IState newState) {
+	    this.initState = null;
+	    this.newState = newState;
+	}
+
+	public boolean isFunctionSummary() {
+	    return newState != null;
+	}
+
+	public Pair<CFG, IState> getInitialStateOfFunction() {
+	    return initState;
+	}
+
+	public IState getPostCallStateOfSummary() {
+	    return newState;
+	}
+
     }
 
 }

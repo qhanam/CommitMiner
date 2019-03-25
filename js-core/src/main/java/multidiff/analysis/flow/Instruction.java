@@ -1,6 +1,6 @@
 package multidiff.analysis.flow;
 
-import multidiffplus.cfg.IState;
+import multidiffplus.cfg.AnalysisState;
 
 /**
  * A source code instruction.
@@ -18,7 +18,7 @@ public abstract class Instruction {
 	StackFrame stackFrame = callStack.peek();
 
 	/* Transfer the abstract state over the node. */
-	IState postTransferState = transferStateOverInstruction(callStack);
+	AnalysisState postTransferState = transferStateOverInstruction(callStack);
 
 	// Has a frame been added to the call stack?
 	if (callStack.peek() == stackFrame) {
@@ -38,28 +38,29 @@ public abstract class Instruction {
     /**
      * Pushes the next instructions onto the frame's kontinuation.
      */
-    public abstract void addInstructionsToKontinuation(CallStack callStack, IState incomingState);
+    public abstract void addInstructionsToKontinuation(CallStack callStack,
+	    AnalysisState incomingState);
 
     /**
      * Updates the abstract state by evaluating the instruction.
      */
-    protected abstract IState transferStateOverInstruction(CallStack callStack);
+    protected abstract AnalysisState transferStateOverInstruction(CallStack callStack);
 
     /**
      * Returns the state of the program before the instruction executes.
      */
-    protected abstract IState getPreTransferState();
+    protected abstract AnalysisState getPreTransferState();
 
     /**
      * Joins the incoming state with the state of the program before the instruction
      * is interpreted.
      */
-    protected abstract void joinPreTransferState(IState incomingState);
+    protected abstract void joinPreTransferState(AnalysisState incomingState);
 
     /**
      * Joins the outgoing state with the state of the program after the instruction
      * is interpreted.
      */
-    protected abstract void joinPostTransferState(IState outgoingState);
+    protected abstract void joinPostTransferState(AnalysisState outgoingState);
 
 }

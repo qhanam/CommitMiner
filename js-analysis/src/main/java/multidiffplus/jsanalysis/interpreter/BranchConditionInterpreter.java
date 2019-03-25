@@ -9,8 +9,8 @@ import org.mozilla.javascript.ast.Name;
 import org.mozilla.javascript.ast.ParenthesizedExpression;
 import org.mozilla.javascript.ast.UnaryExpression;
 
-import multidiff.analysis.flow.CallStack;
 import multidiffplus.cfg.CFGEdge;
+import multidiffplus.cfg.CfgMap;
 import multidiffplus.jsanalysis.abstractdomain.Address;
 import multidiffplus.jsanalysis.abstractdomain.BValue;
 import multidiffplus.jsanalysis.abstractdomain.Bool;
@@ -28,9 +28,9 @@ public class BranchConditionInterpreter {
     private State state;
     private ExpEval expEval;
 
-    private BranchConditionInterpreter(State state, CallStack callStack) {
+    private BranchConditionInterpreter(State state, CfgMap cfgs) {
 	this.state = state;
-	this.expEval = new ExpEval(callStack, state);
+	this.expEval = new ExpEval(state, cfgs);
     }
 
     private void interpret(AstNode condition) {
@@ -302,7 +302,7 @@ public class BranchConditionInterpreter {
      * Updates the {@code state} and {@code callStack} by interpreting
      * {@code statement}.
      */
-    public static void interpret(CFGEdge edge, State state, CallStack callStack) {
+    public static void interpret(CFGEdge edge, State state, CfgMap cfgs) {
 	/* Interpret the effect of the edge on control flow. */
 	state.control = state.control.update(edge);
 
@@ -311,7 +311,7 @@ public class BranchConditionInterpreter {
 	    return;
 
 	/* Interpret the type refinements and the expression. */
-	BranchConditionInterpreter interpreter = new BranchConditionInterpreter(state, callStack);
+	BranchConditionInterpreter interpreter = new BranchConditionInterpreter(state, cfgs);
 	interpreter.interpret((AstNode) edge.getCondition());
     }
 

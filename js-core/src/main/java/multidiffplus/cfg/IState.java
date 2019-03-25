@@ -1,6 +1,6 @@
 package multidiffplus.cfg;
 
-import multidiff.analysis.flow.CallStack;
+import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode;
 
 /**
  * An abstract state and abstract interpreter for built-in abstract domains.
@@ -19,13 +19,13 @@ public interface IState {
      * 
      * @param statement
      *            The statement to interpret.
-     * @param callstack
-     *            The current abstract call stack. The interpreter pushes new stack
-     *            frames onto the call stack when needed.
+     * @param functReg
+     *            The registry for requesting function calls be evaluated (added to
+     *            the abstract call stack) by the analysis.
      * @return A new analysis state state, which is the state of the analysis after
      *         the statement is interpreted.
      */
-    IState interpretStatement(CFGNode node, CallStack callStack);
+    IState interpretStatement(ClassifiedASTNode statement);
 
     /**
      * Updates a copy of the abstract state and abstract call stack in-place by
@@ -34,13 +34,23 @@ public interface IState {
      * 
      * @param statement
      *            The statement to interpret.
-     * @param callstack
-     *            The current abstract call stack. The interpreter pushes new stack
-     *            frames onto the call stack when needed.
+     * @param functReg
+     *            The registry for requesting function calls be evaluated (added to
+     *            the abstract call stack) by the analysis.
      * @return A new analysis state, which is the state of the analysis after the
      *         statement is interpreted.
      */
-    IState interpretBranchCondition(CFGEdge edge, CallStack callStack);
+    IState interpretBranchCondition(ClassifiedASTNode condition);
+
+    /**
+     * Evaluates the state of the current stack frame up to the function call,
+     * resolves the call site targets and prepares the initial state of the stack
+     * frame for the callee.
+     * 
+     * @return The pre/post execution state of the call site, the initial state of
+     *         the callee and the list of resolved targets.
+     */
+    FunctionEvaluator initializeFunctionState(ClassifiedASTNode callSite);
 
     /**
      * Return a new analysis state, which is the join of {@code this} state and
@@ -55,5 +65,10 @@ public interface IState {
      * Returns true if this state is equivalent to that state.
      */
     boolean equivalentTo(IState that);
+
+    /**
+     * Returns a unique ID for the analysis.
+     */
+    Integer getAnalysisId();
 
 }

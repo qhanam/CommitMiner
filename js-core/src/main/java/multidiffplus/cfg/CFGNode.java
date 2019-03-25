@@ -22,6 +22,9 @@ public class CFGNode {
      **/
     private ClassifiedASTNode statement;
 
+    /** The ordered list of call sites within the statement. */
+    private List<ClassifiedASTNode> callSites;
+
     /** The edges entering this node. **/
     private List<CFGEdge> inEdges;
 
@@ -35,19 +38,19 @@ public class CFGNode {
      * The state of the environment and store before transferring over the term
      * (statement). The state is language dependent.
      */
-    private IState beforeState;
+    private AnalysisState beforeState;
 
     /**
      * The state of the environment and store after transferring over the term
      * (statement). The state is language dependent.
      */
-    private IState afterState;
+    private AnalysisState afterState;
 
     /**
      * @param statement
      *            The statement that is executed when this node is reached.
      */
-    public CFGNode(ClassifiedASTNode statement, int id) {
+    public CFGNode(ClassifiedASTNode statement, List<ClassifiedASTNode> callSites, int id) {
 	this.inEdges = new LinkedList<CFGEdge>();
 	this.outEdges = new LinkedList<CFGEdge>();
 	this.statement = statement;
@@ -56,6 +59,7 @@ public class CFGNode {
 	this.setMappedNode(null);
 	this.beforeState = null;
 	this.afterState = null;
+	this.callSites = callSites;
     }
 
     /**
@@ -64,7 +68,8 @@ public class CFGNode {
      * @param name
      *            The name for this node (nice for printing and debugging).
      */
-    public CFGNode(ClassifiedASTNode statement, String name, int id) {
+    public CFGNode(ClassifiedASTNode statement, List<ClassifiedASTNode> callSites, String name,
+	    int id) {
 	this.inEdges = new LinkedList<CFGEdge>();
 	this.outEdges = new LinkedList<CFGEdge>();
 	this.statement = statement;
@@ -72,6 +77,7 @@ public class CFGNode {
 	this.name = name;
 	this.beforeState = null;
 	this.afterState = null;
+	this.callSites = callSites;
     }
 
     /**
@@ -87,14 +93,14 @@ public class CFGNode {
      * @param as
      *            The abstract state.
      */
-    public void setBeforeState(IState state) {
+    public void setBeforeState(AnalysisState state) {
 	this.beforeState = state;
     }
 
     /**
      * @return the abstract state at this point in the program.
      */
-    public IState getBeforeState() {
+    public AnalysisState getBeforeState() {
 	return this.beforeState;
     }
 
@@ -104,14 +110,14 @@ public class CFGNode {
      * @param as
      *            The abstract state.
      */
-    public void setAfterState(IState state) {
+    public void setAfterState(AnalysisState state) {
 	this.afterState = state;
     }
 
     /**
      * @return the abstract state at this point in the program.
      */
-    public IState getAfterState() {
+    public AnalysisState getAfterState() {
 	return this.afterState;
     }
 
@@ -232,7 +238,14 @@ public class CFGNode {
     }
 
     /**
-     * @return The AST Statement which contains the actions this node performs.
+     * Returns the list of callsites in topological order.
+     */
+    public List<ClassifiedASTNode> getCallSites() {
+	return callSites;
+    }
+
+    /**
+     * Returns the AST Statement which contains the actions this node performs.
      */
     public ClassifiedASTNode getStatement() {
 	return statement;
@@ -242,8 +255,9 @@ public class CFGNode {
      * @param statement
      *            The AST Statement which contains the actions this node performs.
      */
-    public void setStatement(ClassifiedASTNode statement) {
+    public void setStatement(ClassifiedASTNode statement, List<ClassifiedASTNode> callSites) {
 	this.statement = statement;
+	this.callSites = callSites;
     }
 
     /**
@@ -300,7 +314,7 @@ public class CFGNode {
      *         the same as the original.
      */
     public static CFGNode copy(CFGNode node, int id) {
-	CFGNode newNode = new CFGNode(node.getStatement(), id);
+	CFGNode newNode = new CFGNode(node.getStatement(), node.callSites, id);
 	for (CFGEdge edge : node.getOutgoingEdges())
 	    newNode.addOutgoingEdge(edge.getCondition(), edge.getTo(), edge.getId());
 	return newNode;

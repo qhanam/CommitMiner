@@ -1,9 +1,9 @@
 package multidiff.analysis.flow;
 
 import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode;
+import multidiffplus.cfg.AnalysisState;
 import multidiffplus.cfg.CFG;
 import multidiffplus.cfg.CfgMap;
-import multidiffplus.cfg.IState;
 import multidiffplus.facts.AnnotationFactBase;
 
 /**
@@ -24,7 +24,7 @@ public abstract class Analysis {
      *            The map of function -> cfg.
      * @param initialState
      */
-    public Analysis(CFG entryPoint, CfgMap cfgMap, IState initialState) {
+    public Analysis(CFG entryPoint, CfgMap cfgMap, AnalysisState initialState) {
 	this.callStack = new CallStack(cfgMap);
 	this.callStack.push(new StackFrame(entryPoint, initialState));
     }

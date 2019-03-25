@@ -33,13 +33,13 @@ public class CFGEdge {
      * The state of the environment and store before transferring over the term
      * (statement). The state is language dependent.
      */
-    private IState beforeState;
+    private AnalysisState beforeState;
 
     /**
      * The state of the environment and store after transferring over the term
      * (statement). The state is language dependent.
      */
-    private IState afterState;
+    private AnalysisState afterState;
 
     public CFGEdge(ClassifiedASTNode condition, CFGNode from, CFGNode to, int id) {
 	this.condition = condition;
@@ -71,14 +71,14 @@ public class CFGEdge {
      * @param as
      *            The abstract state.
      */
-    public void setBeforeState(IState state) {
+    public void setBeforeState(AnalysisState state) {
 	this.beforeState = state;
     }
 
     /**
      * @return the abstract state at this point in the program.
      */
-    public IState getBeforeState() {
+    public AnalysisState getBeforeState() {
 	return this.beforeState;
     }
 
@@ -88,14 +88,14 @@ public class CFGEdge {
      * @param as
      *            The abstract state.
      */
-    public void setAfterState(IState state) {
+    public void setAfterState(AnalysisState state) {
 	this.afterState = state;
     }
 
     /**
      * @return the abstract state at this point in the program.
      */
-    public IState getAfterState() {
+    public AnalysisState getAfterState() {
 	return this.afterState;
     }
 

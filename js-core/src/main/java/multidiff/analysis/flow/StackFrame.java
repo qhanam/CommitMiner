@@ -7,9 +7,9 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
+import multidiffplus.cfg.AnalysisState;
 import multidiffplus.cfg.CFG;
 import multidiffplus.cfg.CFGNode;
-import multidiffplus.cfg.IState;
 
 /**
  * A frame in a call stack.
@@ -41,7 +41,7 @@ public class StackFrame {
      */
     private Queue<Instruction> kontinuation;
 
-    public StackFrame(CFG cfg, IState initialState) {
+    public StackFrame(CFG cfg, AnalysisState initialState) {
 
 	// Initialize member vars.
 	this.cfg = cfg;

@@ -9,8 +9,8 @@ import org.mozilla.javascript.ast.ThrowStatement;
 import org.mozilla.javascript.ast.VariableDeclaration;
 import org.mozilla.javascript.ast.VariableInitializer;
 
-import multidiff.analysis.flow.CallStack;
 import multidiffplus.cfg.CFGNode;
+import multidiffplus.cfg.CfgMap;
 import multidiffplus.jsanalysis.abstractdomain.Address;
 import multidiffplus.jsanalysis.abstractdomain.BValue;
 import multidiffplus.jsanalysis.abstractdomain.Change;
@@ -27,9 +27,9 @@ public class StatementInterpreter {
     private State state;
     private ExpEval expEval;
 
-    private StatementInterpreter(State state, CallStack callStack) {
+    private StatementInterpreter(State state, CfgMap cfgs) {
 	this.state = state;
-	this.expEval = new ExpEval(callStack, state);
+	this.expEval = new ExpEval(state, cfgs);
     }
 
     /**
@@ -98,7 +98,7 @@ public class StatementInterpreter {
 	state.store = state.store.alloc(address, retVal, new Name());
 
 	/* Update the return value on the scratchpad. */
-	state.scratch = state.scratch.strongUpdate(retVal, null);
+	state.scratch = state.scratch.strongUpdate(retVal);
 
     }
 
@@ -129,8 +129,8 @@ public class StatementInterpreter {
      * Updates the {@code state} and {@code callStack} by interpreting
      * {@code statement}.
      */
-    public static void interpret(CFGNode node, State state, CallStack callStack) {
-	StatementInterpreter interpreter = new StatementInterpreter(state, callStack);
+    public static void interpret(CFGNode node, State state, CfgMap cfgs) {
+	StatementInterpreter interpreter = new StatementInterpreter(state, cfgs);
 	interpreter.interpret((AstNode) node.getStatement());
     }
 
