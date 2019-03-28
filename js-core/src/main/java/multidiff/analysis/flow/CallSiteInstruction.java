@@ -34,12 +34,15 @@ public class CallSiteInstruction extends Instruction {
 	AnalysisState newState = callSite.getBeforeState().interpretCallSite(callSite.getCallSite(),
 		callStack);
 
-	if (callStack.peek() == current) {
-	    // The instruction was interpreted.
-	    callSite.setAfterState(callSite.getAfterState().join(newState));
-	} else {
+	if (callStack.peek() != current)
 	    // A new frame was added to the call stack.
-	}
+	    return;
+
+	// The instruction was interpreted.
+	if (callSite.getAfterState() == null)
+	    callSite.setAfterState(newState);
+	else
+	    callSite.setAfterState(callSite.getAfterState().join(newState));
 
     }
 

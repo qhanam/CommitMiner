@@ -73,7 +73,7 @@ public class FunctionEvaluator {
      * function summary.
      */
     public boolean resolved() {
-	return initialTargetState.isEmpty() && postCallState == null;
+	return !initialTargetState.isEmpty() || postCallState != null;
     }
 
 }

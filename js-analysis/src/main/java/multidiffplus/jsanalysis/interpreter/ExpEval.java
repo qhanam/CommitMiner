@@ -12,6 +12,7 @@ import org.mozilla.javascript.ast.ArrayLiteral;
 import org.mozilla.javascript.ast.Assignment;
 import org.mozilla.javascript.ast.AstNode;
 import org.mozilla.javascript.ast.ElementGet;
+import org.mozilla.javascript.ast.FunctionCall;
 import org.mozilla.javascript.ast.FunctionNode;
 import org.mozilla.javascript.ast.InfixExpression;
 import org.mozilla.javascript.ast.KeywordLiteral;
@@ -89,12 +90,23 @@ public class ExpEval {
 	    return evalFunctionNode((FunctionNode) node);
 	} else if (node instanceof ParenthesizedExpression) {
 	    return evalParenthesizedExpression((ParenthesizedExpression) node);
+	} else if (node instanceof FunctionCall) {
+	    return evalFunctionCall((FunctionCall) node);
 	}
 
 	/* We could not evaluate the expression. Return top. */
 	return BValue.top(Change.convU(node, Dependencies::injectValueChange),
 		Dependencies.injectValue(node));
 
+    }
+
+    /**
+     * Returns the return value of the function call.
+     */
+    private BValue evalFunctionCall(FunctionCall fc) {
+	// The function call has already been interpreted by a prior
+	// instruction, and its return value is stored in scratch space.
+	return state.scratch.applyCall(fc);
     }
 
     /**

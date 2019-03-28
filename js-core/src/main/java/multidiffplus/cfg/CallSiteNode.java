@@ -84,7 +84,7 @@ public class CallSiteNode {
      * Set the abstract state after the call site is evaluated.
      */
     public void setAfterState(AnalysisState state) {
-	beforeState = state;
+	afterState = state;
     }
 
     /**

@@ -65,10 +65,13 @@ public class AnalysisState {
 	List<IState> builtinExitStates = builtinEvaluator.getInitialTargetStates().keySet().stream()
 		.map(cfg -> cfg.getMergedExitState().builtinState).collect(Collectors.toList());
 
+	if (newBuiltinState == null && builtinExitStates.isEmpty())
+	    throw new Error("There was no return value for " + callSite.toString());
+
 	// Join the function and summary states.
 	if (newBuiltinState == null) {
 	    newBuiltinState = builtinState.interpretCallSite(callSite, builtinExitStates);
-	} else {
+	} else if (!builtinExitStates.isEmpty()) {
 	    newBuiltinState = newBuiltinState
 		    .join(builtinState.interpretCallSite(callSite, builtinExitStates));
 	}
