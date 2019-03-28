@@ -45,7 +45,7 @@ public class CallSiteInstruction extends Instruction {
 
     @Override
     public String toString() {
-	return callSite.toString();
+	return callSite.getCallSite().toString();
     }
 
 }

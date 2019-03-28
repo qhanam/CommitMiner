@@ -320,6 +320,13 @@ public class CFGNode {
 	this.mappedNode = mappedNode;
     }
 
+    /**
+     * Returns the call sites contained within the node in topological order.
+     */
+    public CallSiteNode[] getCallSiteNodes() {
+	return callSiteNodes;
+    }
+
     public String getName() {
 
 	if (this.name != null)

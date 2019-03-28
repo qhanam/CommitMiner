@@ -3,9 +3,14 @@ package multidiffplus.jsanalysis.flow;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.mozilla.javascript.Node;
 import org.mozilla.javascript.ast.AstNode;
+import org.mozilla.javascript.ast.ElementGet;
+import org.mozilla.javascript.ast.ExpressionStatement;
 import org.mozilla.javascript.ast.FunctionCall;
+import org.mozilla.javascript.ast.InfixExpression;
+import org.mozilla.javascript.ast.ReturnStatement;
+import org.mozilla.javascript.ast.ThrowStatement;
+import org.mozilla.javascript.ast.UnaryExpression;
 
 import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode;
 
@@ -35,12 +40,21 @@ public class CallSiteVisitor {
     public void topsort(AstNode node) {
 	if (node instanceof FunctionCall) {
 	    topsort((FunctionCall) node);
-	} else {
-	    for (Node child : node) {
-		topsort((AstNode) child);
-	    }
+	} else if (node instanceof ExpressionStatement) {
+	    topsort(((ExpressionStatement) node).getExpression());
+	} else if (node instanceof InfixExpression) {
+	    topsort(((InfixExpression) node).getLeft());
+	    topsort(((InfixExpression) node).getRight());
+	} else if (node instanceof UnaryExpression) {
+	    topsort(((UnaryExpression) node).getOperand());
+	} else if (node instanceof ElementGet) {
+	    topsort(((ElementGet) node).getTarget());
+	    topsort(((ElementGet) node).getElement());
+	} else if (node instanceof ReturnStatement) {
+	    topsort(((ReturnStatement) node).getReturnValue());
+	} else if (node instanceof ThrowStatement) {
+	    topsort(((ThrowStatement) node).getExpression());
 	}
-
     }
 
     private void topsort(FunctionCall fc) {

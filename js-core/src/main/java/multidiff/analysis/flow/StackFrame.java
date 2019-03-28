@@ -13,6 +13,7 @@ import multidiffplus.cfg.AnalysisState;
 import multidiffplus.cfg.CFG;
 import multidiffplus.cfg.CFGEdge;
 import multidiffplus.cfg.CFGNode;
+import multidiffplus.cfg.CallSiteNode;
 
 /**
  * A frame in a call stack.
@@ -111,13 +112,13 @@ public class StackFrame {
 
 	    if (semaphore == 0) {
 		// There are no more incoming edges.
-		instructions.add(new ExpressionInstruction(node));
+		addNodeInstructions(node, instructions);
 		unvisitedEdges.forEach(child -> {
 		    edges.add(child);
 		});
 	    } else if (semaphore == unvisitedLoopEdges.size()) {
 		// There are only incoming edges that are reachable from outgoing edges.
-		instructions.add(new ExpressionInstruction(node));
+		addNodeInstructions(node, instructions);
 		unvisitedLoopEdges.forEach(child -> {
 		    edges.add(child);
 		});
@@ -126,6 +127,17 @@ public class StackFrame {
 
 	return instructions;
 
+    }
+
+    /**
+     * Add an ExpressionInstruction, preceded by any CallSiteInstructions contained
+     * within the expression.
+     */
+    private static void addNodeInstructions(CFGNode node, Queue<Instruction> instructions) {
+	for (CallSiteNode callSiteNode : node.getCallSiteNodes()) {
+	    instructions.add(new CallSiteInstruction(callSiteNode));
+	}
+	instructions.add(new ExpressionInstruction(node));
     }
 
 }
