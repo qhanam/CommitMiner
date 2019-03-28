@@ -89,14 +89,14 @@ public class FunctionFactory {
 	    public JavaScriptAnalysisState run(Address selfAddr, Store store, Scratchpad scratchpad,
 		    Trace trace, Control control, CallStack callStack) {
 		scratchpad.strongUpdate(retVal, null);
-		return (JavaScriptAnalysisState) JavaScriptAnalysisState.initializeFunctionState(
+		return (JavaScriptAnalysisState) JavaScriptAnalysisState.interpretCallSite(
 			new State(store, new Environment(), scratchpad, trace, control, selfAddr));
 	    }
 
 	    @Override
 	    public JavaScriptAnalysisState run(Address selfAddr, Store store, Scratchpad scratchpad,
 		    Trace trace, Control control) {
-		return (JavaScriptAnalysisState) JavaScriptAnalysisState.initializeFunctionState(
+		return (JavaScriptAnalysisState) JavaScriptAnalysisState.interpretCallSite(
 			new State(store, new Environment(), scratchpad, trace, control, selfAddr));
 	    }
 	};

@@ -9,7 +9,7 @@ import org.mozilla.javascript.ast.ThrowStatement;
 import org.mozilla.javascript.ast.VariableDeclaration;
 import org.mozilla.javascript.ast.VariableInitializer;
 
-import multidiffplus.cfg.CFGNode;
+import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode;
 import multidiffplus.cfg.CfgMap;
 import multidiffplus.jsanalysis.abstractdomain.Address;
 import multidiffplus.jsanalysis.abstractdomain.BValue;
@@ -129,9 +129,9 @@ public class StatementInterpreter {
      * Updates the {@code state} and {@code callStack} by interpreting
      * {@code statement}.
      */
-    public static void interpret(CFGNode node, State state, CfgMap cfgs) {
+    public static void interpret(ClassifiedASTNode statement, State state, CfgMap cfgs) {
 	StatementInterpreter interpreter = new StatementInterpreter(state, cfgs);
-	interpreter.interpret((AstNode) node.getStatement());
+	interpreter.interpret((AstNode) statement);
     }
 
 }

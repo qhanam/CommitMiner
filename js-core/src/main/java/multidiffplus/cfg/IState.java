@@ -40,7 +40,7 @@ public interface IState {
      * @return A new analysis state, which is the state of the analysis after the
      *         statement is interpreted.
      */
-    IState interpretBranchCondition(ClassifiedASTNode condition);
+    IState interpretBranchCondition(CFGEdge edge);
 
     /**
      * Evaluates the state of the current stack frame up to the function call,
@@ -50,7 +50,7 @@ public interface IState {
      * @return The pre/post execution state of the call site, the initial state of
      *         the callee and the list of resolved targets.
      */
-    FunctionEvaluator initializeFunctionState(ClassifiedASTNode callSite);
+    FunctionEvaluator interpretCallSite(ClassifiedASTNode callSite);
 
     /**
      * Return a new analysis state, which is the join of {@code this} state and
@@ -65,10 +65,5 @@ public interface IState {
      * Returns true if this state is equivalent to that state.
      */
     boolean equivalentTo(IState that);
-
-    /**
-     * Returns a unique ID for the analysis.
-     */
-    Integer getAnalysisId();
 
 }

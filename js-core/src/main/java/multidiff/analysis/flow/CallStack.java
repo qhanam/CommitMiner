@@ -11,9 +11,6 @@ import multidiffplus.cfg.CfgMap;
  */
 public class CallStack {
 
-    /** The CFGs of every function. */
-    private CfgMap cfgMap;
-
     /** The virtual call stack. */
     private Stack<StackFrame> callStack;
 
@@ -29,18 +26,12 @@ public class CallStack {
      */
 
     public CallStack(CfgMap cfgMap) {
-	// TODO: Separate the CFG map from the CallStack. They aren't related.
-	this.cfgMap = cfgMap;
 	this.callStack = new Stack<StackFrame>();
 	this.eventLoop = new ArrayDeque<AsyncFunctionCall>();
     }
 
     public boolean isEmpty() {
 	return callStack.isEmpty();
-    }
-
-    public CfgMap getCfgMap() {
-	return cfgMap;
     }
 
     public void push(StackFrame stackFrame) {

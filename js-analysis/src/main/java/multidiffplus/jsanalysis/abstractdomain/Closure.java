@@ -17,7 +17,6 @@ public abstract class Closure {
      * returns the function's exit state, or (2) if the closure is a CFG, returns
      * the function (ie. its CFG) and its initial state.
      * 
-     * 
      * @param selfAddr
      *            The value of the 'this' variable (a set of objects).
      * @param store

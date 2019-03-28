@@ -1,7 +1,5 @@
 package multidiff.analysis.flow;
 
-import multidiffplus.cfg.AnalysisState;
-
 /**
  * A source code instruction.
  */
@@ -18,7 +16,7 @@ public abstract class Instruction {
 	StackFrame stackFrame = callStack.peek();
 
 	/* Transfer the abstract state over the node. */
-	AnalysisState postTransferState = transferStateOverInstruction(callStack);
+	transferStateOverInstruction(callStack);
 
 	// Has a frame been added to the call stack?
 	if (callStack.peek() == stackFrame) {
@@ -26,8 +24,6 @@ public abstract class Instruction {
 	    // Remove it from the kontinuation stack so that the next
 	    // instruction can be analyzed.
 	    stackFrame.popInstruction();
-	    joinPostTransferState(postTransferState);
-	    addInstructionsToKontinuation(callStack, postTransferState);
 	} else {
 	    // A new stack frame has been added to the call stack. We must
 	    // analyze it before continuing with the current instruction and
@@ -36,31 +32,8 @@ public abstract class Instruction {
     }
 
     /**
-     * Pushes the next instructions onto the frame's kontinuation.
-     */
-    public abstract void addInstructionsToKontinuation(CallStack callStack,
-	    AnalysisState incomingState);
-
-    /**
      * Updates the abstract state by evaluating the instruction.
      */
-    protected abstract AnalysisState transferStateOverInstruction(CallStack callStack);
-
-    /**
-     * Returns the state of the program before the instruction executes.
-     */
-    protected abstract AnalysisState getPreTransferState();
-
-    /**
-     * Joins the incoming state with the state of the program before the instruction
-     * is interpreted.
-     */
-    protected abstract void joinPreTransferState(AnalysisState incomingState);
-
-    /**
-     * Joins the outgoing state with the state of the program after the instruction
-     * is interpreted.
-     */
-    protected abstract void joinPostTransferState(AnalysisState outgoingState);
+    protected abstract void transferStateOverInstruction(CallStack callStack);
 
 }

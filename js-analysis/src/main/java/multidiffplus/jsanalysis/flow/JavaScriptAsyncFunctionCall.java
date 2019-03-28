@@ -3,7 +3,6 @@ package multidiffplus.jsanalysis.flow;
 import multidiff.analysis.flow.AsyncFunctionCall;
 import multidiff.analysis.flow.CallStack;
 import multidiffplus.jsanalysis.abstractdomain.Address;
-import multidiffplus.jsanalysis.abstractdomain.BValue;
 import multidiffplus.jsanalysis.abstractdomain.Control;
 import multidiffplus.jsanalysis.abstractdomain.FunctionClosure;
 import multidiffplus.jsanalysis.abstractdomain.Scratchpad;
@@ -24,8 +23,8 @@ public class JavaScriptAsyncFunctionCall implements AsyncFunctionCall {
     public Store store;
     public Trace trace;
 
-    public JavaScriptAsyncFunctionCall(FunctionClosure functionClosure, Address selfAddr, Store store,
-	    Trace trace) {
+    public JavaScriptAsyncFunctionCall(FunctionClosure functionClosure, Address selfAddr,
+	    Store store, Trace trace) {
 	this.functionClosure = functionClosure;
 	this.selfAddr = selfAddr;
 	this.store = store;
@@ -36,7 +35,7 @@ public class JavaScriptAsyncFunctionCall implements AsyncFunctionCall {
     public void run(CallStack callStack) {
 	if (functionClosure.cfg.getEntryNode().getBeforeState() == null) {
 	    Control control = Control.bottom();
-	    Scratchpad scratch = new Scratchpad(null, new BValue[0]);
+	    Scratchpad scratch = Scratchpad.empty();
 	    functionClosure.run(selfAddr, store, scratch, trace, control, callStack);
 	}
     }

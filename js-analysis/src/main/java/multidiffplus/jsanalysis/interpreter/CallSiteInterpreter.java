@@ -8,6 +8,7 @@ import org.mozilla.javascript.ast.FunctionCall;
 import org.mozilla.javascript.ast.Name;
 import org.mozilla.javascript.ast.ObjectLiteral;
 
+import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode;
 import multidiffplus.cfg.CfgMap;
 import multidiffplus.cfg.FunctionEvaluator;
 import multidiffplus.jsanalysis.abstractdomain.Address;
@@ -33,7 +34,7 @@ public class CallSiteInterpreter {
 
     private State state;
     private ExpEval expEval;
-    private CfgMap cfgs;
+    CfgMap cfgs;
 
     private CallSiteInterpreter(State state, CfgMap cfgs) {
 	this.state = state;
@@ -87,68 +88,63 @@ public class CallSiteInterpreter {
 
 	}
 
-	// TODO: The function couldn't be resolved. Build a dummy function summary.
+	// Because our analysis is not complete, the identifier may not
+	// point to any function object (ie. function or summary). In this
+	// case, we assume the (local) state is unchanged, but add
+	// BValue.TOP as the return value.
+
+	// CASE 1: Function does not resolve:
+	// (1) If the function call is inserted, the return value is new.
+	// (2) If the target function has changed, the return value has changed.
+	// (3) If any of the argument values have changed, the return value has changed.
+	Change retValChange;
+	if (Change.test(fc))
+	    retValChange = Change.conv(fc, Dependencies::injectValueChange);
+	else if (Change.testU(fc.getTarget()))
+	    retValChange = Change.convU(fc.getTarget(), Dependencies::injectValueChange);
+	else
+	    retValChange = argsChange(scratch);
+
+	// Create the return value.
+	BValue retVal = BValue.top(retValChange, Dependencies.injectValue(fc));
+
+	// Add the function call's value to the scratch space.
+	state.scratch = state.scratch.weakUpdate(fc, retVal);
+	newState = new State(state.store, state.env, state.scratch, state.trace, state.control,
+		state.selfAddr);
+
+	// The function couldn't be resolved. Build a dummy function summary,
+	// which leaves the state unchanged.
 	FunctionEvaluator evaluator = new FunctionEvaluator();
-	evaluator.joinPostCallState(stateToJoin);
+	evaluator
+		.joinPostCallState(JavaScriptAnalysisState.initializeFunctionState(newState, cfgs));
+	return evaluator;
 
-	if (newState == null) {
-	    // Because our analysis is not complete, the identifier may not
-	    // point to any function object. In this case, we assume the
-	    // (local) state is unchanged, but add BValue.TOP as the return
-	    // value.
-
-	    // CASE 1: Function does not resolve:
-	    // (1) If the function call is inserted, the return value is new.
-	    // (2) If the target function has changed, the return value has changed.
-	    // (3) If any of the argument values have changed, the return value has changed.
-	    Change retValChange;
-	    if (Change.test(fc))
-		retValChange = Change.conv(fc, Dependencies::injectValueChange);
-	    else if (Change.testU(fc.getTarget()))
-		retValChange = Change.convU(fc.getTarget(), Dependencies::injectValueChange);
-	    else
-		retValChange = argChange;
-
-	    // Create the return value.
-	    BValue retVal = BValue.top(retValChange, Dependencies.injectValue(fc));
-
-	    // Add the function call's value to the scratch space.
-	    state.scratch = state.scratch.weakUpdate(fc, retVal);
-	    newState = new State(state.store, state.env, state.scratch, state.trace, state.control,
-		    state.selfAddr);
-	} else {
-	    // The function exists and must be evaluated.
-
-	    // CASE 2: Function resolves.
-	    // (1) If the function call is inserted, the return value is new.
-	    // (2) If the target function has changed, the return value has changed.
-	    // (3) If the return value has changed, the return value has changed.
-	    Change retValChange;
-	    if (Change.test(fc))
-		// The entire call is new.
-		retValChange = Change.conv(fc, Dependencies::injectValueChange);
-	    else if (Change.testU(fc.getTarget()))
-		// The target has changed.
-		retValChange = Change.convU(fc.getTarget(), Dependencies::injectValueChange);
-	    else if (funVal.change.isChanged())
-		// The target has changed.
-		retValChange = funVal.change;
-	    else
-		retValChange = Change.u();
-
-	    BValue retVal = newState.scratch.applyReturn();
-	    if (retVal == null) {
-		// Functions with no return statement return undefined.
-		retVal = Undefined.inject(Undefined.top(), retValChange,
-			Dependencies.injectValue(fc));
-		newState.scratch = newState.scratch.weakUpdate(fc, retVal);
-	    } else {
-		// This could be a new value if the call is new.
-		newState.scratch = newState.scratch.weakUpdate(fc,
-			retVal.join(BValue.bottom(retValChange, Dependencies.bot())));
-	    }
-
-	}
+	/*
+	 * if (newState == null) {
+	 * 
+	 * } else { // The function exists and must be evaluated.
+	 * 
+	 * // CASE 2: Function resolves. // (1) If the function call is inserted, the
+	 * return value is new. // (2) If the target function has changed, the return
+	 * value has changed. // (3) If the return value has changed, the return value
+	 * has changed. Change retValChange; if (Change.test(fc)) // The entire call is
+	 * new. retValChange = Change.conv(fc, Dependencies::injectValueChange); else if
+	 * (Change.testU(fc.getTarget())) // The target has changed. retValChange =
+	 * Change.convU(fc.getTarget(), Dependencies::injectValueChange); else if
+	 * (funVal.change.isChanged()) // The target has changed. retValChange =
+	 * funVal.change; else retValChange = Change.u();
+	 * 
+	 * BValue retVal = newState.scratch.applyReturn(); if (retVal == null) { //
+	 * Functions with no return statement return undefined. retVal =
+	 * Undefined.inject(Undefined.top(), retValChange,
+	 * Dependencies.injectValue(fc)); newState.scratch =
+	 * newState.scratch.weakUpdate(fc, retVal); } else { // This could be a new
+	 * value if the call is new. newState.scratch = newState.scratch.weakUpdate(fc,
+	 * retVal.join(BValue.bottom(retValChange, Dependencies.bot()))); }
+	 * 
+	 * }
+	 */
 
     }
 
@@ -183,15 +179,17 @@ public class CallSiteInterpreter {
 	if (retVal == null) {
 	    // Functions with no return statement return undefined.
 	    retVal = Undefined.inject(Undefined.top(), retValChange, Dependencies.injectValue(fc));
-	    returnState.scratch = returnState.scratch.strongUpdate(retVal, null);
+	    returnState.scratch = returnState.scratch.strongUpdate(retVal);
 	} else {
 	    // This could be a new value if the call is new.
-	    returnState.scratch = returnState.scratch.strongUpdate(
-		    retVal.join(BValue.bottom(retValChange, Dependencies.bot())), null);
+	    returnState.scratch = returnState.scratch
+		    .strongUpdate(retVal.join(BValue.bottom(retValChange, Dependencies.bot())));
 	}
 
+	// Update the state for (1) side effects on the store and (2) the return
+	// value of the function call.
 	this.state.store = returnState.store;
-	return newState.scratch.applyReturn();
+	this.state.scratch.weakUpdate(fc, returnState.scratch.applyReturn());
 
 	// TODO: Add a map of FunctionCalls BValues to State. Isn't this just the return
 	// value? Yes, but we may have return values for multiple functions (e.g.,
@@ -214,10 +212,20 @@ public class CallSiteInterpreter {
 
     }
 
+    /**
+     * Returns the aggregated change across all args.
+     */
+    private Change argsChange(Scratchpad scratchpad) {
+	Change argChange = Change.bottom();
+	for (BValue argVal : scratchpad.applyArgs()) {
+	    argChange = argChange.join(argVal.change);
+	}
+	return argChange;
+    }
+
     private Scratchpad evalArgs(FunctionCall fc, BValue funVal) {
 
 	BValue[] args = new BValue[fc.getArguments().size()];
-	Change argChange = Change.bottom();
 	int i = 0;
 	for (AstNode arg : fc.getArguments()) {
 
@@ -239,9 +247,6 @@ public class CallSiteInterpreter {
 		// The argument has changed.
 		argVal.change = argVal.change
 			.join(Change.convU(arg, Dependencies::injectValueChange));
-
-	    // Aggregate the change across all args.
-	    argChange = argChange.join(argVal.change);
 
 	    if (arg instanceof ObjectLiteral) {
 		// If this is an object literal, make a fake var in the
@@ -284,7 +289,7 @@ public class CallSiteInterpreter {
      *            The trace at the caller.
      * @return The final state of the closure.
      */
-    public static FunctionEvaluator applyClosure(BValue funVal, Address selfAddr, Store store,
+    private static FunctionEvaluator applyClosure(BValue funVal, Address selfAddr, Store store,
 	    Scratchpad sp, Trace trace, Control control) {
 
 	FunctionEvaluator evaluator = new FunctionEvaluator();
@@ -340,6 +345,24 @@ public class CallSiteInterpreter {
 
 	return evaluator;
 
+    }
+
+    /**
+     * Initializes the {@code state} of the {@code callSite} target.
+     */
+    public static FunctionEvaluator initialize(ClassifiedASTNode callSite, State state,
+	    CfgMap cfgs) {
+	CallSiteInterpreter interpreter = new CallSiteInterpreter(state, cfgs);
+	return interpreter.initialize((FunctionCall) callSite);
+    }
+
+    /**
+     * Updates the {@code state} by interpreting {@code callSite}.
+     */
+    public static void interpret(FunctionCall fc, State state, JavaScriptAnalysisState exitState,
+	    CfgMap cfgs) {
+	CallSiteInterpreter interpreter = new CallSiteInterpreter(state, cfgs);
+	interpreter.interpret(fc, exitState);
     }
 
 }

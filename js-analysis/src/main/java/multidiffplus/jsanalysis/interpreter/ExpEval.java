@@ -127,7 +127,7 @@ public class ExpEval {
      * @return A BValue that points to the new function object.
      */
     public BValue evalFunctionNode(FunctionNode f) {
-	Closure closure = new FunctionClosure(cfgs.getCfgFor(f), state.env);
+	Closure closure = new FunctionClosure(cfgs.getCfgFor(f), state.env, cfgs);
 	Address addr = state.trace.makeAddr(f.getID(), "");
 	addr = state.trace.modAddr(addr, JSClass.CFunction);
 	state.store = Helpers.createFunctionObj(closure, state.store, state.trace, addr, f);

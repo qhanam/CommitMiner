@@ -43,6 +43,7 @@ import com.github.gumtreediff.gen.js.RhinoTreeGenerator;
 import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode;
 import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode.ChangeType;
 import multidiff.analysis.flow.Analysis;
+import multidiffplus.cfg.AnalysisState;
 import multidiffplus.cfg.CFG;
 import multidiffplus.cfg.CFGEdge;
 import multidiffplus.cfg.CFGNode;
@@ -60,7 +61,7 @@ public class JavaScriptCFGFactory implements ICFGFactory {
     @Override
     public Analysis createAnalysis(ClassifiedASTNode root, IState[] userStates) {
 	CfgMap cfgMap = createCFGs(root);
-	IState initialState = JavaScriptAnalysisState.initializeScriptState(root, cfgMap,
+	AnalysisState initialState = JavaScriptAnalysisState.initializeScriptState(root, cfgMap,
 		userStates);
 	CFG entryPoint = cfgMap.getCfgFor(root);
 	return new JavaScriptAnalysis(entryPoint, cfgMap, initialState);
@@ -175,16 +176,19 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	    }
 
 	    /* The next node in the graph is first node of the subgraph. */
-	    scriptEntry.addOutgoingEdge(null, subGraph.getEntryNode(), idgen.getUniqueID());
+	    scriptEntry.addOutgoingEdge(null, subGraph.getEntryNode(), Collections.emptyList(),
+		    idgen.getUniqueID());
 
 	    /* Merge the subgraph's exit nodes into the script exit node. */
 	    for (CFGNode exitNode : subGraph.getExitNodes()) {
-		exitNode.addOutgoingEdge(null, scriptExit, idgen.getUniqueID());
+		exitNode.addOutgoingEdge(null, scriptExit, Collections.emptyList(),
+			idgen.getUniqueID());
 	    }
 
 	    /* The return nodes should point to the function exit. */
 	    for (CFGNode returnNode : subGraph.getReturnNodes()) {
-		returnNode.addOutgoingEdge(null, scriptExit, idgen.getUniqueID());
+		returnNode.addOutgoingEdge(null, scriptExit, Collections.emptyList(),
+			idgen.getUniqueID());
 	    }
 
 	    /* Count the number of incoming edges for each CFGNode. */
@@ -258,7 +262,7 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 			/* Merge the previous subgraph into the entry point of this subgraph. */
 			for (CFGNode exitNode : previous.getExitNodes()) {
 			    exitNode.addOutgoingEdge(null, subGraph.getEntryNode(),
-				    idgen.getUniqueID());
+				    Collections.emptyList(), idgen.getUniqueID());
 			}
 		    }
 
@@ -308,7 +312,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	    }
 
 	    ifNode.addOutgoingEdge(new CFGEdge(ifStatement.getCondition(), ifNode,
-		    trueBranch.getEntryNode(), idgen.getUniqueID()));
+		    trueBranch.getEntryNode(),
+		    CallSiteVisitor.getCallSites(ifStatement.getCondition()), idgen.getUniqueID()));
 
 	    /* Propagate exit, return, continue, break and throw nodes. */
 	    cfg.addAllExitNodes(trueBranch.getExitNodes());
@@ -342,7 +347,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	    falseBranchCondition.setChangeType(ifStatement.getCondition().getChangeType());
 
 	    ifNode.addOutgoingEdge(new CFGEdge(falseBranchCondition, ifNode,
-		    falseBranch.getEntryNode(), idgen.getUniqueID()));
+		    falseBranch.getEntryNode(), CallSiteVisitor.getCallSites(falseBranchCondition),
+		    idgen.getUniqueID()));
 
 	    /* Propagate exit, return, continue and break nodes. */
 	    cfg.addAllExitNodes(falseBranch.getExitNodes());
@@ -379,7 +385,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	    }
 
 	    whileNode.addOutgoingEdge(new CFGEdge(whileLoop.getCondition(), whileNode,
-		    trueBranch.getEntryNode(), true, idgen.getUniqueID()));
+		    trueBranch.getEntryNode(), true,
+		    CallSiteVisitor.getCallSites(whileLoop.getCondition()), idgen.getUniqueID()));
 
 	    /* Propagate return and throw nodes. */
 	    cfg.addAllReturnNodes(trueBranch.getReturnNodes());
@@ -390,12 +397,14 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 
 	    /* Exit nodes point back to the start of the loop. */
 	    for (CFGNode exitNode : trueBranch.getExitNodes()) {
-		exitNode.addOutgoingEdge(null, whileNode, idgen.getUniqueID());
+		exitNode.addOutgoingEdge(null, whileNode, Collections.emptyList(),
+			idgen.getUniqueID());
 	    }
 
 	    /* Continue nodes point back to the start of the loop. */
 	    for (CFGNode continueNode : trueBranch.getContinueNodes()) {
-		continueNode.addOutgoingEdge(null, whileNode, idgen.getUniqueID());
+		continueNode.addOutgoingEdge(null, whileNode, Collections.emptyList(),
+			idgen.getUniqueID());
 	    }
 
 	    /* Build the false branch. */
@@ -412,8 +421,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 
 	    CFGNode empty = new CFGNode(new EmptyStatement(), Collections.emptyList(),
 		    idgen.getUniqueID());
-	    whileNode.addOutgoingEdge(
-		    new CFGEdge(falseBranchCondition, whileNode, empty, idgen.getUniqueID()));
+	    whileNode.addOutgoingEdge(new CFGEdge(falseBranchCondition, whileNode, empty,
+		    CallSiteVisitor.getCallSites(falseBranchCondition), idgen.getUniqueID()));
 	    cfg.addExitNode(empty);
 
 	    return cfg;
@@ -446,11 +455,13 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	    }
 
 	    /* We always execute the do block at least once. */
-	    doNode.addOutgoingEdge(null, loopBranch.getEntryNode(), idgen.getUniqueID());
+	    doNode.addOutgoingEdge(null, loopBranch.getEntryNode(), Collections.emptyList(),
+		    idgen.getUniqueID());
 
 	    /* Add edges from exit nodes from the loop to the while node. */
 	    for (CFGNode exitNode : loopBranch.getExitNodes()) {
-		exitNode.addOutgoingEdge(null, whileNode, idgen.getUniqueID());
+		exitNode.addOutgoingEdge(null, whileNode, Collections.emptyList(),
+			idgen.getUniqueID());
 	    }
 
 	    /* Propagate return and throw nodes. */
@@ -462,11 +473,13 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 
 	    /* Continue nodes have edges to the while condition. */
 	    for (CFGNode continueNode : loopBranch.getContinueNodes()) {
-		continueNode.addOutgoingEdge(null, whileNode, idgen.getUniqueID());
+		continueNode.addOutgoingEdge(null, whileNode, Collections.emptyList(),
+			idgen.getUniqueID());
 	    }
 
 	    /* Add edge for true condition back to the start of the loop. */
-	    whileNode.addOutgoingEdge(doLoop.getCondition(), doNode, true, idgen.getUniqueID());
+	    whileNode.addOutgoingEdge(doLoop.getCondition(), doNode, true,
+		    CallSiteVisitor.getCallSites(doLoop.getCondition()), idgen.getUniqueID());
 
 	    /* Add edge for false condition. */
 
@@ -482,7 +495,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 
 	    CFGNode empty = new CFGNode(new EmptyStatement(), Collections.emptyList(),
 		    idgen.getUniqueID());
-	    whileNode.addOutgoingEdge(falseBranchCondition, empty, idgen.getUniqueID());
+	    whileNode.addOutgoingEdge(falseBranchCondition, empty,
+		    CallSiteVisitor.getCallSites(falseBranchCondition), idgen.getUniqueID());
 	    cfg.addExitNode(empty);
 
 	    return cfg;
@@ -505,14 +519,15 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	    /* After variables are declared, add an empty node with two edges. */
 	    CFGNode condition = new CFGNode(new EmptyStatement(), Collections.emptyList(), "FOR",
 		    idgen.getUniqueID());
-	    forNode.addOutgoingEdge(null, condition, idgen.getUniqueID());
+	    forNode.addOutgoingEdge(null, condition, Collections.emptyList(), idgen.getUniqueID());
 
 	    /*
 	     * After the body of the loop executes, add the node to perform the increment.
 	     */
 	    CFGNode increment = new CFGNode(forLoop.getIncrement(),
 		    CallSiteVisitor.getCallSites(forLoop.getIncrement()), idgen.getUniqueID());
-	    increment.addOutgoingEdge(null, condition, idgen.getUniqueID());
+	    increment.addOutgoingEdge(null, condition, Collections.emptyList(),
+		    idgen.getUniqueID());
 
 	    /* Build the true branch. */
 
@@ -526,7 +541,7 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	    }
 
 	    condition.addOutgoingEdge(forLoop.getCondition(), trueBranch.getEntryNode(), true,
-		    idgen.getUniqueID());
+		    CallSiteVisitor.getCallSites(forLoop.getCondition()), idgen.getUniqueID());
 
 	    /* Propagate return and throw nodes. */
 	    cfg.addAllReturnNodes(trueBranch.getReturnNodes());
@@ -537,12 +552,14 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 
 	    /* Exit nodes point to the increment node. */
 	    for (CFGNode exitNode : trueBranch.getExitNodes()) {
-		exitNode.addOutgoingEdge(null, increment, idgen.getUniqueID());
+		exitNode.addOutgoingEdge(null, increment, Collections.emptyList(),
+			idgen.getUniqueID());
 	    }
 
 	    /* Continue nodes point to the increment. */
 	    for (CFGNode continueNode : trueBranch.getContinueNodes()) {
-		continueNode.addOutgoingEdge(null, increment, idgen.getUniqueID());
+		continueNode.addOutgoingEdge(null, increment, Collections.emptyList(),
+			idgen.getUniqueID());
 	    }
 
 	    /* Build the false branch. */
@@ -559,7 +576,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 
 	    CFGNode empty = new CFGNode(new EmptyStatement(), Collections.emptyList(),
 		    idgen.getUniqueID());
-	    condition.addOutgoingEdge(falseBranchCondition, empty, idgen.getUniqueID());
+	    condition.addOutgoingEdge(falseBranchCondition, empty,
+		    CallSiteVisitor.getCallSites(falseBranchCondition), idgen.getUniqueID());
 	    cfg.addExitNode(empty);
 
 	    return cfg;
@@ -650,9 +668,10 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	     * Add the edges connecting the entry point to the assignment and assignment to
 	     * condition.
 	     */
-	    forInNode.addOutgoingEdge(null, condition, idgen.getUniqueID());
+	    forInNode.addOutgoingEdge(null, condition, Collections.emptyList(),
+		    idgen.getUniqueID());
 	    condition.addOutgoingEdge(new CFGEdge(keyConditionFunction, condition, assignment, true,
-		    idgen.getUniqueID()));
+		    CallSiteVisitor.getCallSites(keyConditionFunction), idgen.getUniqueID()));
 
 	    /* Create the CFG for the loop body. */
 
@@ -674,12 +693,14 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 
 	    /* The exit nodes point back to the assignment node. */
 	    for (CFGNode exitNode : trueBranch.getExitNodes()) {
-		exitNode.addOutgoingEdge(null, condition, idgen.getUniqueID());
+		exitNode.addOutgoingEdge(null, condition, Collections.emptyList(),
+			idgen.getUniqueID());
 	    }
 
 	    /* The continue nodes point back to the assignment node. */
 	    for (CFGNode continueNode : trueBranch.getContinueNodes()) {
-		continueNode.addOutgoingEdge(null, condition, idgen.getUniqueID());
+		continueNode.addOutgoingEdge(null, condition, Collections.emptyList(),
+			idgen.getUniqueID());
 	    }
 
 	    /* Create a node for the false branch to exit the loop. */
@@ -701,9 +722,10 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	    falseBranchCondition.setParent(forInLoop);
 
 	    /* Add the edges from the assignment node to the start of the loop. */
-	    assignment.addOutgoingEdge(null, trueBranch.getEntryNode(), idgen.getUniqueID());
-	    condition.addOutgoingEdge(
-		    new CFGEdge(falseBranchCondition, condition, falseBranch, idgen.getUniqueID()));
+	    assignment.addOutgoingEdge(null, trueBranch.getEntryNode(), Collections.emptyList(),
+		    idgen.getUniqueID());
+	    condition.addOutgoingEdge(new CFGEdge(falseBranchCondition, condition, falseBranch,
+		    CallSiteVisitor.getCallSites(falseBranchCondition), idgen.getUniqueID()));
 
 	    return cfg;
 
@@ -758,8 +780,9 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 		    InfixExpression compare = new InfixExpression(switchStatement.getExpression(),
 			    switchCase.getExpression());
 		    compare.setType(Token.SHEQ);
-		    switchNode.addOutgoingEdge(new CFGEdge(compare, switchNode,
-			    subGraph.getEntryNode(), idgen.getUniqueID()));
+		    switchNode.addOutgoingEdge(
+			    new CFGEdge(compare, switchNode, subGraph.getEntryNode(),
+				    CallSiteVisitor.getCallSites(compare), idgen.getUniqueID()));
 
 		    if (defaultCondition == null) {
 			defaultCondition = compare;
@@ -776,7 +799,7 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 
 		} else {
 		    defaultEdge = new CFGEdge(null, switchNode, subGraph.getEntryNode(),
-			    idgen.getUniqueID());
+			    Collections.emptyList(), idgen.getUniqueID());
 		    switchNode.addOutgoingEdge(defaultEdge);
 		}
 
@@ -798,7 +821,7 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 		     */
 		    for (CFGNode exitNode : previousSubGraph.getExitNodes()) {
 			exitNode.addOutgoingEdge(null, subGraph.getEntryNode(),
-				idgen.getUniqueID());
+				Collections.emptyList(), idgen.getUniqueID());
 		    }
 
 		}
@@ -812,7 +835,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 		CFGNode defaultPath = new CFGNode(new EmptyStatement(), Collections.emptyList(),
 			idgen.getUniqueID());
 		defaultEdge = new CFGEdge(null, switchNode, new CFGNode(new EmptyStatement(),
-			Collections.emptyList(), idgen.getUniqueID()), idgen.getUniqueID());
+			Collections.emptyList(), idgen.getUniqueID()), Collections.emptyList(),
+			idgen.getUniqueID());
 		cfg.addExitNode(defaultPath);
 	    }
 
@@ -881,11 +905,13 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 		scopeBlock.addExitNode(empty);
 	    }
 
-	    withNode.addOutgoingEdge(null, scopeBlock.getEntryNode(), idgen.getUniqueID());
+	    withNode.addOutgoingEdge(null, scopeBlock.getEntryNode(), Collections.emptyList(),
+		    idgen.getUniqueID());
 
 	    /* Exit nodes point to the scope destroy method. */
 	    for (CFGNode exitNode : scopeBlock.getExitNodes()) {
-		exitNode.addOutgoingEdge(null, endWithNode, idgen.getUniqueID());
+		exitNode.addOutgoingEdge(null, endWithNode, Collections.emptyList(),
+			idgen.getUniqueID());
 	    }
 
 	    /* Propagate return and throw nodes. */
@@ -936,7 +962,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 		cfg.addAllThrowNodes(finallyBlock.getThrowNodes());
 
 		for (CFGNode exitNode : finallyBlock.getExitNodes()) {
-		    exitNode.addOutgoingEdge(null, exit, idgen.getUniqueID());
+		    exitNode.addOutgoingEdge(null, exit, Collections.emptyList(),
+			    idgen.getUniqueID());
 		}
 	    }
 
@@ -959,7 +986,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 		cfg.addExitNode(empty);
 
 		for (CFGNode exitNode : finallyBlock.getExitNodes()) {
-		    exitNode.addOutgoingEdge(null, empty, idgen.getUniqueID());
+		    exitNode.addOutgoingEdge(null, empty, Collections.emptyList(),
+			    idgen.getUniqueID());
 		}
 
 		/*
@@ -981,13 +1009,13 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 		 */
 		for (CFGNode throwNode : tryBlock.getThrowNodes()) {
 		    throwNode.addOutgoingEdge(null, finallyBlock.getEntryNode(),
-			    idgen.getUniqueID());
+			    Collections.emptyList(), idgen.getUniqueID());
 		}
 
 		/* Exit nodes exit to the finally block. */
 		for (CFGNode exitNode : tryBlock.getExitNodes()) {
 		    exitNode.addOutgoingEdge(null, finallyBlock.getEntryNode(),
-			    idgen.getUniqueID());
+			    Collections.emptyList(), idgen.getUniqueID());
 		}
 	    }
 
@@ -1030,7 +1058,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 		    cfg.addExitNode(empty);
 
 		    for (CFGNode exitNode : finallyBlock.getExitNodes()) {
-			exitNode.addOutgoingEdge(catchCondition, empty, idgen.getUniqueID());
+			exitNode.addOutgoingEdge(catchCondition, empty,
+				CallSiteVisitor.getCallSites(catchCondition), idgen.getUniqueID());
 		    }
 
 		    /*
@@ -1049,17 +1078,18 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 		    /* Exit nodes exit to the finally block. */
 		    for (CFGNode exitNode : catchBlock.getExitNodes()) {
 			exitNode.addOutgoingEdge(null, finallyBlock.getEntryNode(),
-				idgen.getUniqueID());
+				Collections.emptyList(), idgen.getUniqueID());
 		    }
 
 		}
 
 		tryNode.addOutgoingEdge(catchCondition, catchBlock.getEntryNode(),
-			idgen.getUniqueID());
+			CallSiteVisitor.getCallSites(catchCondition), idgen.getUniqueID());
 
 	    }
 
-	    tryNode.addOutgoingEdge(null, tryBlock.getEntryNode(), idgen.getUniqueID());
+	    tryNode.addOutgoingEdge(null, tryBlock.getEntryNode(), Collections.emptyList(),
+		    idgen.getUniqueID());
 
 	    return cfg;
 
@@ -1092,7 +1122,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 		/* Add an edge from the finally block to the return node. */
 		for (CFGNode exitNode : copyOfFinallyBlock.getExitNodes()) {
 		    exitNode.getOutgoingEdges().clear();
-		    exitNode.addOutgoingEdge(condition, newJumpNode, idgen.getUniqueID());
+		    exitNode.addOutgoingEdge(condition, newJumpNode,
+			    CallSiteVisitor.getCallSites(condition), idgen.getUniqueID());
 		    exitNode.getId();
 		}
 
@@ -1106,7 +1137,7 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 		 * Add an edge from the original jump node to the start of the finally block.
 		 */
 		jumpNode.addOutgoingEdge(null, copyOfFinallyBlock.getEntryNode(),
-			idgen.getUniqueID());
+			Collections.emptyList(), idgen.getUniqueID());
 
 	    }
 

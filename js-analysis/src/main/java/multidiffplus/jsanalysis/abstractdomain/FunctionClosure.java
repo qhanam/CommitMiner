@@ -11,7 +11,6 @@ import org.mozilla.javascript.ast.ScriptNode;
 
 import multidiffplus.cfg.CFG;
 import multidiffplus.cfg.CfgMap;
-import multidiffplus.cfg.IState;
 import multidiffplus.jsanalysis.flow.JavaScriptAnalysisState;
 import multidiffplus.jsanalysis.initstate.StoreFactory;
 import multidiffplus.jsanalysis.interpreter.Helpers;
@@ -59,7 +58,7 @@ public class FunctionClosure extends Closure {
 
 	// Return initial state.
 	return new FunctionOrSummary(Pair.of(cfg, JavaScriptAnalysisState.initializeFunctionState(
-		initState(selfAddr, store, scratchpad, trace, control), new IState[0])));
+		initState(selfAddr, store, scratchpad, trace, control), cfgs)));
 
     }
 

@@ -2,6 +2,7 @@ package multidiff.analysis.flow;
 
 import multidiffplus.cfg.AnalysisState;
 import multidiffplus.cfg.CFGEdge;
+import multidiffplus.cfg.CFGNode;
 
 /**
  * An branch condition source code instruction.
@@ -18,39 +19,22 @@ public class BranchInstruction extends Instruction {
     }
 
     @Override
-    public void addInstructionsToKontinuation(CallStack callStack, AnalysisState incomingState) {
-	StackFrame stackFrame = callStack.peek();
-	Instruction instruction = stackFrame.getInstructionForNode(edge.getTo());
-	instruction.joinPreTransferState(incomingState);
-	stackFrame.pushInstruction(instruction);
-    }
+    protected void transferStateOverInstruction(CallStack callStack) {
 
-    @Override
-    protected AnalysisState transferStateOverInstruction(CallStack callStack) {
-	AnalysisState postTransferState, preTransferState = edge.getBeforeState();
-	postTransferState = preTransferState.interpretBranchCondition(edge.getCondition());
-	return postTransferState;
-    }
-
-    @Override
-    protected void joinPostTransferState(AnalysisState outgoingState) {
-	if (edge.getAfterState() != null) {
-	    outgoingState = outgoingState.join(edge.getAfterState());
+	// Update the pre-transfer state by joining all incoming states.
+	AnalysisState preTransferState = edge.getBeforeState();
+	CFGNode node = edge.getFrom();
+	if (preTransferState == null) {
+	    preTransferState = node.getAfterState();
+	} else {
+	    preTransferState = preTransferState.join(node.getAfterState());
 	}
-	edge.setAfterState(outgoingState);
-    }
+	edge.setBeforeState(preTransferState);
 
-    @Override
-    protected AnalysisState getPreTransferState() {
-	return edge.getBeforeState();
-    }
+	// Update the post-transfer state by interpreting the statement.
+	edge.setAfterState(
+		edge.getAfterState().join(edge.getBeforeState().interpretBranchCondition(edge)));
 
-    @Override
-    protected void joinPreTransferState(AnalysisState incomingState) {
-	if (edge.getBeforeState() != null) {
-	    incomingState = incomingState.join(edge.getAfterState());
-	}
-	edge.setBeforeState(incomingState);
     }
 
     @Override

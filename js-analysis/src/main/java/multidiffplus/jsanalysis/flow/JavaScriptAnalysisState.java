@@ -4,8 +4,8 @@ import org.mozilla.javascript.ast.FunctionCall;
 import org.mozilla.javascript.ast.ScriptNode;
 
 import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode;
+import multidiffplus.cfg.AnalysisState;
 import multidiffplus.cfg.CFGEdge;
-import multidiffplus.cfg.CFGNode;
 import multidiffplus.cfg.CfgMap;
 import multidiffplus.cfg.FunctionEvaluator;
 import multidiffplus.cfg.IState;
@@ -25,31 +25,20 @@ import multidiffplus.jsanalysis.interpreter.StatementInterpreter;
  */
 public class JavaScriptAnalysisState implements IState {
 
-    /**
-     * The built-in state (control flow, points-to, type-state and change-impact).
-     */
     private State state;
+    private CfgMap cfgs;
 
-    /**
-     * The set of states for user-specified analyses.
-     */
-    private IState[] userStates;
-
-    private JavaScriptAnalysisState(State state, IState[] userStates) {
+    private JavaScriptAnalysisState(State state, CfgMap cfgs) {
 	this.state = state;
-	this.userStates = userStates;
+	this.cfgs = cfgs;
     }
 
     @Override
-    public IState interpretStatement(CFGNode node) {
+    public IState interpretStatement(ClassifiedASTNode statement) {
 	State newState = this.state.clone();
-	state.trace = state.trace.update(node.getStatement().getID());
-	StatementInterpreter.interpret(node, newState);
-	IState[] newUserStates = new IState[userStates.length];
-	for (int i = 0; i < userStates.length; i++) {
-	    newUserStates[i] = userStates[i].interpretStatement(node);
-	}
-	return new JavaScriptAnalysisState(newState, newUserStates);
+	state.trace = state.trace.update(statement.getID());
+	StatementInterpreter.interpret(statement, newState, cfgs);
+	return new JavaScriptAnalysisState(newState, cfgs);
     }
 
     @Override
@@ -58,22 +47,14 @@ public class JavaScriptAnalysisState implements IState {
 	if (edge.getCondition() != null) {
 	    state.trace = state.trace.update(edge.getCondition().getID());
 	}
-	BranchConditionInterpreter.interpret(edge, newState);
-	IState[] newUserStates = new IState[userStates.length];
-	for (int i = 0; i < userStates.length; i++) {
-	    newUserStates[i] = userStates[i].interpretBranchCondition(edge);
-	}
-	return new JavaScriptAnalysisState(newState, newUserStates);
+	BranchConditionInterpreter.interpret(edge, newState, cfgs);
+	return new JavaScriptAnalysisState(newState, cfgs);
     }
 
     @Override
     public IState join(IState s) {
 	JavaScriptAnalysisState that = (JavaScriptAnalysisState) s;
-	IState[] newUserStates = new IState[userStates.length];
-	for (int i = 0; i < userStates.length; i++) {
-	    newUserStates[i] = this.userStates[i].join(that.userStates[i]);
-	}
-	return new JavaScriptAnalysisState(this.state.join(that.state), newUserStates);
+	return new JavaScriptAnalysisState(this.state.join(that.state), cfgs);
     }
 
     @Override
@@ -84,15 +65,14 @@ public class JavaScriptAnalysisState implements IState {
     }
 
     @Override
-    public Integer getAnalysisId() {
-	return 0;
-    }
-
-    @Override
-    public FunctionEvaluator initializeFunctionState(ClassifiedASTNode callSite) {
+    public FunctionEvaluator interpretCallSite(ClassifiedASTNode callSite) {
+	// TODO: Either (1) an initial function state was returned; compare the
+	// initial state, or (2) a function summary was returned; move to the
+	// next call site.
 	FunctionCall fc = (FunctionCall) callSite;
 	State newState = this.state.clone();
 	state.trace = state.trace.update(fc.getID());
+	// CallSiteInterpreter
 	return null;
     }
 
@@ -103,8 +83,8 @@ public class JavaScriptAnalysisState implements IState {
     /**
      * Creates an initial AnalysisState for a function.
      */
-    public static IState initializeFunctionState(State state, IState[] userStates) {
-	return new JavaScriptAnalysisState(state, userStates);
+    public static IState initializeFunctionState(State state, CfgMap cfgs) {
+	return new JavaScriptAnalysisState(state, cfgs);
     }
 
     /**
@@ -113,10 +93,11 @@ public class JavaScriptAnalysisState implements IState {
      * This should only be called once per analysis. All other states should be
      * created by either interpreting statements or joining two states.
      */
-    public static IState initializeScriptState(ClassifiedASTNode root, CfgMap cfgMap,
+    public static AnalysisState initializeScriptState(ClassifiedASTNode root, CfgMap cfgs,
 	    IState[] userStates) {
-	State state = StateFactory.createInitialState((ScriptNode) root, cfgMap);
-	return new JavaScriptAnalysisState(state, userStates);
+	State state = StateFactory.createInitialState((ScriptNode) root, cfgs);
+	return AnalysisState.initializeAnalysisState(new JavaScriptAnalysisState(state, cfgs),
+		userStates);
     }
 
 }

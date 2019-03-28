@@ -23,7 +23,7 @@ public class CFGNode {
     private ClassifiedASTNode statement;
 
     /** The ordered list of call sites within the statement. */
-    private List<ClassifiedASTNode> callSites;
+    private CallSiteNode[] callSiteNodes;
 
     /** The edges entering this node. **/
     private List<CFGEdge> inEdges;
@@ -50,7 +50,7 @@ public class CFGNode {
      * @param statement
      *            The statement that is executed when this node is reached.
      */
-    public CFGNode(ClassifiedASTNode statement, List<ClassifiedASTNode> callSites, int id) {
+    public CFGNode(ClassifiedASTNode statement, CallSiteNode[] callSiteNodes, int id) {
 	this.inEdges = new LinkedList<CFGEdge>();
 	this.outEdges = new LinkedList<CFGEdge>();
 	this.statement = statement;
@@ -59,7 +59,7 @@ public class CFGNode {
 	this.setMappedNode(null);
 	this.beforeState = null;
 	this.afterState = null;
-	this.callSites = callSites;
+	this.callSiteNodes = callSiteNodes;
     }
 
     /**
@@ -67,6 +67,35 @@ public class CFGNode {
      *            The statement that is executed when this node is reached.
      * @param name
      *            The name for this node (nice for printing and debugging).
+     * @param id
+     *            The unique id for the node.
+     */
+    public CFGNode(ClassifiedASTNode statement, List<ClassifiedASTNode> callSites, int id) {
+	this.inEdges = new LinkedList<CFGEdge>();
+	this.outEdges = new LinkedList<CFGEdge>();
+	this.statement = statement;
+	this.id = id;
+	this.name = null;
+	this.beforeState = null;
+	this.afterState = null;
+
+	this.callSiteNodes = new CallSiteNode[callSites.size()];
+	for (int i = 0; i < callSites.size(); i++) {
+	    if (i == 0)
+		this.callSiteNodes[i] = new CallSiteNode(callSites.get(i), this.inEdges);
+	    else
+		this.callSiteNodes[i] = new CallSiteNode(callSites.get(i),
+			this.callSiteNodes[i - 1]);
+	}
+    }
+
+    /**
+     * @param statement
+     *            The statement that is executed when this node is reached.
+     * @param name
+     *            The name for this node (nice for printing and debugging).
+     * @param id
+     *            The unique id for the node.
      */
     public CFGNode(ClassifiedASTNode statement, List<ClassifiedASTNode> callSites, String name,
 	    int id) {
@@ -77,7 +106,15 @@ public class CFGNode {
 	this.name = name;
 	this.beforeState = null;
 	this.afterState = null;
-	this.callSites = callSites;
+
+	this.callSiteNodes = new CallSiteNode[callSites.size()];
+	for (int i = 0; i < callSites.size(); i++) {
+	    if (i == 0)
+		this.callSiteNodes[i] = new CallSiteNode(callSites.get(i), this.inEdges);
+	    else
+		this.callSiteNodes[i] = new CallSiteNode(callSites.get(i),
+			this.callSiteNodes[i - 1]);
+	}
     }
 
     /**
@@ -163,14 +200,15 @@ public class CFGNode {
      * @param node
      *            The node at the other end of this edge.
      */
-    public void addOutgoingEdge(ClassifiedASTNode condition, CFGNode node, int id) {
+    public void addOutgoingEdge(ClassifiedASTNode condition, CFGNode node,
+	    List<ClassifiedASTNode> callSites, int id) {
 	CFGEdge edge = this.getOutgoingEdge(condition);
 
 	if (edge != null) {
 	    edge.setTo(node);
 	} else {
-	    edge = new CFGEdge(condition, this, node, id);
-	    this.outEdges.add(new CFGEdge(condition, this, node, id));
+	    edge = new CFGEdge(condition, this, node, callSites, id);
+	    this.outEdges.add(new CFGEdge(condition, this, node, callSites, id));
 	}
     }
 
@@ -184,14 +222,14 @@ public class CFGNode {
      *            The node at the other end of this edge.
      */
     public void addOutgoingEdge(ClassifiedASTNode condition, CFGNode node, boolean loopEdge,
-	    int id) {
+	    List<ClassifiedASTNode> callSites, int id) {
 	CFGEdge edge = this.getOutgoingEdge(condition);
 
 	if (edge != null) {
 	    edge.setTo(node);
 	} else {
-	    edge = new CFGEdge(condition, this, node, id);
-	    this.outEdges.add(new CFGEdge(condition, this, node, loopEdge, id));
+	    edge = new CFGEdge(condition, this, node, callSites, id);
+	    this.outEdges.add(new CFGEdge(condition, this, node, loopEdge, callSites, id));
 	}
     }
 
@@ -238,13 +276,6 @@ public class CFGNode {
     }
 
     /**
-     * Returns the list of callsites in topological order.
-     */
-    public List<ClassifiedASTNode> getCallSites() {
-	return callSites;
-    }
-
-    /**
      * Returns the AST Statement which contains the actions this node performs.
      */
     public ClassifiedASTNode getStatement() {
@@ -257,7 +288,14 @@ public class CFGNode {
      */
     public void setStatement(ClassifiedASTNode statement, List<ClassifiedASTNode> callSites) {
 	this.statement = statement;
-	this.callSites = callSites;
+	this.callSiteNodes = new CallSiteNode[callSites.size()];
+	for (int i = 0; i < callSites.size(); i++) {
+	    if (i == 0)
+		this.callSiteNodes[i] = new CallSiteNode(callSites.get(i), this);
+	    else
+		this.callSiteNodes[i] = new CallSiteNode(callSites.get(i),
+			this.callSiteNodes[i - 1]);
+	}
     }
 
     /**
@@ -314,9 +352,10 @@ public class CFGNode {
      *         the same as the original.
      */
     public static CFGNode copy(CFGNode node, int id) {
-	CFGNode newNode = new CFGNode(node.getStatement(), node.callSites, id);
+	CFGNode newNode = new CFGNode(node.getStatement(), node.callSiteNodes, id);
 	for (CFGEdge edge : node.getOutgoingEdges())
-	    newNode.addOutgoingEdge(edge.getCondition(), edge.getTo(), edge.getId());
+	    newNode.addOutgoingEdge(edge.getCondition(), edge.getTo(), edge.getCallSiteNodes(),
+		    edge.getId());
 	return newNode;
     }
 

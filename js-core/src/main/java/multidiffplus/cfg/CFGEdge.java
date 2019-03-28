@@ -1,5 +1,8 @@
 package multidiffplus.cfg;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode;
 import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode.ChangeType;
 
@@ -16,6 +19,9 @@ public class CFGEdge {
      * always traversed.
      **/
     private ClassifiedASTNode condition;
+
+    /** The ordered list of call sites within the statement. */
+    private CallSiteNode[] callSiteNodes;
 
     /** The node that this edge exits. */
     private CFGNode from;
@@ -41,21 +47,49 @@ public class CFGEdge {
      */
     private AnalysisState afterState;
 
-    public CFGEdge(ClassifiedASTNode condition, CFGNode from, CFGNode to, int id) {
+    private CFGEdge(ClassifiedASTNode condition, CFGNode from, CFGNode to,
+	    CallSiteNode[] callSiteNodes, int id) {
 	this.condition = condition;
 	this.to = to;
 	this.from = from;
 	this.changeType = ChangeType.UNKNOWN;
 	this.id = id;
+	this.callSiteNodes = callSiteNodes;
+    }
+
+    public CFGEdge(ClassifiedASTNode condition, CFGNode from, CFGNode to,
+	    List<ClassifiedASTNode> callSites, int id) {
+	this.condition = condition;
+	this.to = to;
+	this.from = from;
+	this.changeType = ChangeType.UNKNOWN;
+	this.id = id;
+	this.callSiteNodes = new CallSiteNode[callSites.size()];
+	for (int i = 0; i < callSites.size(); i++) {
+	    if (i == 0)
+		this.callSiteNodes[i] = new CallSiteNode(callSites.get(i), from);
+	    else
+		this.callSiteNodes[i] = new CallSiteNode(callSites.get(i),
+			this.callSiteNodes[i - 1]);
+	}
     }
 
     public CFGEdge(ClassifiedASTNode condition, CFGNode from, CFGNode to, boolean loopEdge,
-	    int id) {
+	    List<ClassifiedASTNode> callSites, int id) {
 	this.condition = condition;
 	this.to = to;
 	this.from = from;
 	this.changeType = ChangeType.UNKNOWN;
 	this.id = id;
+	this.callSiteNodes = new CallSiteNode[callSites.size()];
+	for (int i = 0; i < callSites.size(); i++) {
+	    if (i == 0)
+		this.callSiteNodes[i] = new CallSiteNode(callSites.get(i), from);
+	    else
+		this.callSiteNodes[i] = new CallSiteNode(callSites.get(i),
+			this.callSiteNodes[i - 1]);
+	}
+
     }
 
     /**
@@ -110,7 +144,7 @@ public class CFGEdge {
      * @return a shallow copy of the edge.
      */
     public CFGEdge copy(int id) {
-	return new CFGEdge(this.condition, this.from, this.to, id);
+	return new CFGEdge(this.condition, this.from, this.to, this.callSiteNodes, id);
     }
 
     /**
@@ -163,6 +197,17 @@ public class CFGEdge {
      */
     public int getId() {
 	return id;
+    }
+
+    /**
+     * Returns the call site nodes.
+     */
+    public List<ClassifiedASTNode> getCallSiteNodes() {
+	List<ClassifiedASTNode> callSites = new ArrayList<>();
+	for (CallSiteNode node : callSiteNodes) {
+	    callSites.add(node.getCallSite());
+	}
+	return callSites;
     }
 
     @Override

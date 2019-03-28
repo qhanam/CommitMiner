@@ -4,6 +4,7 @@ import org.mozilla.javascript.ast.AstRoot;
 
 import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode;
 import multidiff.analysis.flow.Analysis;
+import multidiffplus.cfg.AnalysisState;
 import multidiffplus.cfg.CFG;
 import multidiffplus.cfg.CfgMap;
 import multidiffplus.cfg.IState;
@@ -12,7 +13,7 @@ import multidiffplus.jsanalysis.interpreter.Helpers;
 
 public class JavaScriptAnalysis extends Analysis {
 
-    JavaScriptAnalysis(CFG entryPoint, CfgMap cfgMap, IState initialState) {
+    JavaScriptAnalysis(CFG entryPoint, CfgMap cfgMap, AnalysisState initialState) {
 	super(entryPoint, cfgMap, initialState);
     }
 
@@ -29,7 +30,8 @@ public class JavaScriptAnalysis extends Analysis {
     public static JavaScriptAnalysis InitializeJavaScriptAnalysis(ClassifiedASTNode root) {
 	JavaScriptCFGFactory cfgFactory = new JavaScriptCFGFactory();
 	CfgMap cfgMap = cfgFactory.createCFGs(root);
-	IState initialState = JavaScriptAnalysisState.initializeScriptState(root, cfgMap);
+	AnalysisState initialState = JavaScriptAnalysisState.initializeScriptState(root, cfgMap,
+		new IState[0]);
 	CFG entryPoint = cfgMap.getCfgFor(root);
 	return new JavaScriptAnalysis(entryPoint, cfgMap, initialState);
     }
