@@ -1,5 +1,7 @@
 package multidiffplus.jsanalysis.flow;
 
+import java.util.List;
+
 import org.mozilla.javascript.ast.FunctionCall;
 import org.mozilla.javascript.ast.ScriptNode;
 
@@ -12,6 +14,7 @@ import multidiffplus.cfg.IState;
 import multidiffplus.jsanalysis.abstractdomain.State;
 import multidiffplus.jsanalysis.initstate.StateFactory;
 import multidiffplus.jsanalysis.interpreter.BranchConditionInterpreter;
+import multidiffplus.jsanalysis.interpreter.CallSiteInterpreter;
 import multidiffplus.jsanalysis.interpreter.StateComparator;
 import multidiffplus.jsanalysis.interpreter.StatementInterpreter;
 
@@ -65,15 +68,35 @@ public class JavaScriptAnalysisState implements IState {
     }
 
     @Override
-    public FunctionEvaluator interpretCallSite(ClassifiedASTNode callSite) {
-	// TODO: Either (1) an initial function state was returned; compare the
-	// initial state, or (2) a function summary was returned; move to the
-	// next call site.
+    public FunctionEvaluator buildFunctionEvaluator(ClassifiedASTNode callSite) {
 	FunctionCall fc = (FunctionCall) callSite;
 	State newState = this.state.clone();
 	state.trace = state.trace.update(fc.getID());
-	// CallSiteInterpreter
-	return null;
+	return CallSiteInterpreter.initialize(callSite, newState, cfgs);
+    }
+
+    @Override
+    public IState interpretCallSite(ClassifiedASTNode callSite, List<IState> exitStates) {
+	State newState = this.state.clone();
+	if (exitStates.size() == 0)
+	    return null;
+
+	// Merge the exit states (ie. return values) of the function targets.
+	IState mergedExitState = null;
+	for (IState exitState : exitStates) {
+	    if (mergedExitState == null) {
+		mergedExitState = exitState;
+	    } else {
+		mergedExitState = mergedExitState.join(exitState);
+	    }
+	}
+
+	// Update the call site (return value) and the abstract store (side
+	// effects).
+	CallSiteInterpreter.interpret((FunctionCall) callSite, newState,
+		(JavaScriptAnalysisState) mergedExitState, cfgs);
+
+	return new JavaScriptAnalysisState(newState, cfgs);
     }
 
     public State getUnderlyingState() {

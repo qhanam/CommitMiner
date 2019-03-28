@@ -3,6 +3,7 @@ package multidiffplus.jsanalysis.abstractdomain;
 import org.apache.commons.lang3.tuple.Pair;
 
 import multidiffplus.cfg.CFG;
+import multidiffplus.cfg.CfgMap;
 import multidiffplus.cfg.IState;
 import multidiffplus.jsanalysis.trace.Trace;
 
@@ -17,6 +18,8 @@ public abstract class Closure {
      * returns the function's exit state, or (2) if the closure is a CFG, returns
      * the function (ie. its CFG) and its initial state.
      * 
+     * @param preTransferState
+     *            The state before the function is interpreted.
      * @param selfAddr
      *            The value of the 'this' variable (a set of objects).
      * @param store
@@ -28,8 +31,8 @@ public abstract class Closure {
      * @param control
      *            Tracks control flow changes.
      */
-    public abstract FunctionOrSummary initializeOrRun(Address selfAddr, Store store,
-	    Scratchpad scratchpad, Trace trace, Control control);
+    public abstract FunctionOrSummary initializeOrRun(State preTransferState, Address selfAddr,
+	    Store store, Scratchpad scratchpad, Trace trace, Control control, CfgMap cfgs);
 
     /**
      * Contains (1) a function (ie. a CFG and an initial state) to evaluate, or (2)

@@ -44,8 +44,8 @@ public class FunctionClosure extends Closure {
     }
 
     @Override
-    public FunctionOrSummary initializeOrRun(Address selfAddr, Store store, Scratchpad scratchpad,
-	    Trace trace, Control control) {
+    public FunctionOrSummary initializeOrRun(State preTransferState, Address selfAddr, Store store,
+	    Scratchpad scratchpad, Trace trace, Control control, CfgMap cfgs) {
 
 	// Store any callsite dependencies.
 	control.getCall().change.getDependencies().getDependencies()

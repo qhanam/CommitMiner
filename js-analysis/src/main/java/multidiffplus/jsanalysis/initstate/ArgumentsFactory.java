@@ -6,7 +6,7 @@ import java.util.Stack;
 
 import org.mozilla.javascript.ast.Name;
 
-import multidiff.analysis.flow.CallStack;
+import multidiffplus.cfg.CfgMap;
 import multidiffplus.jsanalysis.abstractdomain.Address;
 import multidiffplus.jsanalysis.abstractdomain.Change;
 import multidiffplus.jsanalysis.abstractdomain.Closure;
@@ -49,17 +49,10 @@ public class ArgumentsFactory {
 
 	NativeClosure closure = new NativeClosure() {
 	    @Override
-	    public JavaScriptAnalysisState run(Address selfAddr, Store store, Scratchpad scratchpad,
-		    Trace trace, Control control, CallStack callStack) {
-		return (JavaScriptAnalysisState) JavaScriptAnalysisState.interpretCallSite(
-			new State(store, null, scratchpad, trace, control, selfAddr));
-	    }
-
-	    @Override
-	    public JavaScriptAnalysisState run(Address selfAddr, Store store, Scratchpad scratchpad,
-		    Trace trace, Control control) {
-		return (JavaScriptAnalysisState) JavaScriptAnalysisState.interpretCallSite(
-			new State(store, null, scratchpad, trace, control, selfAddr));
+	    public FunctionOrSummary initializeOrRun(State preTransferState, Address selfAddr,
+		    Store store, Scratchpad scratchpad, Trace trace, Control control, CfgMap cfgs) {
+		return new FunctionOrSummary(JavaScriptAnalysisState
+			.initializeFunctionState(preTransferState.clone(), cfgs));
 	    }
 	};
 

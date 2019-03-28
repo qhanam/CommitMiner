@@ -204,8 +204,8 @@ public class Helpers {
 	    return;
 
 	/* Analyze reachable functions. */
-	State exitState = ((JavaScriptAnalysisState) stackFrame.getCFG().getMergedExitState())
-		.getUnderlyingState();
+	State exitState = ((JavaScriptAnalysisState) stackFrame.getCFG().getMergedExitState()
+		.getBuiltinState()).getUnderlyingState();
 	Helpers.analyzeEnvReachable(exitState, exitState.env.environment, exitState.selfAddr,
 		new HashSet<Address>(), localVars, callStack);
     }

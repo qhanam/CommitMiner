@@ -1,7 +1,7 @@
 package multidiffplus.cfg;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -10,11 +10,6 @@ import org.apache.commons.lang3.tuple.Pair;
  * support inter-procedural analysis across user-specified domains.
  */
 public class FunctionEvaluator {
-
-    /**
-     * The state of the current stack frame immediately before the call is executed.
-     */
-    private IState preCallState;
 
     /**
      * The state of the current stack frame immediately after the call is executed.
@@ -33,12 +28,11 @@ public class FunctionEvaluator {
      * The functions that the call site target points to are stored as their CFGs,
      * and the initial state is stored as the IState.
      */
-    private List<Pair<CFG, IState>> initialTargetState;
+    private Map<CFG, IState> initialTargetState;
 
     public FunctionEvaluator() {
-	this.preCallState = null;
 	this.postCallState = null;
-	this.initialTargetState = new ArrayList<Pair<CFG, IState>>();
+	this.initialTargetState = new HashMap<CFG, IState>();
     }
 
     /**
@@ -46,7 +40,14 @@ public class FunctionEvaluator {
      * call site.
      */
     public void addInitialTargetState(Pair<CFG, IState> initialTargetState) {
-	this.initialTargetState.add(initialTargetState);
+	this.initialTargetState.put(initialTargetState.getKey(), initialTargetState.getValue());
+    }
+
+    /**
+     * Returns the initial state for each target.
+     */
+    public Map<CFG, IState> getInitialTargetStates() {
+	return initialTargetState;
     }
 
     /**
@@ -58,6 +59,13 @@ public class FunctionEvaluator {
 	    postCallState = stateToJoin;
 	else
 	    postCallState = postCallState.join(stateToJoin);
+    }
+
+    /**
+     * Returns the merged function summaries.
+     */
+    public IState getPostCallState() {
+	return postCallState;
     }
 
     /**

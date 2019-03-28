@@ -36,7 +36,8 @@ public class JavaScriptAsyncFunctionCall implements AsyncFunctionCall {
 	if (functionClosure.cfg.getEntryNode().getBeforeState() == null) {
 	    Control control = Control.bottom();
 	    Scratchpad scratch = Scratchpad.empty();
-	    functionClosure.run(selfAddr, store, scratch, trace, control, callStack);
+	    // TODO: Fix this (or remove it?)
+	    // functionClosure.run(selfAddr, store, scratch, trace, control, callStack);
 	}
     }
 

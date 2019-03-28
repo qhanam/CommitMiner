@@ -79,8 +79,8 @@ public class CallSiteInterpreter {
 	    // Get either (1) the initial state of the callee if funVal resolves
 	    // to a CFG, or (2) the post-IState of the current stack frame if
 	    // the funVal resolves to a function summary.
-	    FunctionEvaluator evaluator = applyClosure(funVal, objAddr, state.store, scratch,
-		    state.trace, control);
+	    FunctionEvaluator evaluator = applyClosure(state, funVal, objAddr, state.store, scratch,
+		    state.trace, control, cfgs);
 
 	    if (evaluator.resolved()) {
 		return evaluator;
@@ -191,11 +191,6 @@ public class CallSiteInterpreter {
 	this.state.store = returnState.store;
 	this.state.scratch.weakUpdate(fc, returnState.scratch.applyReturn());
 
-	// TODO: Add a map of FunctionCalls BValues to State. Isn't this just the return
-	// value? Yes, but we may have return values for multiple functions (e.g.,
-	// foo() + bar()).
-	// TODO: Update the state of the FunctionCall's BValue.
-
 	// TODO: How do we add async functions if we can't access the call stack?
 	// Analyze any callbacks if we are running an analysis. We are running
 	// an analysis if there is a callstack.
@@ -289,8 +284,9 @@ public class CallSiteInterpreter {
      *            The trace at the caller.
      * @return The final state of the closure.
      */
-    private static FunctionEvaluator applyClosure(BValue funVal, Address selfAddr, Store store,
-	    Scratchpad sp, Trace trace, Control control) {
+    private static FunctionEvaluator applyClosure(State preTransferState, BValue funVal,
+	    Address selfAddr, Store store, Scratchpad sp, Trace trace, Control control,
+	    CfgMap cfgs) {
 
 	FunctionEvaluator evaluator = new FunctionEvaluator();
 
@@ -309,8 +305,8 @@ public class CallSiteInterpreter {
 
 	    // The closure will either yield a function to evaluate, or an updated
 	    // state computed from a function summary.
-	    FunctionOrSummary fos = ifp.closure.initializeOrRun(selfAddr, store, sp, trace,
-		    control);
+	    FunctionOrSummary fos = ifp.closure.initializeOrRun(preTransferState, selfAddr, store,
+		    sp, trace, control, cfgs);
 
 	    // Add the result of the function to the evaluator.
 	    if (fos.isFunctionSummary()) {

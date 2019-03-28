@@ -1,5 +1,7 @@
 package multidiffplus.cfg;
 
+import java.util.List;
+
 import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode;
 
 /**
@@ -13,9 +15,9 @@ import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode;
 public interface IState {
 
     /**
-     * Updates a copy of the abstract state and abstract call stack in-place by
-     * interpreting the given JavaScript statement. By interpreting the instruction
-     * on a copy of the abstract state, the original state is left intact.
+     * Updates a copy of the abstract state in-place by interpreting the given
+     * JavaScript statement. By interpreting the instruction on a copy of the
+     * abstract state, the original state is left intact.
      * 
      * @param statement
      *            The statement to interpret.
@@ -28,9 +30,9 @@ public interface IState {
     IState interpretStatement(ClassifiedASTNode statement);
 
     /**
-     * Updates a copy of the abstract state and abstract call stack in-place by
-     * interpreting the given JavaScript statement. By interpreting the instruction
-     * on a copy of the abstract state, the original state is left intact.
+     * Updates a copy of the abstract state in-place by interpreting the given
+     * JavaScript statement. By interpreting the instruction on a copy of the
+     * abstract state, the original state is left intact.
      * 
      * @param statement
      *            The statement to interpret.
@@ -50,7 +52,20 @@ public interface IState {
      * @return The pre/post execution state of the call site, the initial state of
      *         the callee and the list of resolved targets.
      */
-    FunctionEvaluator interpretCallSite(ClassifiedASTNode callSite);
+    FunctionEvaluator buildFunctionEvaluator(ClassifiedASTNode callSite);
+
+    /**
+     * Updates a copy of the abstract state in-place by interpreting the given
+     * JavaScript call site.
+     * 
+     * @param callSite
+     *            The AST node containing the call site.
+     * @param functionExitStates
+     *            The exit states of the call site's target functions.
+     * @return A new analysis state, which is the state of the analysis after the
+     *         call site's target functions are interpreted.
+     */
+    IState interpretCallSite(ClassifiedASTNode callSite, List<IState> functionExitStates);
 
     /**
      * Return a new analysis state, which is the join of {@code this} state and

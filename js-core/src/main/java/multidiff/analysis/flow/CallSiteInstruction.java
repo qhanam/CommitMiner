@@ -29,11 +29,17 @@ public class CallSiteInstruction extends Instruction {
 	}
 	callSite.setBeforeState(preTransferState);
 
-	// Update the post-transfer state by interpreting the call site.
-	// TODO: Pass the call stack to interpretCallSite, so that a new frame can be
-	// added when necessary.
-	callSite.setAfterState(callSite.getAfterState()
-		.join(callSite.getBeforeState().interpretCallSite(callSite.getCallSite())));
+	// Update the post-transfer state by interpreting the instruction.
+	StackFrame current = callStack.peek();
+	AnalysisState newState = callSite.getBeforeState().interpretCallSite(callSite.getCallSite(),
+		callStack);
+
+	if (callStack.peek() == current) {
+	    // The instruction was interpreted.
+	    callSite.setAfterState(callSite.getAfterState().join(newState));
+	} else {
+	    // A new frame was added to the call stack.
+	}
 
     }
 

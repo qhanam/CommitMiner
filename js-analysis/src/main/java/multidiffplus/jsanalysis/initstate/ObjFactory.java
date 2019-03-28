@@ -6,7 +6,7 @@ import java.util.Stack;
 
 import org.mozilla.javascript.ast.Name;
 
-import multidiff.analysis.flow.CallStack;
+import multidiffplus.cfg.CfgMap;
 import multidiffplus.jsanalysis.abstractdomain.Address;
 import multidiffplus.jsanalysis.abstractdomain.BValue;
 import multidiffplus.jsanalysis.abstractdomain.Bool;
@@ -22,6 +22,7 @@ import multidiffplus.jsanalysis.abstractdomain.Num;
 import multidiffplus.jsanalysis.abstractdomain.Obj;
 import multidiffplus.jsanalysis.abstractdomain.Property;
 import multidiffplus.jsanalysis.abstractdomain.Scratchpad;
+import multidiffplus.jsanalysis.abstractdomain.State;
 import multidiffplus.jsanalysis.abstractdomain.Store;
 import multidiffplus.jsanalysis.abstractdomain.Str;
 import multidiffplus.jsanalysis.flow.JavaScriptAnalysisState;
@@ -92,17 +93,10 @@ public class ObjFactory {
 
 	NativeClosure closure = new NativeClosure() {
 	    @Override
-	    public JavaScriptAnalysisState run(Address selfAddr, Store store, Scratchpad scratchpad,
-		    Trace trace, Control control, CallStack callStack) {
-		// TODO: Update the state
-		return null;
-	    }
-
-	    @Override
-	    public JavaScriptAnalysisState run(Address selfAddr, Store store, Scratchpad scratchpad,
-		    Trace trace, Control control) {
-		// TODO: Update the state
-		return null;
+	    public FunctionOrSummary initializeOrRun(State preTransferState, Address selfAddr,
+		    Store store, Scratchpad scratchpad, Trace trace, Control control, CfgMap cfgs) {
+		return new FunctionOrSummary(JavaScriptAnalysisState
+			.initializeFunctionState(preTransferState.clone(), cfgs));
 	    }
 	};
 

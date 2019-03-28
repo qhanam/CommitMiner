@@ -36,7 +36,7 @@ public class StateFactory {
 	Store store = StoreFactory.createInitialStore();
 	Pair<Environment, Store> lifted = EnvironmentFactory.createInitialEnvironment(script, store,
 		cfgMap, trace);
-	Scratchpad scratchpad = new Scratchpad();
+	Scratchpad scratchpad = Scratchpad.empty();
 	Control control = Control.bottom();
 	Environment env = lifted.getLeft();
 	store = lifted.getRight();

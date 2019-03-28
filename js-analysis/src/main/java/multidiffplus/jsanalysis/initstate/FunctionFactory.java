@@ -6,14 +6,13 @@ import java.util.Stack;
 
 import org.mozilla.javascript.ast.Name;
 
-import multidiff.analysis.flow.CallStack;
+import multidiffplus.cfg.CfgMap;
 import multidiffplus.jsanalysis.abstractdomain.Address;
 import multidiffplus.jsanalysis.abstractdomain.BValue;
 import multidiffplus.jsanalysis.abstractdomain.Change;
 import multidiffplus.jsanalysis.abstractdomain.Closure;
 import multidiffplus.jsanalysis.abstractdomain.Control;
 import multidiffplus.jsanalysis.abstractdomain.Dependencies;
-import multidiffplus.jsanalysis.abstractdomain.Environment;
 import multidiffplus.jsanalysis.abstractdomain.InternalFunctionProperties;
 import multidiffplus.jsanalysis.abstractdomain.InternalObjectProperties;
 import multidiffplus.jsanalysis.abstractdomain.JSClass;
@@ -86,18 +85,10 @@ public class FunctionFactory {
 
 	Closure closure = new NativeClosure() {
 	    @Override
-	    public JavaScriptAnalysisState run(Address selfAddr, Store store, Scratchpad scratchpad,
-		    Trace trace, Control control, CallStack callStack) {
-		scratchpad.strongUpdate(retVal, null);
-		return (JavaScriptAnalysisState) JavaScriptAnalysisState.interpretCallSite(
-			new State(store, new Environment(), scratchpad, trace, control, selfAddr));
-	    }
-
-	    @Override
-	    public JavaScriptAnalysisState run(Address selfAddr, Store store, Scratchpad scratchpad,
-		    Trace trace, Control control) {
-		return (JavaScriptAnalysisState) JavaScriptAnalysisState.interpretCallSite(
-			new State(store, new Environment(), scratchpad, trace, control, selfAddr));
+	    public FunctionOrSummary initializeOrRun(State preTransferState, Address selfAddr,
+		    Store store, Scratchpad scratchpad, Trace trace, Control control, CfgMap cfgs) {
+		return new FunctionOrSummary(JavaScriptAnalysisState
+			.initializeFunctionState(preTransferState.clone(), cfgs));
 	    }
 	};
 

@@ -1,6 +1,11 @@
 package multidiffplus.cfg;
 
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
+
 import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode;
+import multidiff.analysis.flow.CallStack;
 import multidiff.analysis.flow.StackFrame;
 
 public class AnalysisState {
@@ -32,25 +37,43 @@ public class AnalysisState {
 	return new AnalysisState(newBuiltinState, newUserStates);
     }
 
-    public AnalysisState interpretCallSite(ClassifiedASTNode callSite) {
-	// TODO: How should AnalysisState interact with the control flow
-	// analysis? We need to merge return values somehow. IDEA: All
-	// function summaries should automatically update the BValue of
-	// the call site. All functions should return an exit state, which
-	// should be interpreted by the analysis.
-	//
-	// Either (1) an initial function state was returned; compare the
-	// initial state, or (2) a function summary was returned; move to the
-	// next call site.
-
-	// Either (1) There is a function that needs to be evaluated with the new
-	// initial state, or (2) all functions have been evaluated.
-
-	// TODO: Check if there is a CFG with a new initial state. If there is,
-	// put that CFG on the call stack and return (can return null in this case).
+    public AnalysisState interpretCallSite(ClassifiedASTNode callSite, CallStack callStack) {
+	// Check if there is a CFG with a new initial state. If there is, put
+	// that CFG on the call stack and return (can return null in this case).
 	// Otherwise, return merged states.
-	StackFrame stackFrame = builtinState.interpretCallSite(callSite);
-	return null;
+	FunctionEvaluator builtinEvaluator = builtinState.buildFunctionEvaluator(callSite);
+	for (Entry<CFG, IState> entry : builtinEvaluator.getInitialTargetStates().entrySet()) {
+	    // Check for changes to target's initial state.
+	    AnalysisState newState = AnalysisState.initializeAnalysisState(entry.getValue(),
+		    new IState[0]);
+	    AnalysisState oldState = entry.getKey().getEntryNode().getBeforeState();
+	    AnalysisState primeState = oldState.join(newState);
+
+	    if (!oldState.equivalentTo(primeState)) {
+		// We need to re-analyze this target.
+		callStack.push(new StackFrame(entry.getKey(), primeState));
+		return null;
+	    }
+
+	}
+
+	// There are no changes; so we can safely interpret the call.
+	IState newBuiltinState = builtinEvaluator.getPostCallState();
+	IState[] newUserStates = new IState[userStates.length];
+
+	// Interpret the exit state of function calls.
+	List<IState> builtinExitStates = builtinEvaluator.getInitialTargetStates().keySet().stream()
+		.map(cfg -> cfg.getMergedExitState().builtinState).collect(Collectors.toList());
+
+	// Join the function and summary states.
+	if (newBuiltinState == null) {
+	    newBuiltinState = builtinState.interpretCallSite(callSite, builtinExitStates);
+	} else {
+	    newBuiltinState = newBuiltinState
+		    .join(builtinState.interpretCallSite(callSite, builtinExitStates));
+	}
+
+	return new AnalysisState(newBuiltinState, newUserStates);
     }
 
     public AnalysisState join(AnalysisState that) {
@@ -60,6 +83,22 @@ public class AnalysisState {
 	    newUserStates[i] = this.userStates[i].join(that.userStates[i]);
 	}
 	return new AnalysisState(newBuiltinState, newUserStates);
+    }
+
+    public IState getBuiltinState() {
+	return builtinState;
+    }
+
+    public boolean equivalentTo(AnalysisState that) {
+	if (!this.builtinState.equivalentTo(that.builtinState))
+	    return false;
+	if (!(this.userStates.length != that.userStates.length))
+	    return false;
+	for (int i = 0; i < this.userStates.length; i++) {
+	    if (!this.userStates[i].equivalentTo(that.userStates[i]))
+		return false;
+	}
+	return true;
     }
 
     /**
