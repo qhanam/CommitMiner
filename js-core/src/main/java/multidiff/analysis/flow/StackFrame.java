@@ -67,6 +67,7 @@ public class StackFrame {
 
 	// The ordered instructions.
 	Queue<Instruction> instructions = new ArrayDeque<>();
+	cfg.getEntryNode().setBeforeState(initialState);
 	instructions.add(new ExpressionInstruction(cfg.getEntryNode()));
 
 	// The set of edges that have been visited within this
@@ -110,14 +111,14 @@ public class StackFrame {
 
 	    if (semaphore == 0) {
 		// There are no more incoming edges.
+		instructions.add(new ExpressionInstruction(node));
 		unvisitedEdges.forEach(child -> {
-		    instructions.add(new BranchInstruction(child));
 		    edges.add(child);
 		});
 	    } else if (semaphore == unvisitedLoopEdges.size()) {
 		// There are only incoming edges that are reachable from outgoing edges.
+		instructions.add(new ExpressionInstruction(node));
 		unvisitedLoopEdges.forEach(child -> {
-		    instructions.add(new BranchInstruction(child));
 		    edges.add(child);
 		});
 	    }

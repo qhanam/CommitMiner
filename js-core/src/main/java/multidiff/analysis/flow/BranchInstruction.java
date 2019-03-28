@@ -32,8 +32,11 @@ public class BranchInstruction extends Instruction {
 	edge.setBeforeState(preTransferState);
 
 	// Update the post-transfer state by interpreting the statement.
-	edge.setAfterState(
-		edge.getAfterState().join(edge.getBeforeState().interpretBranchCondition(edge)));
+	if (edge.getAfterState() == null)
+	    edge.setAfterState(edge.getBeforeState().interpretBranchCondition(edge));
+	else
+	    edge.setAfterState(edge.getAfterState()
+		    .join(edge.getBeforeState().interpretBranchCondition(edge)));
 
     }
 

@@ -36,8 +36,11 @@ public class ExpressionInstruction extends Instruction {
 	node.setBeforeState(preTransferState);
 
 	// Update the post-transfer state by interpreting the statement.
-	node.setAfterState(node.getAfterState()
-		.join(node.getBeforeState().interpretStatement(node.getStatement())));
+	if (node.getAfterState() == null)
+	    node.setAfterState(node.getBeforeState().interpretStatement(node.getStatement()));
+	else
+	    node.setAfterState(node.getAfterState()
+		    .join(node.getBeforeState().interpretStatement(node.getStatement())));
 
     }
 
