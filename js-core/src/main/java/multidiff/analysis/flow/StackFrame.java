@@ -89,7 +89,7 @@ public class StackFrame {
 	while (!edges.isEmpty()) {
 	    // Add a new instruction for the edge's branch condition.
 	    CFGEdge edge = edges.remove();
-	    instructions.add(new BranchInstruction(edge));
+	    addBranchInstructions(edge, instructions);
 
 	    CFGNode node = edge.getTo();
 
@@ -138,6 +138,13 @@ public class StackFrame {
 	    instructions.add(new CallSiteInstruction(callSiteNode));
 	}
 	instructions.add(new ExpressionInstruction(node));
+    }
+
+    private static void addBranchInstructions(CFGEdge edge, Queue<Instruction> instructions) {
+	for (CallSiteNode callSiteNode : edge.getCallSiteNodes()) {
+	    instructions.add(new CallSiteInstruction(callSiteNode));
+	}
+	instructions.add(new BranchInstruction(edge));
     }
 
 }

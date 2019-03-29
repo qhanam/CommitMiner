@@ -3,6 +3,7 @@ package multidiff.analysis.flow;
 import multidiffplus.cfg.AnalysisState;
 import multidiffplus.cfg.CFGEdge;
 import multidiffplus.cfg.CFGNode;
+import multidiffplus.cfg.CallSiteNode;
 
 /**
  * An expression source code instruction.
@@ -23,14 +24,26 @@ public class ExpressionInstruction extends Instruction {
 
 	// Update the pre-transfer state by joining all incoming states.
 	AnalysisState preTransferState = node.getBeforeState();
-	for (CFGEdge edge : node.getIncommingEdges()) {
-	    if (edge.getAfterState() == null) {
-		continue;
-	    }
+	if (node.getCallSiteNodes().length > 0) {
+	    // The predecessor is a call site.
+	    CallSiteNode[] callSiteNodes = node.getCallSiteNodes();
+	    AnalysisState afterState = callSiteNodes[callSiteNodes.length - 1].getAfterState();
 	    if (preTransferState == null) {
-		preTransferState = edge.getAfterState();
+		preTransferState = afterState;
 	    } else {
-		preTransferState = preTransferState.join(edge.getAfterState());
+		preTransferState = preTransferState.join(afterState);
+	    }
+	} else {
+	    // The predecessor is a set of edges.
+	    for (CFGEdge edge : node.getIncommingEdges()) {
+		if (edge.getAfterState() == null) {
+		    continue;
+		}
+		if (preTransferState == null) {
+		    preTransferState = edge.getAfterState();
+		} else {
+		    preTransferState = preTransferState.join(edge.getAfterState());
+		}
 	    }
 	}
 	node.setBeforeState(preTransferState);

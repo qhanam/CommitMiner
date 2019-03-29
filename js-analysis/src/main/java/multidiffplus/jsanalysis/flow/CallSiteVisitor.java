@@ -8,6 +8,7 @@ import org.mozilla.javascript.ast.ElementGet;
 import org.mozilla.javascript.ast.ExpressionStatement;
 import org.mozilla.javascript.ast.FunctionCall;
 import org.mozilla.javascript.ast.InfixExpression;
+import org.mozilla.javascript.ast.ParenthesizedExpression;
 import org.mozilla.javascript.ast.ReturnStatement;
 import org.mozilla.javascript.ast.ThrowStatement;
 import org.mozilla.javascript.ast.UnaryExpression;
@@ -54,6 +55,8 @@ public class CallSiteVisitor {
 	    topsort(((ReturnStatement) node).getReturnValue());
 	} else if (node instanceof ThrowStatement) {
 	    topsort(((ThrowStatement) node).getExpression());
+	} else if (node instanceof ParenthesizedExpression) {
+	    topsort(((ParenthesizedExpression) node).getExpression());
 	}
     }
 

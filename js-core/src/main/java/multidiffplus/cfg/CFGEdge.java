@@ -202,7 +202,14 @@ public class CFGEdge {
     /**
      * Returns the call site nodes.
      */
-    public List<ClassifiedASTNode> getCallSiteNodes() {
+    public CallSiteNode[] getCallSiteNodes() {
+	return callSiteNodes;
+    }
+
+    /**
+     * Returns the AstNodes of the call site nodes.
+     */
+    public List<ClassifiedASTNode> getCallSiteAstNodes() {
 	List<ClassifiedASTNode> callSites = new ArrayList<>();
 	for (CallSiteNode node : callSiteNodes) {
 	    callSites.add(node.getCallSite());

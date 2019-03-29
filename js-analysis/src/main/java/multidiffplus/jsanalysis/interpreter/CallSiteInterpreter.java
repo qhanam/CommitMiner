@@ -189,7 +189,7 @@ public class CallSiteInterpreter {
 	// Update the state for (1) side effects on the store and (2) the return
 	// value of the function call.
 	this.state.store = returnState.store;
-	this.state.scratch.weakUpdate(fc, returnState.scratch.applyReturn());
+	this.state.scratch = this.state.scratch.weakUpdate(fc, retVal);
 
 	// TODO: How do we add async functions if we can't access the call stack?
 	// Analyze any callbacks if we are running an analysis. We are running

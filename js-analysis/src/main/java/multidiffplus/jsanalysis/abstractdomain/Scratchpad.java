@@ -91,10 +91,10 @@ public class Scratchpad {
      * Returns a new scratchpad with the weak update applied.
      */
     public Scratchpad weakUpdate(FunctionCall fc, BValue callValue) {
-	Map<FunctionCall, BValue> callVals = new HashMap<>();
-	callValues.forEach(callVals::put);
-	callVals.put(fc, callValue);
-	return new Scratchpad(returnValue, args, callVals);
+	Map<FunctionCall, BValue> newCallValues = new HashMap<>();
+	callValues.forEach(newCallValues::put);
+	newCallValues.put(fc, callValue);
+	return new Scratchpad(returnValue, args, newCallValues);
     }
 
     /**

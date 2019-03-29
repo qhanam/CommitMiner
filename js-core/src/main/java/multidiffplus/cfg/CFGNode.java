@@ -361,7 +361,7 @@ public class CFGNode {
     public static CFGNode copy(CFGNode node, int id) {
 	CFGNode newNode = new CFGNode(node.getStatement(), node.callSiteNodes, id);
 	for (CFGEdge edge : node.getOutgoingEdges())
-	    newNode.addOutgoingEdge(edge.getCondition(), edge.getTo(), edge.getCallSiteNodes(),
+	    newNode.addOutgoingEdge(edge.getCondition(), edge.getTo(), edge.getCallSiteAstNodes(),
 		    edge.getId());
 	return newNode;
     }

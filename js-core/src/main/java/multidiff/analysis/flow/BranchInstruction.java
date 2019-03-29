@@ -3,6 +3,7 @@ package multidiff.analysis.flow;
 import multidiffplus.cfg.AnalysisState;
 import multidiffplus.cfg.CFGEdge;
 import multidiffplus.cfg.CFGNode;
+import multidiffplus.cfg.CallSiteNode;
 
 /**
  * An branch condition source code instruction.
@@ -23,11 +24,23 @@ public class BranchInstruction extends Instruction {
 
 	// Update the pre-transfer state by joining all incoming states.
 	AnalysisState preTransferState = edge.getBeforeState();
-	CFGNode node = edge.getFrom();
-	if (preTransferState == null) {
-	    preTransferState = node.getAfterState();
+	if (edge.getCallSiteNodes().length > 0) {
+	    // The predecessor is a call site.
+	    CallSiteNode[] callSiteNodes = edge.getCallSiteNodes();
+	    AnalysisState afterState = callSiteNodes[callSiteNodes.length - 1].getAfterState();
+	    if (preTransferState == null) {
+		preTransferState = afterState;
+	    } else {
+		preTransferState = preTransferState.join(afterState);
+	    }
 	} else {
-	    preTransferState = preTransferState.join(node.getAfterState());
+	    // The predecessor is a node.
+	    CFGNode node = edge.getFrom();
+	    if (preTransferState == null) {
+		preTransferState = node.getAfterState();
+	    } else {
+		preTransferState = preTransferState.join(node.getAfterState());
+	    }
 	}
 	edge.setBeforeState(preTransferState);
 
