@@ -43,11 +43,19 @@ public class AnalysisState {
 	// Otherwise, return merged states.
 	FunctionEvaluator builtinEvaluator = builtinState.buildFunctionEvaluator(callSite);
 	for (Entry<CFG, IState> entry : builtinEvaluator.getInitialTargetStates().entrySet()) {
+	    AnalysisState newState, oldState, primeState;
+
 	    // Check for changes to target's initial state.
-	    AnalysisState newState = AnalysisState.initializeAnalysisState(entry.getValue(),
-		    new IState[0]);
-	    AnalysisState oldState = entry.getKey().getEntryNode().getBeforeState();
-	    AnalysisState primeState = oldState.join(newState);
+	    newState = AnalysisState.initializeAnalysisState(entry.getValue(), new IState[0]);
+	    oldState = entry.getKey().getEntryNode().getBeforeState();
+
+	    if (oldState == null) {
+		// We need to analyze this target for the first time.
+		callStack.push(new StackFrame(entry.getKey(), newState));
+		return null;
+	    }
+
+	    primeState = oldState.join(newState);
 
 	    if (!oldState.equivalentTo(primeState)) {
 		// We need to re-analyze this target.
@@ -95,7 +103,7 @@ public class AnalysisState {
     public boolean equivalentTo(AnalysisState that) {
 	if (!this.builtinState.equivalentTo(that.builtinState))
 	    return false;
-	if (!(this.userStates.length != that.userStates.length))
+	if (this.userStates.length != that.userStates.length)
 	    return false;
 	for (int i = 0; i < this.userStates.length; i++) {
 	    if (!this.userStates[i].equivalentTo(that.userStates[i]))
