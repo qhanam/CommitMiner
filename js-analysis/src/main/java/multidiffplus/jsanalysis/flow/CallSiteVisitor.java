@@ -12,6 +12,8 @@ import org.mozilla.javascript.ast.ParenthesizedExpression;
 import org.mozilla.javascript.ast.ReturnStatement;
 import org.mozilla.javascript.ast.ThrowStatement;
 import org.mozilla.javascript.ast.UnaryExpression;
+import org.mozilla.javascript.ast.VariableDeclaration;
+import org.mozilla.javascript.ast.VariableInitializer;
 
 import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode;
 
@@ -57,6 +59,10 @@ public class CallSiteVisitor {
 	    topsort(((ThrowStatement) node).getExpression());
 	} else if (node instanceof ParenthesizedExpression) {
 	    topsort(((ParenthesizedExpression) node).getExpression());
+	} else if (node instanceof VariableDeclaration) {
+	    ((VariableDeclaration) node).getVariables().forEach(vd -> topsort(vd));
+	} else if (node instanceof VariableInitializer) {
+	    topsort(((VariableInitializer) node).getInitializer());
 	}
     }
 
