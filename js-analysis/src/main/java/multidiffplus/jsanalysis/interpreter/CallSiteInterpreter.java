@@ -179,11 +179,9 @@ public class CallSiteInterpreter {
 	if (retVal == null) {
 	    // Functions with no return statement return undefined.
 	    retVal = Undefined.inject(Undefined.top(), retValChange, Dependencies.injectValue(fc));
-	    returnState.scratch = returnState.scratch.strongUpdate(retVal);
 	} else {
 	    // This could be a new value if the call is new.
-	    returnState.scratch = returnState.scratch
-		    .strongUpdate(retVal.join(BValue.bottom(retValChange, Dependencies.bot())));
+	    retVal.change = retVal.change.join(retValChange);
 	}
 
 	// Update the state for (1) side effects on the store and (2) the return
