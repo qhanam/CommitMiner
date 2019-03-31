@@ -46,7 +46,7 @@ public class Environment {
      *            The variable.
      * @return The store addresses of the var.
      */
-    public Addresses apply(Name varName) {
+    public Variable apply(Name varName) {
 	Variable var = environment.get(varName.toSource());
 	if (var == null)
 	    return null;
@@ -56,7 +56,7 @@ public class Environment {
 	for (Criterion crit : var.change.getDependencies().getDependencies()) {
 	    varName.addDependency(crit.getType().name(), crit.getId());
 	}
-	return var.addresses;
+	return var;
     }
 
     /**
@@ -86,21 +86,6 @@ public class Environment {
      */
     public void strongUpdateNoCopy(String variable, Variable id) {
 	this.environment.put(variable, id);
-    }
-
-    /**
-     * Performs a weak update on a variable in the environment.
-     * 
-     * @param variable
-     *            The variable to update.
-     * @param addresses
-     *            The addresses for the variable.
-     * @return The updated environment.
-     */
-    public Environment weakUpdate(String variable, Variable id) {
-	Map<String, Variable> map = new HashMap<String, Variable>(this.environment);
-	map.put(variable, map.get(variable).join(id));
-	return new Environment(map);
     }
 
     /**

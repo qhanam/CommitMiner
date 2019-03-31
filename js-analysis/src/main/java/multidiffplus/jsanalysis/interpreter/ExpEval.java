@@ -1,5 +1,6 @@
 package multidiffplus.jsanalysis.interpreter;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -32,6 +33,7 @@ import multidiffplus.jsanalysis.abstractdomain.BValue;
 import multidiffplus.jsanalysis.abstractdomain.Bool;
 import multidiffplus.jsanalysis.abstractdomain.Change;
 import multidiffplus.jsanalysis.abstractdomain.Closure;
+import multidiffplus.jsanalysis.abstractdomain.Criterion;
 import multidiffplus.jsanalysis.abstractdomain.Dependencies;
 import multidiffplus.jsanalysis.abstractdomain.FunctionClosure;
 import multidiffplus.jsanalysis.abstractdomain.InternalFunctionProperties;
@@ -531,6 +533,11 @@ public class ExpEval {
 	    // This expression points the lhs to a new value.
 	    val.change = val.change.join(Change.convU(rhs, Dependencies::injectValueChange));
 
+	// Check if the lhs is new and was not renamed.
+	if (Change.testU(lhs) && !wasRenamed(lhs)) {
+	    val.change = val.change.join(Change.convU(lhs, Dependencies::injectValueChange));
+	}
+
 	/* Update the values in the store. */
 	for (Address addr : addrs) {
 	    state.store = state.store.strongUpdate(addr, val, lhs);
@@ -546,14 +553,48 @@ public class ExpEval {
      */
     public void evalAssignment(AstNode lhs, BValue val) {
 
-	/* Resolve the left hand side to a set of addresses. */
+	// Resolve the left hand side to a set of addresses.
 	Set<Address> addrs = this.resolveOrCreate(lhs);
 
-	/* Update the values in the store. */
+	// Check if the lhs is new and was not renamed.
+	if (Change.testU(lhs) && !wasRenamed(lhs)) {
+	    val.change = val.change.join(Change.convU(lhs, Dependencies::injectValueChange));
+	}
+
+	// Update the values in the store.
 	for (Address addr : addrs) {
 	    state.store = state.store.strongUpdate(addr, val, lhs);
 	}
 
+    }
+
+    /**
+     * Returns {@code true} if the variable was renamed.
+     * 
+     * @param identifier
+     *            The identifier being used.
+     */
+    public boolean wasRenamed(AstNode identifier) {
+	if (!(identifier instanceof Name))
+	    return false;
+	if (identifier.getMapping() == null)
+	    return false;
+	Name varName = (Name) identifier;
+	Variable var = state.env.apply(varName);
+	if (!var.change.isChanged())
+	    return false;
+	Collection<Criterion> deps = var.change.getDependencies().getDependencies();
+	if (deps.size() > 1)
+	    return false;
+	for (Criterion crit : var.change.getDependencies().getDependencies()) {
+	    AstNode node = crit.getNode();
+	    if (!(node instanceof Name) || node.getMapping() == null)
+		return false;
+	    if (!((Name) node.getMapping()).toSource()
+		    .equals(((Name) varName.getMapping()).toSource()))
+		return false;
+	}
+	return true;
     }
 
     /**
@@ -634,7 +675,9 @@ public class ExpEval {
 
 	Set<Address> result = new HashSet<Address>();
 
-	Addresses addrs = state.env.apply(node);
+	Variable var = state.env.apply(node);
+	Addresses addrs = var == null ? null : var.addresses;
+
 	if (addrs == null) {
 	    // Although globals which were not explicitly defined have already
 	    // been loaded by inspecting the AST, there are still undefined

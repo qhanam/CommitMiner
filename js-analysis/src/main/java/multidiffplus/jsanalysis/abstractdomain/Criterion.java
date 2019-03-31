@@ -17,9 +17,13 @@ public class Criterion {
     // The identifier for the criterion.
     private Integer id;
 
-    private Criterion(Type type, Integer id) {
+    // The AstNode
+    private AstNode node;
+
+    private Criterion(Type type, AstNode node) {
 	this.type = type;
-	this.id = id;
+	this.id = node.getID();
+	this.node = node;
     }
 
     public Type getType() {
@@ -30,12 +34,16 @@ public class Criterion {
 	return id;
     }
 
+    public AstNode getNode() {
+	return node;
+    }
+
     /**
      * Creates a new Criterion, uniquely identified by its type and id.
      */
     public static Criterion of(AstNode node, Type type) {
 	node.addCriterion(type.name(), node.getID());
-	return new Criterion(type, node.getID());
+	return new Criterion(type, node);
     }
 
     @Override
