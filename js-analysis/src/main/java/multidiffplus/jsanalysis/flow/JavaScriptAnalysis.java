@@ -1,9 +1,13 @@
 package multidiffplus.jsanalysis.flow;
 
+import java.util.Set;
+
+import org.apache.commons.lang3.tuple.Pair;
 import org.mozilla.javascript.ast.AstRoot;
 
 import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode;
 import multidiff.analysis.flow.Analysis;
+import multidiff.analysis.flow.StackFrame;
 import multidiffplus.cfg.AnalysisState;
 import multidiffplus.cfg.CFG;
 import multidiffplus.cfg.CfgMap;
@@ -13,13 +17,21 @@ import multidiffplus.jsanalysis.interpreter.Helpers;
 
 public class JavaScriptAnalysis extends Analysis {
 
+    CfgMap cfgs;
+
     JavaScriptAnalysis(CFG entryPoint, CfgMap cfgMap, AnalysisState initialState) {
 	super(entryPoint, cfgMap, initialState);
+	this.cfgs = cfgMap;
     }
 
     @Override
     protected void addReachableFunctions() {
-	Helpers.findReachableFunctions(callStack);
+	Set<Pair<CFG, IState>> reachables = Helpers.findReachableFunctions(callStack, cfgs);
+	for (Pair<CFG, IState> reachable : reachables) {
+	    AnalysisState initialState = AnalysisState.initializeAnalysisState(reachable.getValue(),
+		    new IState[0]);
+	    callStack.addAsync(new StackFrame(reachable.getKey(), initialState));
+	}
     }
 
     @Override

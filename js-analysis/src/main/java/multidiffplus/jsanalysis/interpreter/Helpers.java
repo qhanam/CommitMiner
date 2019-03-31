@@ -1,5 +1,6 @@
 package multidiffplus.jsanalysis.interpreter;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -7,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.mozilla.javascript.ast.AstNode;
 import org.mozilla.javascript.ast.FunctionNode;
 import org.mozilla.javascript.ast.Name;
@@ -14,11 +16,14 @@ import org.mozilla.javascript.ast.ScriptNode;
 
 import multidiff.analysis.flow.CallStack;
 import multidiff.analysis.flow.StackFrame;
+import multidiffplus.cfg.CFG;
 import multidiffplus.cfg.CfgMap;
+import multidiffplus.cfg.IState;
 import multidiffplus.jsanalysis.abstractdomain.Address;
 import multidiffplus.jsanalysis.abstractdomain.BValue;
 import multidiffplus.jsanalysis.abstractdomain.Change;
 import multidiffplus.jsanalysis.abstractdomain.Closure;
+import multidiffplus.jsanalysis.abstractdomain.Closure.FunctionOrSummary;
 import multidiffplus.jsanalysis.abstractdomain.Dependencies;
 import multidiffplus.jsanalysis.abstractdomain.Environment;
 import multidiffplus.jsanalysis.abstractdomain.FunctionClosure;
@@ -27,6 +32,7 @@ import multidiffplus.jsanalysis.abstractdomain.JSClass;
 import multidiffplus.jsanalysis.abstractdomain.Num;
 import multidiffplus.jsanalysis.abstractdomain.Obj;
 import multidiffplus.jsanalysis.abstractdomain.Property;
+import multidiffplus.jsanalysis.abstractdomain.Scratchpad;
 import multidiffplus.jsanalysis.abstractdomain.State;
 import multidiffplus.jsanalysis.abstractdomain.Store;
 import multidiffplus.jsanalysis.abstractdomain.Undefined;
@@ -159,7 +165,7 @@ public class Helpers {
      * Finds functions which are reachable from the current scope and have not yet
      * been analyzed and adds them to a set to be analyzed later.
      */
-    public static void findReachableFunctions(CallStack callStack) {
+    public static Set<Pair<CFG, IState>> findReachableFunctions(CallStack callStack, CfgMap cfgs) {
 	StackFrame stackFrame = callStack.peek();
 
 	/* Get the set of local vars to search for unanalyzed functions. */
@@ -199,14 +205,15 @@ public class Helpers {
 	 */
 	if (stackFrame.getCFG().getExitNodes().stream().anyMatch((node) -> {
 	    return node.getIncommingEdgeCount() == 0;
-	}))
-	    return;
+	})) {
+	    return Collections.emptySet();
+	}
 
 	/* Analyze reachable functions. */
 	State exitState = ((JavaScriptAnalysisState) stackFrame.getCFG().getMergedExitState()
 		.getBuiltinState()).getUnderlyingState();
-	Helpers.analyzeEnvReachable(exitState, exitState.env.environment, exitState.selfAddr,
-		new HashSet<Address>(), localVars, callStack);
+	return Helpers.analyzeEnvReachable(exitState, exitState.env.environment, exitState.selfAddr,
+		new HashSet<Address>(), localVars, cfgs);
     }
 
     /**
@@ -218,18 +225,20 @@ public class Helpers {
      * @param visited
      *            Prevent circular lookups.
      */
-    private static boolean analyzeEnvReachable(State state, Map<String, Variable> vars,
-	    Address selfAddr, Set<Address> visited, Set<String> localvars, CallStack callStack) {
+    private static Set<Pair<CFG, IState>> analyzeEnvReachable(State state,
+	    Map<String, Variable> vars, Address selfAddr, Set<Address> visited,
+	    Set<String> localvars, CfgMap cfgs) {
+
+	Set<Pair<CFG, IState>> reachables = new HashSet<>();
 
 	for (Map.Entry<String, Variable> entry : vars.entrySet()) {
 	    for (Address addr : entry.getValue().addresses.addresses) {
-		if (analyzePublic(state, entry.getKey(), addr, selfAddr, visited, localvars,
-			callStack))
-		    return true;
+		reachables.addAll(analyzePublic(state, entry.getKey(), addr, selfAddr, visited,
+			localvars, cfgs));
 	    }
 	}
 
-	return false;
+	return reachables;
 
     }
 
@@ -242,22 +251,24 @@ public class Helpers {
      * @param visited
      *            Prevent circular lookups.
      */
-    private static boolean analyzeObjReachable(State state, Map<String, Property> props,
-	    Address selfAddr, Set<Address> visited, Set<String> localvars, CallStack callStack) {
+    private static Set<Pair<CFG, IState>> analyzeObjReachable(State state,
+	    Map<String, Property> props, Address selfAddr, Set<Address> visited,
+	    Set<String> localvars, CfgMap cfgs) {
+
+	Set<Pair<CFG, IState>> reachables = new HashSet<>();
 
 	for (Map.Entry<String, Property> entry : props.entrySet()) {
-	    if (analyzePublic(state, entry.getKey(), entry.getValue().address, selfAddr, visited,
-		    localvars, callStack))
-		return true;
+	    reachables.addAll(analyzePublic(state, entry.getKey(), entry.getValue().address,
+		    selfAddr, visited, localvars, cfgs));
 	}
 
-	return false;
+	return reachables;
 
     }
 
     /**
-     * Analyze functions which are reachable from an object property and that have
-     * not already been analyzed.
+     * Returns a set of functions which are reachable from an object property and
+     * that have not already been analyzed.
      * 
      * @param state
      *            The end state of the parent function.
@@ -267,10 +278,11 @@ public class Helpers {
      *            The address pointed to by the property or variable.
      * @param visited
      *            Prevent circular lookups.
-     * @return {@code true} when a reachable frame has been added to the call stack.
      */
-    private static boolean analyzePublic(State state, String name, Address addr, Address selfAddr,
-	    Set<Address> visited, Set<String> localvars, CallStack callStack) {
+    private static Set<Pair<CFG, IState>> analyzePublic(State state, String name, Address addr,
+	    Address selfAddr, Set<Address> visited, Set<String> localvars, CfgMap cfgs) {
+
+	Set<Pair<CFG, IState>> reachables = new HashSet<>();
 
 	BValue val = state.store.apply(addr, new Name());
 
@@ -280,11 +292,11 @@ public class Helpers {
 	 */
 	if (localvars != null && !localvars.contains(name) && !name.equals("~retval~")
 		&& !StringUtils.isNumeric(name))
-	    return false;
+	    return reachables;
 
 	/* Avoid circular references. */
 	if (visited.contains(addr))
-	    return false;
+	    return reachables;
 	visited.add(addr);
 
 	// Identify all reachable functions. If a function has not yet been analyzed
@@ -302,17 +314,20 @@ public class Helpers {
 		    continue;
 
 		if (fc.cfg.getEntryNode().getBeforeState() == null) {
-		    // callStack.addAsync(new JavaScriptAsyncFunctionCall(fc, selfAddr, state.store,
-		    // state.trace));
+		    FunctionOrSummary functionOrSummary = fc.initializeOrRun(state, selfAddr,
+			    state.store, Scratchpad.empty(), state.trace, state.control, cfgs);
+		    if (functionOrSummary.isFunctionSummary())
+			continue;
+		    reachables.add(functionOrSummary.getInitialStateOfFunction());
 		}
 	    }
 
 	    /* Recursively look for object properties that are functions. */
-	    analyzeObjReachable(state, obj.externalProperties, addr, visited, null, callStack);
+	    analyzeObjReachable(state, obj.externalProperties, addr, visited, null, cfgs);
 
 	}
 
-	return false;
+	return reachables;
     }
 
 }
