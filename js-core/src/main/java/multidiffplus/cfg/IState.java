@@ -52,7 +52,7 @@ public interface IState {
      * @return The pre/post execution state of the call site, the initial state of
      *         the callee and the list of resolved targets.
      */
-    FunctionEvaluator buildFunctionEvaluator(ClassifiedASTNode callSite);
+    FunctionEvaluator initializeCallsite(ClassifiedASTNode callSite);
 
     /**
      * Updates a copy of the abstract state in-place by interpreting the given
@@ -66,6 +66,18 @@ public interface IState {
      *         call site's target functions are interpreted.
      */
     IState interpretCallSite(ClassifiedASTNode callSite, List<IState> functionExitStates);
+
+    /**
+     * Initializes the state of the callback function passed to the given call site.
+     * 
+     * @param callSite
+     *            The call site containing the callback argument.
+     * @param function
+     *            The callback function given as an argument to the call site
+     *            target.
+     * @return The initial state of the call back function.
+     */
+    IState initializeCallback(ClassifiedASTNode callSite, CFG function);
 
     /**
      * Return a new analysis state, which is the join of {@code this} state and

@@ -7,6 +7,7 @@ import org.mozilla.javascript.ast.ScriptNode;
 
 import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode;
 import multidiffplus.cfg.AnalysisState;
+import multidiffplus.cfg.CFG;
 import multidiffplus.cfg.CFGEdge;
 import multidiffplus.cfg.CfgMap;
 import multidiffplus.cfg.FunctionEvaluator;
@@ -68,7 +69,7 @@ public class JavaScriptAnalysisState implements IState {
     }
 
     @Override
-    public FunctionEvaluator buildFunctionEvaluator(ClassifiedASTNode callSite) {
+    public FunctionEvaluator initializeCallsite(ClassifiedASTNode callSite) {
 	FunctionCall fc = (FunctionCall) callSite;
 	State newState = this.state.clone();
 	state.trace = state.trace.update(fc.getID());
@@ -97,6 +98,13 @@ public class JavaScriptAnalysisState implements IState {
 		(JavaScriptAnalysisState) mergedExitState, cfgs);
 
 	return new JavaScriptAnalysisState(newState, cfgs);
+    }
+
+    @Override
+    public IState initializeCallback(ClassifiedASTNode callSite, CFG function) {
+	// Builtin initializeCallback not called by AnalysisState. The state
+	// was initialized by the call site interpreter.
+	throw new Error("Unreachable state.");
     }
 
     public State getUnderlyingState() {

@@ -32,7 +32,6 @@ import multidiffplus.jsanalysis.abstractdomain.Store;
 import multidiffplus.jsanalysis.abstractdomain.Undefined;
 import multidiffplus.jsanalysis.abstractdomain.Variable;
 import multidiffplus.jsanalysis.flow.JavaScriptAnalysisState;
-import multidiffplus.jsanalysis.flow.JavaScriptAsyncFunctionCall;
 import multidiffplus.jsanalysis.hoisting.FunctionLiftVisitor;
 import multidiffplus.jsanalysis.hoisting.GlobalVisitor;
 import multidiffplus.jsanalysis.hoisting.VariableLiftVisitor;
@@ -303,8 +302,8 @@ public class Helpers {
 		    continue;
 
 		if (fc.cfg.getEntryNode().getBeforeState() == null) {
-		    callStack.addAsync(new JavaScriptAsyncFunctionCall(fc, selfAddr, state.store,
-			    state.trace));
+		    // callStack.addAsync(new JavaScriptAsyncFunctionCall(fc, selfAddr, state.store,
+		    // state.trace));
 		}
 	    }
 

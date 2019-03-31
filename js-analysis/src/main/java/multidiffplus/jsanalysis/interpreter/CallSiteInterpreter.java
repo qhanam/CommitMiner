@@ -18,6 +18,7 @@ import multidiffplus.jsanalysis.abstractdomain.Closure.FunctionOrSummary;
 import multidiffplus.jsanalysis.abstractdomain.Control;
 import multidiffplus.jsanalysis.abstractdomain.Dependencies;
 import multidiffplus.jsanalysis.abstractdomain.InternalFunctionProperties;
+import multidiffplus.jsanalysis.abstractdomain.JSClass;
 import multidiffplus.jsanalysis.abstractdomain.Obj;
 import multidiffplus.jsanalysis.abstractdomain.Scratchpad;
 import multidiffplus.jsanalysis.abstractdomain.State;
@@ -118,6 +119,23 @@ public class CallSiteInterpreter {
 	FunctionEvaluator evaluator = new FunctionEvaluator();
 	evaluator
 		.joinPostCallState(JavaScriptAnalysisState.initializeFunctionState(newState, cfgs));
+
+	// Identify callback arguments (ie. args that resolve to functions).
+	for (BValue arg : scratch.applyArgs()) {
+	    for (Address cbAddr : arg.addressAD.addresses) {
+		Obj cbObj = state.store.getObj(cbAddr);
+		if (cbObj == null || cbObj.internalProperties.klass != JSClass.CFunction)
+		    continue;
+		InternalFunctionProperties ifp = (InternalFunctionProperties) cbObj.internalProperties;
+		FunctionOrSummary functionOrSummary = ifp.closure.initializeOrRun(state,
+			state.selfAddr, state.store, Scratchpad.empty(), state.trace, state.control,
+			cfgs);
+		if (functionOrSummary.isFunctionSummary())
+		    continue;
+		evaluator.addCallback(functionOrSummary.getInitialStateOfFunction());
+	    }
+	}
+
 	return evaluator;
 
 	/*

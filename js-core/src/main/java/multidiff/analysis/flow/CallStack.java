@@ -18,7 +18,7 @@ public class CallStack {
      * Calls to async functions that are be executed from the event loop (ie. they
      * must be analyzed with a fresh call stack).
      */
-    private Queue<AsyncFunctionCall> eventLoop;
+    private Queue<StackFrame> eventLoop;
 
     /**
      * TODO: Add 'asyncFunctions' for functions that will be run from the JavaScript
@@ -27,7 +27,7 @@ public class CallStack {
 
     public CallStack(CfgMap cfgMap) {
 	this.callStack = new Stack<StackFrame>();
-	this.eventLoop = new ArrayDeque<AsyncFunctionCall>();
+	this.eventLoop = new ArrayDeque<StackFrame>();
     }
 
     public boolean isEmpty() {
@@ -47,13 +47,13 @@ public class CallStack {
     }
 
     /**
-     * Adds an {@code AsyncFunctionCall} to the event loop.
+     * Adds an async function call to the event loop.
      * 
      * The call will be analyzed sometime in the future after the analysis beginning
      * at the entry point has finished.
      */
-    public void addAsync(AsyncFunctionCall asyncCall) {
-	eventLoop.add(asyncCall);
+    public void addAsync(StackFrame asyncStackFrame) {
+	eventLoop.add(asyncStackFrame);
     }
 
     /**
@@ -68,7 +68,7 @@ public class CallStack {
      * to the call stack.
      */
     public void runNextAsync() {
-	eventLoop.poll().run(this);
+	callStack.push(eventLoop.remove());
     }
 
     public boolean isScriptLevel() {

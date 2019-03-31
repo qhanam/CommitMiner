@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode;
 import multidiff.analysis.flow.CallStack;
 import multidiff.analysis.flow.StackFrame;
@@ -41,7 +43,7 @@ public class AnalysisState {
 	// Check if there is a CFG with a new initial state. If there is, put
 	// that CFG on the call stack and return (can return null in this case).
 	// Otherwise, return merged states.
-	FunctionEvaluator builtinEvaluator = builtinState.buildFunctionEvaluator(callSite);
+	FunctionEvaluator builtinEvaluator = builtinState.initializeCallsite(callSite);
 	for (Entry<CFG, IState> entry : builtinEvaluator.getInitialTargetStates().entrySet()) {
 	    AnalysisState newState, oldState, primeState;
 
@@ -82,6 +84,13 @@ public class AnalysisState {
 	} else if (!builtinExitStates.isEmpty()) {
 	    newBuiltinState = newBuiltinState
 		    .join(builtinState.interpretCallSite(callSite, builtinExitStates));
+	}
+
+	// Add callbacks to the event loop.
+	for (Pair<CFG, IState> callback : builtinEvaluator.getCallbacks()) {
+	    AnalysisState primeState = AnalysisState.initializeAnalysisState(callback.getValue(),
+		    new IState[0]);
+	    callStack.addAsync(new StackFrame(callback.getKey(), primeState));
 	}
 
 	return new AnalysisState(newBuiltinState, newUserStates);

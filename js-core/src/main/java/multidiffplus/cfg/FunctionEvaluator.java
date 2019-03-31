@@ -1,6 +1,8 @@
 package multidiffplus.cfg;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -30,9 +32,17 @@ public class FunctionEvaluator {
      */
     private Map<CFG, IState> initialTargetState;
 
+    /**
+     * Callback functions passed as arguments to unresolved call site targets. These
+     * will have their states initialized by built-in and user interpreters, and
+     * added to the event loop to be analyzed later.
+     */
+    private List<Pair<CFG, IState>> callbacks;
+
     public FunctionEvaluator() {
 	this.postCallState = null;
 	this.initialTargetState = new HashMap<CFG, IState>();
+	this.callbacks = new ArrayList<Pair<CFG, IState>>();
     }
 
     /**
@@ -66,6 +76,25 @@ public class FunctionEvaluator {
      */
     public IState getPostCallState() {
 	return postCallState;
+    }
+
+    /**
+     * Register a callback function to be added to the event loop.
+     * 
+     * Callback functions should only be added for call sites with targets that do
+     * not resolve to actual functions or summaries. For cases where targets do
+     * resolve, the fate of the callback will be evaluated within the analysis of
+     * the target.
+     */
+    public void addCallback(Pair<CFG, IState> functionState) {
+	callbacks.add(functionState);
+    }
+
+    /**
+     * Returns the callback functions in the call site.
+     */
+    public List<Pair<CFG, IState>> getCallbacks() {
+	return callbacks;
     }
 
     /**
