@@ -1,8 +1,5 @@
 package multidiffplus.jsanalysis.interpreter;
 
-import java.util.LinkedList;
-import java.util.List;
-
 import org.mozilla.javascript.ast.AstNode;
 import org.mozilla.javascript.ast.FunctionCall;
 import org.mozilla.javascript.ast.Name;
@@ -50,9 +47,6 @@ public class CallSiteInterpreter {
 
 	/* The state after the function call. */
 	State newState = null;
-
-	/* Keep track of callback functions. */
-	List<Address> callbacks = new LinkedList<Address>();
 
 	// Attempt to resolve the function and its parent object.
 	BValue funVal = expEval.resolveValue(fc.getTarget());
@@ -138,32 +132,6 @@ public class CallSiteInterpreter {
 
 	return evaluator;
 
-	/*
-	 * if (newState == null) {
-	 * 
-	 * } else { // The function exists and must be evaluated.
-	 * 
-	 * // CASE 2: Function resolves. // (1) If the function call is inserted, the
-	 * return value is new. // (2) If the target function has changed, the return
-	 * value has changed. // (3) If the return value has changed, the return value
-	 * has changed. Change retValChange; if (Change.test(fc)) // The entire call is
-	 * new. retValChange = Change.conv(fc, Dependencies::injectValueChange); else if
-	 * (Change.testU(fc.getTarget())) // The target has changed. retValChange =
-	 * Change.convU(fc.getTarget(), Dependencies::injectValueChange); else if
-	 * (funVal.change.isChanged()) // The target has changed. retValChange =
-	 * funVal.change; else retValChange = Change.u();
-	 * 
-	 * BValue retVal = newState.scratch.applyReturn(); if (retVal == null) { //
-	 * Functions with no return statement return undefined. retVal =
-	 * Undefined.inject(Undefined.top(), retValChange,
-	 * Dependencies.injectValue(fc)); newState.scratch =
-	 * newState.scratch.weakUpdate(fc, retVal); } else { // This could be a new
-	 * value if the call is new. newState.scratch = newState.scratch.weakUpdate(fc,
-	 * retVal.join(BValue.bottom(retValChange, Dependencies.bot()))); }
-	 * 
-	 * }
-	 */
-
     }
 
     /**
@@ -207,20 +175,6 @@ public class CallSiteInterpreter {
 	this.state.store = returnState.store;
 	this.state.scratch = this.state.scratch.weakUpdate(fc, retVal);
 
-	// TODO: How do we add async functions if we can't access the call stack?
-	// Analyze any callbacks if we are running an analysis. We are running
-	// an analysis if there is a callstack.
-	// if (callStack != null) {
-	// for (Address addr : callbacks) {
-	// Obj funct = newState.store.getObj(addr);
-	// InternalFunctionProperties ifp = (InternalFunctionProperties)
-	// funct.internalProperties;
-	// FunctionClosure closure = (FunctionClosure) ifp.closure;
-	// callStack.addAsync(new JavaScriptAsyncFunctionCall(closure, state.selfAddr,
-	// state.store, state.trace));
-	// }
-	// }
-
     }
 
     /**
@@ -242,6 +196,8 @@ public class CallSiteInterpreter {
 
 	    // Get the value of the object. It could be a function, object literal, etc.
 	    BValue argVal = expEval.eval(arg);
+	    // Copy the value so we don't propagate arg changes to the environment.
+	    argVal = argVal.join(BValue.bottom());
 
 	    if (Change.test(fc))
 		// The entire call is new.
