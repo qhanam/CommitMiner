@@ -444,7 +444,8 @@ public class ExpEval {
 	// // TODO: We should never reach this point.
 	// return BValue.top(Change.u(), Dependencies.injectValue(name));
 	// }
-	val.change = val.change.join(Change.convNoPropU(name, Dependencies::injectValueChange));
+	if (!wasRenamed(name))
+	    val.change = val.change.join(Change.convNoPropU(name, Dependencies::injectValueChange));
 	return val;
     }
 

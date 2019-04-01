@@ -152,7 +152,7 @@ public class CallSiteInterpreter {
 	if (Change.test(fc))
 	    // The entire call is new.
 	    retValChange = Change.conv(fc, Dependencies::injectValueChange);
-	else if (Change.testU(fc.getTarget()))
+	else if (Change.testU(fc.getTarget()) && !expEval.wasRenamed(fc.getTarget()))
 	    // The target has changed.
 	    retValChange = Change.convU(fc.getTarget(), Dependencies::injectValueChange);
 	else if (funVal.change.isChanged())
@@ -203,14 +203,14 @@ public class CallSiteInterpreter {
 		// The entire call is new.
 		argVal.change = argVal.change
 			.join(Change.conv(fc, Dependencies::injectValueChange));
-	    else if (Change.testU(fc.getTarget()))
+	    else if (Change.testU(fc.getTarget()) && !expEval.wasRenamed(fc.getTarget()))
 		// The target has changed.
 		argVal.change = argVal.change
 			.join(Change.convU(fc.getTarget(), Dependencies::injectValueChange));
 	    else if (funVal != null && funVal.change.isChanged())
 		// The target has changed.
 		argVal.change = argVal.change.join(funVal.change);
-	    else if (Change.testU(arg))
+	    else if (Change.testU(arg) && !expEval.wasRenamed(arg))
 		// The argument has changed.
 		argVal.change = argVal.change
 			.join(Change.convU(arg, Dependencies::injectValueChange));
@@ -227,14 +227,6 @@ public class CallSiteInterpreter {
 	    }
 
 	    args[i] = argVal;
-
-	    /* Arguments of bind, call or apply are not callbacks. */
-	    // AstNode target = fc.getTarget();
-	    // if (!(target instanceof PropertyGet
-	    // && ((PropertyGet) target).getRight().toSource().equals("bind")))
-	    // callbacks.addAll(extractFunctions(argVal, new LinkedList<Address>(),
-	    // new HashSet<Address>()));
-
 	    i++;
 
 	}
