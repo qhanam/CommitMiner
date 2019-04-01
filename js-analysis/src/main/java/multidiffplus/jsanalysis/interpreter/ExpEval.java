@@ -589,7 +589,7 @@ public class ExpEval {
 	    return false;
 	for (Criterion crit : var.change.getDependencies().getDependencies()) {
 	    AstNode node = crit.getNode();
-	    if (!(node instanceof Name) || node.getMapping() == null)
+	    if (!(node instanceof Name) || !Change.testU(node) || node.getMapping() == null)
 		return false;
 	    if (!((Name) node.getMapping()).toSource()
 		    .equals(((Name) varName.getMapping()).toSource()))

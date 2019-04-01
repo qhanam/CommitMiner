@@ -69,7 +69,10 @@ public class CallSiteInterpreter {
 
 	    // Update the control-call domain for the function call.
 	    Control control = state.control;
-	    control = control.update(fc);
+	    if (Change.test(fc)
+		    || (Change.testU(fc.getTarget()) && !expEval.wasRenamed(fc.getTarget()))) {
+		control = control.update(fc);
+	    }
 
 	    // Get either (1) the initial state of the callee if funVal resolves
 	    // to a CFG, or (2) the post-IState of the current stack frame if

@@ -1,6 +1,6 @@
 package multidiffplus.jsanalysis.abstractdomain;
 
-import org.mozilla.javascript.ast.AstNode;
+import org.mozilla.javascript.ast.FunctionCall;
 
 import multidiffplus.cfg.CFGEdge;
 
@@ -41,15 +41,19 @@ public class Control {
      * 
      * @return The new control state after updates.
      */
-    public Control update(AstNode fc) {
+    public Control update(FunctionCall fc) {
 
 	/*
 	 * If this is a new function call, we interpret the control of the callee as
 	 * changed.
 	 */
-	Change change = Change.convU(fc, Dependencies::injectCallChange);
-	if (change.isChanged())
-	    return Control.inject(call.update(change));
+	if (Change.test(fc)) {
+	    Change callChange = Change.conv(fc, Dependencies::injectCallChange);
+	    return Control.inject(call.update(callChange));
+	} else if (Change.testU(fc.getTarget())) {
+	    Change targetChange = Change.convU(fc.getTarget(), Dependencies::injectCallChange);
+	    return Control.inject(call.update(targetChange));
+	}
 
 	/*
 	 * If this is not a new function call, the control-call lattice is set to
