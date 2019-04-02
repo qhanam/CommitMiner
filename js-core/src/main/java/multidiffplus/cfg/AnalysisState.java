@@ -12,29 +12,29 @@ import multidiff.analysis.flow.StackFrame;
 
 public class AnalysisState {
 
-    private IState builtinState;
+    private IBuiltinState builtinState;
 
-    private IState[] userStates;
+    private IUserState[] userStates;
 
-    private AnalysisState(IState builtinState, IState[] userStates) {
+    private AnalysisState(IBuiltinState builtinState, IUserState[] userStates) {
 	this.builtinState = builtinState;
 	this.userStates = userStates;
     }
 
     public AnalysisState interpretStatement(ClassifiedASTNode statement) {
-	IState newBuiltinState = builtinState.interpretStatement(statement);
-	IState[] newUserStates = new IState[userStates.length];
+	IBuiltinState newBuiltinState = builtinState.interpretStatement(statement);
+	IUserState[] newUserStates = new IUserState[userStates.length];
 	for (int i = 0; i < userStates.length; i++) {
-	    newUserStates[i] = userStates[i].interpretStatement(statement);
+	    newUserStates[i] = userStates[i].interpretStatement(newBuiltinState, statement);
 	}
 	return new AnalysisState(newBuiltinState, newUserStates);
     }
 
     public AnalysisState interpretBranchCondition(CFGEdge edge) {
-	IState newBuiltinState = builtinState.interpretBranchCondition(edge);
-	IState[] newUserStates = new IState[userStates.length];
+	IBuiltinState newBuiltinState = builtinState.interpretBranchCondition(edge);
+	IUserState[] newUserStates = new IUserState[userStates.length];
 	for (int i = 0; i < userStates.length; i++) {
-	    newUserStates[i] = userStates[i].interpretBranchCondition(edge);
+	    newUserStates[i] = userStates[i].interpretBranchCondition(newBuiltinState, edge);
 	}
 	return new AnalysisState(newBuiltinState, newUserStates);
     }
@@ -44,11 +44,12 @@ public class AnalysisState {
 	// that CFG on the call stack and return (can return null in this case).
 	// Otherwise, return merged states.
 	FunctionEvaluator builtinEvaluator = builtinState.initializeCallsite(callSite);
-	for (Entry<CFG, IState> entry : builtinEvaluator.getInitialTargetStates().entrySet()) {
+	for (Entry<CFG, IBuiltinState> entry : builtinEvaluator.getInitialTargetStates()
+		.entrySet()) {
 	    AnalysisState newState, oldState, primeState;
 
 	    // Check for changes to target's initial state.
-	    newState = AnalysisState.initializeAnalysisState(entry.getValue(), new IState[0]);
+	    newState = AnalysisState.initializeAnalysisState(entry.getValue(), userStates);
 	    oldState = entry.getKey().getEntryNode().getBeforeState();
 
 	    if (oldState == null) {
@@ -68,12 +69,13 @@ public class AnalysisState {
 	}
 
 	// There are no changes; so we can safely interpret the call.
-	IState newBuiltinState = builtinEvaluator.getPostCallState();
-	IState[] newUserStates = new IState[userStates.length];
+	IBuiltinState newBuiltinState = builtinEvaluator.getPostCallState();
+	IUserState[] newUserStates = userStates;
 
 	// Interpret the exit state of function calls.
-	List<IState> builtinExitStates = builtinEvaluator.getInitialTargetStates().keySet().stream()
-		.map(cfg -> cfg.getMergedExitState().builtinState).collect(Collectors.toList());
+	List<IBuiltinState> builtinExitStates = builtinEvaluator.getInitialTargetStates().keySet()
+		.stream().map(cfg -> cfg.getMergedExitState().builtinState)
+		.collect(Collectors.toList());
 
 	if (newBuiltinState == null && builtinExitStates.isEmpty())
 	    throw new Error("There was no return value for " + callSite.toString());
@@ -86,10 +88,21 @@ public class AnalysisState {
 		    .join(builtinState.interpretCallSite(callSite, builtinExitStates));
 	}
 
+	// Update the user states
+	for (int i = 0; i < userStates.length; i++) {
+	    // Interpret the exit state of function calls.
+	    final int userStateId = i;
+	    List<IUserState> userExitStates = builtinEvaluator.getInitialTargetStates().keySet()
+		    .stream().map(cfg -> cfg.getMergedExitState().userStates[userStateId])
+		    .collect(Collectors.toList());
+	    newUserStates[i] = userStates[i].interpretCallSite(newBuiltinState, callSite,
+		    userExitStates);
+	}
+
 	// Add callbacks to the event loop.
-	for (Pair<CFG, IState> callback : builtinEvaluator.getCallbacks()) {
+	for (Pair<CFG, IBuiltinState> callback : builtinEvaluator.getCallbacks()) {
 	    AnalysisState primeState = AnalysisState.initializeAnalysisState(callback.getValue(),
-		    new IState[0]);
+		    userStates);
 	    callStack.addAsync(new StackFrame(callback.getKey(), primeState));
 	}
 
@@ -97,15 +110,15 @@ public class AnalysisState {
     }
 
     public AnalysisState join(AnalysisState that) {
-	IState newBuiltinState = this.builtinState.join(that.builtinState);
-	IState[] newUserStates = new IState[userStates.length];
+	IBuiltinState newBuiltinState = this.builtinState.join(that.builtinState);
+	IUserState[] newUserStates = new IUserState[userStates.length];
 	for (int i = 0; i < userStates.length; i++) {
 	    newUserStates[i] = this.userStates[i].join(that.userStates[i]);
 	}
 	return new AnalysisState(newBuiltinState, newUserStates);
     }
 
-    public IState getBuiltinState() {
+    public IBuiltinState getBuiltinState() {
 	return builtinState;
     }
 
@@ -129,7 +142,8 @@ public class AnalysisState {
      * @param userState
      *            the state of the user-specified flow analysis.
      */
-    public static AnalysisState initializeAnalysisState(IState builtinState, IState[] userState) {
+    public static AnalysisState initializeAnalysisState(IBuiltinState builtinState,
+	    IUserState[] userState) {
 	return new AnalysisState(builtinState, userState);
     }
 

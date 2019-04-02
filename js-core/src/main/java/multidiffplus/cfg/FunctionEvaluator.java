@@ -21,7 +21,7 @@ public class FunctionEvaluator {
      * resolve to a function. If postCallState is {@code null}, then neither of
      * these conditions hold, and any side effects to the state are ignored.
      */
-    private IState postCallState;
+    private IBuiltinState postCallState;
 
     /**
      * The initial state of the callee's stack frames, with respect to the current
@@ -30,33 +30,33 @@ public class FunctionEvaluator {
      * The functions that the call site target points to are stored as their CFGs,
      * and the initial state is stored as the IState.
      */
-    private Map<CFG, IState> initialTargetState;
+    private Map<CFG, IBuiltinState> initialTargetState;
 
     /**
      * Callback functions passed as arguments to unresolved call site targets. These
      * will have their states initialized by built-in and user interpreters, and
      * added to the event loop to be analyzed later.
      */
-    private List<Pair<CFG, IState>> callbacks;
+    private List<Pair<CFG, IBuiltinState>> callbacks;
 
     public FunctionEvaluator() {
 	this.postCallState = null;
-	this.initialTargetState = new HashMap<CFG, IState>();
-	this.callbacks = new ArrayList<Pair<CFG, IState>>();
+	this.initialTargetState = new HashMap<CFG, IBuiltinState>();
+	this.callbacks = new ArrayList<Pair<CFG, IBuiltinState>>();
     }
 
     /**
      * Set the initial state of a target's stack frame, with respect to the current
      * call site.
      */
-    public void addInitialTargetState(Pair<CFG, IState> initialTargetState) {
+    public void addInitialTargetState(Pair<CFG, IBuiltinState> initialTargetState) {
 	this.initialTargetState.put(initialTargetState.getKey(), initialTargetState.getValue());
     }
 
     /**
      * Returns the initial state for each target.
      */
-    public Map<CFG, IState> getInitialTargetStates() {
+    public Map<CFG, IBuiltinState> getInitialTargetStates() {
 	return initialTargetState;
     }
 
@@ -64,7 +64,7 @@ public class FunctionEvaluator {
      * Merge the interpretation of a function summary with the interpretations of
      * other function summaries pointed to by the target.
      */
-    public void joinPostCallState(IState stateToJoin) {
+    public void joinPostCallState(IBuiltinState stateToJoin) {
 	if (postCallState == null)
 	    postCallState = stateToJoin;
 	else
@@ -74,7 +74,7 @@ public class FunctionEvaluator {
     /**
      * Returns the merged function summaries.
      */
-    public IState getPostCallState() {
+    public IBuiltinState getPostCallState() {
 	return postCallState;
     }
 
@@ -86,14 +86,14 @@ public class FunctionEvaluator {
      * resolve, the fate of the callback will be evaluated within the analysis of
      * the target.
      */
-    public void addCallback(Pair<CFG, IState> functionState) {
+    public void addCallback(Pair<CFG, IBuiltinState> functionState) {
 	callbacks.add(functionState);
     }
 
     /**
      * Returns the callback functions in the call site.
      */
-    public List<Pair<CFG, IState>> getCallbacks() {
+    public List<Pair<CFG, IBuiltinState>> getCallbacks() {
 	return callbacks;
     }
 

@@ -6,7 +6,7 @@ import java.util.Queue;
 import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode;
 import multidiffplus.cfg.CFG;
 import multidiffplus.cfg.CfgMap;
-import multidiffplus.cfg.IState;
+import multidiffplus.cfg.IBuiltinState;
 
 /**
  * A registry for interpreters to request function calls be evaluated with
@@ -35,7 +35,7 @@ public class FunctionEvalRequestRegistry {
      * @param callee
      *            The CFG of the function being called.
      */
-    public void request(IState state, ClassifiedASTNode caller, CFG callee) {
+    public void request(IBuiltinState state, ClassifiedASTNode caller, CFG callee) {
 	requests.add(new FunctionCall(state, caller, callee));
     }
 
@@ -60,7 +60,7 @@ public class FunctionEvalRequestRegistry {
     protected class FunctionCall {
 
 	/** The abstract state at the time of the call. */
-	private IState state;
+	private IBuiltinState state;
 
 	/** The AST node that contains the call. */
 	private ClassifiedASTNode caller;
@@ -68,13 +68,13 @@ public class FunctionEvalRequestRegistry {
 	/** The CFG of the function being called. */
 	private CFG callee;
 
-	private FunctionCall(IState state, ClassifiedASTNode caller, CFG callee) {
+	private FunctionCall(IBuiltinState state, ClassifiedASTNode caller, CFG callee) {
 	    this.state = state;
 	    this.caller = caller;
 	    this.callee = callee;
 	}
 
-	public IState state() {
+	public IBuiltinState state() {
 	    return state;
 	}
 

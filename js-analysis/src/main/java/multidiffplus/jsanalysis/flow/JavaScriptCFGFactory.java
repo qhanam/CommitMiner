@@ -48,7 +48,7 @@ import multidiffplus.cfg.CFG;
 import multidiffplus.cfg.CFGEdge;
 import multidiffplus.cfg.CFGNode;
 import multidiffplus.cfg.CfgMap;
-import multidiffplus.cfg.IState;
+import multidiffplus.cfg.IUserState;
 import multidiffplus.cfg.IdGen;
 import multidiffplus.factories.ICFGFactory;
 
@@ -59,7 +59,7 @@ import multidiffplus.factories.ICFGFactory;
 public class JavaScriptCFGFactory implements ICFGFactory {
 
     @Override
-    public Analysis createAnalysis(ClassifiedASTNode root, IState[] userStates) {
+    public Analysis createAnalysis(ClassifiedASTNode root, IUserState[] userStates) {
 	CfgMap cfgMap = createCFGs(root);
 	AnalysisState initialState = JavaScriptAnalysisState.initializeScriptState(root, cfgMap,
 		userStates);
@@ -72,7 +72,6 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 	if (!(root instanceof AstRoot))
 	    throw new IllegalArgumentException("The AST must be parsed from Apache Rhino.");
 	AstRoot script = (AstRoot) root;
-
 	CFGBuilder builder = new CFGBuilder(script);
 	return builder.getCfgMap();
     }

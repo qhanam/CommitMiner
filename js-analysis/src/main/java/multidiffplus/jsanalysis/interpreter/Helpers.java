@@ -18,7 +18,7 @@ import multidiff.analysis.flow.CallStack;
 import multidiff.analysis.flow.StackFrame;
 import multidiffplus.cfg.CFG;
 import multidiffplus.cfg.CfgMap;
-import multidiffplus.cfg.IState;
+import multidiffplus.cfg.IBuiltinState;
 import multidiffplus.jsanalysis.abstractdomain.Address;
 import multidiffplus.jsanalysis.abstractdomain.BValue;
 import multidiffplus.jsanalysis.abstractdomain.Change;
@@ -165,7 +165,7 @@ public class Helpers {
      * Finds functions which are reachable from the current scope and have not yet
      * been analyzed and adds them to a set to be analyzed later.
      */
-    public static Set<Pair<CFG, IState>> findReachableFunctions(CallStack callStack, CfgMap cfgs) {
+    public static Set<Pair<CFG, IBuiltinState>> findReachableFunctions(CallStack callStack, CfgMap cfgs) {
 	StackFrame stackFrame = callStack.peek();
 
 	/* Get the set of local vars to search for unanalyzed functions. */
@@ -225,11 +225,11 @@ public class Helpers {
      * @param visited
      *            Prevent circular lookups.
      */
-    private static Set<Pair<CFG, IState>> analyzeEnvReachable(State state,
+    private static Set<Pair<CFG, IBuiltinState>> analyzeEnvReachable(State state,
 	    Map<String, Variable> vars, Address selfAddr, Set<Address> visited,
 	    Set<String> localvars, CfgMap cfgs) {
 
-	Set<Pair<CFG, IState>> reachables = new HashSet<>();
+	Set<Pair<CFG, IBuiltinState>> reachables = new HashSet<>();
 
 	for (Map.Entry<String, Variable> entry : vars.entrySet()) {
 	    for (Address addr : entry.getValue().addresses.addresses) {
@@ -251,11 +251,11 @@ public class Helpers {
      * @param visited
      *            Prevent circular lookups.
      */
-    private static Set<Pair<CFG, IState>> analyzeObjReachable(State state,
+    private static Set<Pair<CFG, IBuiltinState>> analyzeObjReachable(State state,
 	    Map<String, Property> props, Address selfAddr, Set<Address> visited,
 	    Set<String> localvars, CfgMap cfgs) {
 
-	Set<Pair<CFG, IState>> reachables = new HashSet<>();
+	Set<Pair<CFG, IBuiltinState>> reachables = new HashSet<>();
 
 	for (Map.Entry<String, Property> entry : props.entrySet()) {
 	    reachables.addAll(analyzePublic(state, entry.getKey(), entry.getValue().address,
@@ -279,10 +279,10 @@ public class Helpers {
      * @param visited
      *            Prevent circular lookups.
      */
-    private static Set<Pair<CFG, IState>> analyzePublic(State state, String name, Address addr,
+    private static Set<Pair<CFG, IBuiltinState>> analyzePublic(State state, String name, Address addr,
 	    Address selfAddr, Set<Address> visited, Set<String> localvars, CfgMap cfgs) {
 
-	Set<Pair<CFG, IState>> reachables = new HashSet<>();
+	Set<Pair<CFG, IBuiltinState>> reachables = new HashSet<>();
 
 	BValue val = state.store.apply(addr, new Name());
 

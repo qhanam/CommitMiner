@@ -4,7 +4,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import multidiffplus.cfg.CFG;
 import multidiffplus.cfg.CfgMap;
-import multidiffplus.cfg.IState;
+import multidiffplus.cfg.IBuiltinState;
 import multidiffplus.jsanalysis.trace.Trace;
 
 /**
@@ -39,15 +39,15 @@ public abstract class Closure {
      * the state after evaluating a function summary.
      */
     public class FunctionOrSummary {
-	private Pair<CFG, IState> initState;
-	private IState newState;
+	private Pair<CFG, IBuiltinState> initState;
+	private IBuiltinState newState;
 
-	public FunctionOrSummary(Pair<CFG, IState> initState) {
+	public FunctionOrSummary(Pair<CFG, IBuiltinState> initState) {
 	    this.initState = initState;
 	    this.newState = null;
 	}
 
-	public FunctionOrSummary(IState newState) {
+	public FunctionOrSummary(IBuiltinState newState) {
 	    this.initState = null;
 	    this.newState = newState;
 	}
@@ -56,11 +56,11 @@ public abstract class Closure {
 	    return newState != null;
 	}
 
-	public Pair<CFG, IState> getInitialStateOfFunction() {
+	public Pair<CFG, IBuiltinState> getInitialStateOfFunction() {
 	    return initState;
 	}
 
-	public IState getPostCallStateOfSummary() {
+	public IBuiltinState getPostCallStateOfSummary() {
 	    return newState;
 	}
 

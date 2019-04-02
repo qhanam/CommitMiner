@@ -11,9 +11,11 @@ import multidiff.analysis.flow.StackFrame;
 import multidiffplus.cfg.AnalysisState;
 import multidiffplus.cfg.CFG;
 import multidiffplus.cfg.CfgMap;
-import multidiffplus.cfg.IState;
+import multidiffplus.cfg.IBuiltinState;
+import multidiffplus.cfg.IUserState;
 import multidiffplus.facts.AnnotationFactBase;
 import multidiffplus.jsanalysis.interpreter.Helpers;
+import multidiffplus.jsanalysis.user.SyncErrorState;
 
 public class JavaScriptAnalysis extends Analysis {
 
@@ -26,10 +28,10 @@ public class JavaScriptAnalysis extends Analysis {
 
     @Override
     protected void addReachableFunctions() {
-	Set<Pair<CFG, IState>> reachables = Helpers.findReachableFunctions(callStack, cfgs);
-	for (Pair<CFG, IState> reachable : reachables) {
+	Set<Pair<CFG, IBuiltinState>> reachables = Helpers.findReachableFunctions(callStack, cfgs);
+	for (Pair<CFG, IBuiltinState> reachable : reachables) {
 	    AnalysisState initialState = AnalysisState.initializeAnalysisState(reachable.getValue(),
-		    new IState[0]);
+		    getUserStates(reachable.getKey().getEntryNode().getStatement(), cfgs));
 	    callStack.addAsync(new StackFrame(reachable.getKey(), initialState));
 	}
     }
@@ -39,11 +41,17 @@ public class JavaScriptAnalysis extends Analysis {
 	AnnotationVisitor.registerAnnotations((AstRoot) root, annotationFactBase);
     }
 
+    private static IUserState[] getUserStates(ClassifiedASTNode root, CfgMap cfgs) {
+	IUserState[] userStates = new IUserState[1];
+	userStates[0] = SyncErrorState.initializeScriptState();
+	return userStates;
+    }
+
     public static JavaScriptAnalysis InitializeJavaScriptAnalysis(ClassifiedASTNode root) {
 	JavaScriptCFGFactory cfgFactory = new JavaScriptCFGFactory();
 	CfgMap cfgMap = cfgFactory.createCFGs(root);
 	AnalysisState initialState = JavaScriptAnalysisState.initializeScriptState(root, cfgMap,
-		new IState[0]);
+		getUserStates(root, cfgMap));
 	CFG entryPoint = cfgMap.getCfgFor(root);
 	return new JavaScriptAnalysis(entryPoint, cfgMap, initialState);
     }

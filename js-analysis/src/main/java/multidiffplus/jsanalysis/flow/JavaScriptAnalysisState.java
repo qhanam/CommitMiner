@@ -7,15 +7,16 @@ import org.mozilla.javascript.ast.ScriptNode;
 
 import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode;
 import multidiffplus.cfg.AnalysisState;
-import multidiffplus.cfg.CFG;
 import multidiffplus.cfg.CFGEdge;
 import multidiffplus.cfg.CfgMap;
 import multidiffplus.cfg.FunctionEvaluator;
-import multidiffplus.cfg.IState;
+import multidiffplus.cfg.IBuiltinState;
+import multidiffplus.cfg.IUserState;
 import multidiffplus.jsanalysis.abstractdomain.State;
 import multidiffplus.jsanalysis.initstate.StateFactory;
 import multidiffplus.jsanalysis.interpreter.BranchConditionInterpreter;
 import multidiffplus.jsanalysis.interpreter.CallSiteInterpreter;
+import multidiffplus.jsanalysis.interpreter.ExpEval;
 import multidiffplus.jsanalysis.interpreter.StateComparator;
 import multidiffplus.jsanalysis.interpreter.StatementInterpreter;
 
@@ -27,7 +28,7 @@ import multidiffplus.jsanalysis.interpreter.StatementInterpreter;
  * dependencies, data dependencies and type state) are both made available to
  * injected checkers.
  */
-public class JavaScriptAnalysisState implements IState {
+public class JavaScriptAnalysisState implements IBuiltinState {
 
     private State state;
     private CfgMap cfgs;
@@ -38,7 +39,7 @@ public class JavaScriptAnalysisState implements IState {
     }
 
     @Override
-    public IState interpretStatement(ClassifiedASTNode statement) {
+    public IBuiltinState interpretStatement(ClassifiedASTNode statement) {
 	State newState = this.state.clone();
 	state.trace = state.trace.update(statement.getID());
 	StatementInterpreter.interpret(statement, newState, cfgs);
@@ -46,7 +47,7 @@ public class JavaScriptAnalysisState implements IState {
     }
 
     @Override
-    public IState interpretBranchCondition(CFGEdge edge) {
+    public IBuiltinState interpretBranchCondition(CFGEdge edge) {
 	State newState = this.state.clone();
 	if (edge.getCondition() != null) {
 	    state.trace = state.trace.update(edge.getCondition().getID());
@@ -56,13 +57,13 @@ public class JavaScriptAnalysisState implements IState {
     }
 
     @Override
-    public IState join(IState s) {
+    public IBuiltinState join(IBuiltinState s) {
 	JavaScriptAnalysisState that = (JavaScriptAnalysisState) s;
 	return new JavaScriptAnalysisState(this.state.join(that.state), cfgs);
     }
 
     @Override
-    public boolean equivalentTo(IState state) {
+    public boolean equivalentTo(IBuiltinState state) {
 	JavaScriptAnalysisState that = (JavaScriptAnalysisState) state;
 	StateComparator comparator = new StateComparator(this.state, that.state);
 	return comparator.isEqual();
@@ -77,14 +78,15 @@ public class JavaScriptAnalysisState implements IState {
     }
 
     @Override
-    public IState interpretCallSite(ClassifiedASTNode callSite, List<IState> exitStates) {
+    public IBuiltinState interpretCallSite(ClassifiedASTNode callSite,
+	    List<IBuiltinState> exitStates) {
 	State newState = this.state.clone();
 	if (exitStates.size() == 0)
 	    return null;
 
 	// Merge the exit states (ie. return values) of the function targets.
-	IState mergedExitState = null;
-	for (IState exitState : exitStates) {
+	IBuiltinState mergedExitState = null;
+	for (IBuiltinState exitState : exitStates) {
 	    if (mergedExitState == null) {
 		mergedExitState = exitState;
 	    } else {
@@ -100,11 +102,8 @@ public class JavaScriptAnalysisState implements IState {
 	return new JavaScriptAnalysisState(newState, cfgs);
     }
 
-    @Override
-    public IState initializeCallback(ClassifiedASTNode callSite, CFG function) {
-	// Builtin initializeCallback not called by AnalysisState. The state
-	// was initialized by the call site interpreter.
-	throw new Error("Unreachable state.");
+    public ExpEval getExpressionEvaluator() {
+	return new ExpEval(state, cfgs);
     }
 
     public State getUnderlyingState() {
@@ -114,7 +113,7 @@ public class JavaScriptAnalysisState implements IState {
     /**
      * Creates an initial AnalysisState for a function.
      */
-    public static IState initializeFunctionState(State state, CfgMap cfgs) {
+    public static IBuiltinState initializeFunctionState(State state, CfgMap cfgs) {
 	return new JavaScriptAnalysisState(state, cfgs);
     }
 
@@ -125,7 +124,7 @@ public class JavaScriptAnalysisState implements IState {
      * created by either interpreting statements or joining two states.
      */
     public static AnalysisState initializeScriptState(ClassifiedASTNode root, CfgMap cfgs,
-	    IState[] userStates) {
+	    IUserState[] userStates) {
 	State state = StateFactory.createInitialState((ScriptNode) root, cfgs);
 	return AnalysisState.initializeAnalysisState(new JavaScriptAnalysisState(state, cfgs),
 		userStates);
