@@ -3,11 +3,14 @@ package multidiffplus.jsanalysis.flow;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.mozilla.javascript.ast.ArrayLiteral;
 import org.mozilla.javascript.ast.AstNode;
 import org.mozilla.javascript.ast.ElementGet;
 import org.mozilla.javascript.ast.ExpressionStatement;
 import org.mozilla.javascript.ast.FunctionCall;
 import org.mozilla.javascript.ast.InfixExpression;
+import org.mozilla.javascript.ast.ObjectLiteral;
+import org.mozilla.javascript.ast.ObjectProperty;
 import org.mozilla.javascript.ast.ParenthesizedExpression;
 import org.mozilla.javascript.ast.ReturnStatement;
 import org.mozilla.javascript.ast.ThrowStatement;
@@ -63,6 +66,13 @@ public class CallSiteVisitor {
 	    ((VariableDeclaration) node).getVariables().forEach(vd -> topsort(vd));
 	} else if (node instanceof VariableInitializer) {
 	    topsort(((VariableInitializer) node).getInitializer());
+	} else if (node instanceof ArrayLiteral) {
+	    for (AstNode element : ((ArrayLiteral) node).getElements())
+		topsort(element);
+	} else if (node instanceof ObjectLiteral) {
+	    for (ObjectProperty property : ((ObjectLiteral) node).getElements()) {
+		topsort(property);
+	    }
 	}
     }
 

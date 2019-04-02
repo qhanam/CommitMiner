@@ -8,7 +8,15 @@ import org.mozilla.javascript.ast.AstNode;
 public class Criterion {
 
     public enum Type {
-	VARIABLE, VALUE, VALUE_CHANGE, VARIABLE_CHANGE, CALL_CHANGE, CONDITION_CHANGE, SYNC_ERROR
+	VARIABLE, /**/
+	VALUE, /**/
+	VALUE_CHANGE, /**/
+	VARIABLE_CHANGE, /**/
+	CALL_CHANGE, /**/
+	CONDITION_CHANGE, /**/
+	SYNC_ERROR, /**/
+	MUTABLE_SYNC_ERROR_API, /**/
+	MUTABLE_SYNC_ERROR_FUNCTION /**/
     }
 
     // The type of relation.
