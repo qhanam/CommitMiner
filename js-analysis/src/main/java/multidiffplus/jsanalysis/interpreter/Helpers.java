@@ -165,7 +165,8 @@ public class Helpers {
      * Finds functions which are reachable from the current scope and have not yet
      * been analyzed and adds them to a set to be analyzed later.
      */
-    public static Set<Pair<CFG, IBuiltinState>> findReachableFunctions(CallStack callStack, CfgMap cfgs) {
+    public static Set<Pair<CFG, IBuiltinState>> findReachableFunctions(CallStack callStack,
+	    CfgMap cfgs) {
 	StackFrame stackFrame = callStack.peek();
 
 	/* Get the set of local vars to search for unanalyzed functions. */
@@ -279,8 +280,9 @@ public class Helpers {
      * @param visited
      *            Prevent circular lookups.
      */
-    private static Set<Pair<CFG, IBuiltinState>> analyzePublic(State state, String name, Address addr,
-	    Address selfAddr, Set<Address> visited, Set<String> localvars, CfgMap cfgs) {
+    private static Set<Pair<CFG, IBuiltinState>> analyzePublic(State state, String name,
+	    Address addr, Address selfAddr, Set<Address> visited, Set<String> localvars,
+	    CfgMap cfgs) {
 
 	Set<Pair<CFG, IBuiltinState>> reachables = new HashSet<>();
 
@@ -323,7 +325,8 @@ public class Helpers {
 	    }
 
 	    /* Recursively look for object properties that are functions. */
-	    analyzeObjReachable(state, obj.externalProperties, addr, visited, null, cfgs);
+	    reachables.addAll(
+		    analyzeObjReachable(state, obj.externalProperties, addr, visited, null, cfgs));
 
 	}
 
