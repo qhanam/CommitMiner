@@ -3,6 +3,7 @@ package multidiffplus.jsanalysis.user;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.mozilla.javascript.ast.AstNode;
@@ -72,19 +73,27 @@ public class AsyncErrorState implements IUserState {
 	AstNode node = (AstNode) statement;
 	ExpEval eval = ((JavaScriptAnalysisState) builtin).getExpressionEvaluator();
 	BValue val = eval.resolveValue(new Name(0, error.getKey().name));
-	if (val == null) {
+
+	if (val.stringAD.le == Str.LatticeElement.SBLANK
+		|| val.stringAD.le == Str.LatticeElement.BOTTOM) {
+	    // The error parameter is empty, so this statement is safe.
 	    return this;
 	}
 
-	// Check if the parameter is non-empty.
-	if (!(val.stringAD.le == Str.LatticeElement.SBLANK
-		|| val.stringAD.le == Str.LatticeElement.BOTTOM)) {
-	    // The error parameter may be non-null.
-	    for (Criterion criterion : asyncCallsites.values()) {
-		node.addDependency(criterion.getType().toString(), criterion.getId());
-	    }
-	    node.addDependency(error.getValue().getType().toString(), error.getValue().getId());
+	Set<Criterion> usedParams = ParamUseVisitor.findUsedParams(node, returnValues);
+	if (usedParams.isEmpty()) {
+	    // No parameters are used within the statement.
+	    return this;
 	}
+
+	// The error parameter may be non-null.
+	for (Criterion criterion : asyncCallsites.values()) {
+	    node.addDependency(criterion.getType().toString(), criterion.getId());
+	}
+	for (Criterion criterion : usedParams) {
+	    node.addDependency(criterion.getType().toString(), criterion.getId());
+	}
+	node.addDependency(error.getValue().getType().toString(), error.getValue().getId());
 
 	return this;
     }
