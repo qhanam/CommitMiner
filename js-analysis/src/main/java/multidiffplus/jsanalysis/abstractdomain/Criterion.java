@@ -15,8 +15,9 @@ public class Criterion {
 	CALL_CHANGE, /**/
 	CONDITION_CHANGE, /**/
 	SYNC_ERROR, /**/
+	ASYNC_ERROR, /**/
 	MUTABLE_SYNC_ERROR_API, /**/
-	MUTABLE_SYNC_ERROR_FUNCTION /**/
+	MUTABLE_SYNC_ERROR_FUNCTION, /**/
     }
 
     // The type of relation.

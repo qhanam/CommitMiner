@@ -69,11 +69,13 @@ public class BranchConditionInterpreter {
 		    interpretNE(ie);
 		else
 		    interpretEQ(ie);
+		break;
 	    case Token.NE:
 		if (not)
 		    interpretEQ(ie);
 		else
 		    interpretNE(ie);
+		break;
 	    case Token.SHEQ:
 		if (not)
 		    interpretSHNE(ie);
@@ -107,7 +109,7 @@ public class BranchConditionInterpreter {
 		    new Num(Num.LatticeElement.NAN_ZERO), new Bool(Bool.LatticeElement.FALSE),
 		    Null.top(), Undefined.top(), oldVal.addressAD, oldVal.change, oldVal.deps);
 	    // Update the store.
-	    state.store.strongUpdate(addr, val, new Name());
+	    state.store = state.store.strongUpdate(addr, val, new Name());
 	}
 
     }
@@ -124,7 +126,7 @@ public class BranchConditionInterpreter {
 		    new Bool(Bool.LatticeElement.TRUE), Null.bottom(), Undefined.bottom(),
 		    oldVal.addressAD, oldVal.change, oldVal.deps);
 	    // Update the store.
-	    state.store.strongUpdate(addr, val, new Name());
+	    state.store = state.store.strongUpdate(addr, val, new Name());
 	}
 
     }
@@ -188,7 +190,7 @@ public class BranchConditionInterpreter {
 		BValue oldVal = state.store.apply(lhsAddr, ie.getLeft());
 		rhsVal = Undefined.inject(Undefined.top(), oldVal.change, oldVal.deps)
 			.join(Null.inject(Null.top(), oldVal.change, oldVal.deps));
-		state.store.strongUpdate(lhsAddr, rhsVal, new Name());
+		state.store = state.store.strongUpdate(lhsAddr, rhsVal, new Name());
 	    }
 	if (BValue.isBlank(rhsVal) || BValue.isZero(rhsVal))
 	    for (Address lhsAddr : lhsAddrs) {
@@ -196,12 +198,12 @@ public class BranchConditionInterpreter {
 		rhsVal = Str.inject(new Str(Str.LatticeElement.SBLANK), oldVal.change, oldVal.deps)
 			.join(Num.inject(new Num(Num.LatticeElement.ZERO), oldVal.change,
 				oldVal.deps));
-		state.store.strongUpdate(lhsAddr, rhsVal, new Name());
+		state.store = state.store.strongUpdate(lhsAddr, rhsVal, new Name());
 	    }
 	if (BValue.isNaN(rhsVal))
 	    for (Address lhsAddr : lhsAddrs) {
 		BValue oldVal = state.store.apply(lhsAddr, ie.getLeft());
-		state.store.strongUpdate(lhsAddr,
+		state.store = state.store.strongUpdate(lhsAddr,
 			Num.inject(new Num(Num.LatticeElement.NAN), oldVal.change, oldVal.deps),
 			new Name());
 	    }
@@ -227,7 +229,7 @@ public class BranchConditionInterpreter {
 	/* Update the value(s) on the LHS. */
 	Set<Address> lhsAddrs = expEval.resolveOrCreate(ie.getLeft());
 	for (Address lhsAddr : lhsAddrs) {
-	    state.store.strongUpdate(lhsAddr, rhsVal, new Name());
+	    state.store = state.store.strongUpdate(lhsAddr, rhsVal, new Name());
 	}
 
     }
