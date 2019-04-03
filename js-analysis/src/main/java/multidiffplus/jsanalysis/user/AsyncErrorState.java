@@ -9,6 +9,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.mozilla.javascript.ast.AstNode;
 import org.mozilla.javascript.ast.FunctionCall;
 import org.mozilla.javascript.ast.FunctionNode;
+import org.mozilla.javascript.ast.InfixExpression;
 import org.mozilla.javascript.ast.Name;
 
 import ca.ubc.ece.salt.gumtree.ast.ClassifiedASTNode;
@@ -112,32 +113,62 @@ public class AsyncErrorState implements IUserState {
     @Override
     public IUserState initializeCallback(IBuiltinState builtin, ClassifiedASTNode callSite,
 	    CFG function) {
-	JavaScriptAnalysisState state = (JavaScriptAnalysisState) builtin;
+
+	JavaScriptAnalysisState jsBuiltin = (JavaScriptAnalysisState) builtin;
+
 	FunctionCall fc = (FunctionCall) callSite;
 
 	// TODO: Resolve the target and callback function to see if either have changed.
 
-	if (Change.test(fc) || Change.testU(fc.getTarget())) {
-	    // The call site is new, or the target has changed.
-	    FunctionNode f = (FunctionNode) function.getEntryNode().getStatement();
-	    Pair<Variable, Criterion> error = null;
-	    Map<Variable, Criterion> params = new HashMap<>();
-	    int i = 0;
-	    for (AstNode param : f.getParams()) {
-		if (i == 0) {
-		    Variable v = state.getUnderlyingState().env.apply((Name) param);
-		    error = Pair.of(v, Criterion.of(param, Criterion.Type.ASYNC_ERROR_EPARAM));
-		} else {
-		    Variable v = state.getUnderlyingState().env.apply((Name) param);
-		    params.put(v, Criterion.of(param, Criterion.Type.ASYNC_ERROR_VPARAM));
-		}
-		i++;
-	    }
-	    return new AsyncErrorState(fc, error, params);
-	} else {
-	    // The call site is not impacted by the change.
+	if (!(Change.test(fc) || Change.testU(fc.getTarget()))) {
+	    // The call site is not new and the target has not changed.
 	    return new AsyncErrorState();
 	}
+
+	if (!(fc.getTarget() instanceof InfixExpression)
+		|| !(((InfixExpression) fc.getTarget()).getRight() instanceof Name)) {
+	    // The target is not in the format 'API.function()'
+	    return this;
+	}
+
+	// Resolve the object where the function is defined.
+	InfixExpression target = (InfixExpression) fc.getTarget();
+	Name funct = (Name) target.getRight();
+	ExpEval eval = jsBuiltin.getExpressionEvaluator();
+	BValue targetObject = eval.eval(target.getLeft());
+
+	// Is the criterion an API the checker targets?
+	boolean targetOfInterest = false;
+	for (Criterion criterion : targetObject.deps.getDependencies()) {
+	    if (criterion.getType() == Criterion.Type.VALUE
+		    && criterion.getNode().toSource().equals("require('fs')")
+		    && funct.toSource().equals("readFile")) {
+		Criterion api = Criterion.of(criterion.getNode(), Criterion.Type.ASYNC_ERROR_API);
+		criterion.getNode().addCriterion(api.getType().toString(), api.getId());
+		targetOfInterest = true;
+	    }
+	}
+
+	if (!targetOfInterest) {
+	    // This is not a call site of interest.
+	    return new AsyncErrorState();
+	}
+
+	FunctionNode f = (FunctionNode) function.getEntryNode().getStatement();
+	Pair<Variable, Criterion> error = null;
+	Map<Variable, Criterion> params = new HashMap<>();
+	int i = 0;
+	for (AstNode param : f.getParams()) {
+	    if (i == 0) {
+		Variable v = jsBuiltin.getUnderlyingState().env.apply((Name) param);
+		error = Pair.of(v, Criterion.of(param, Criterion.Type.ASYNC_ERROR_EPARAM));
+	    } else {
+		Variable v = jsBuiltin.getUnderlyingState().env.apply((Name) param);
+		params.put(v, Criterion.of(param, Criterion.Type.ASYNC_ERROR_VPARAM));
+	    }
+	    i++;
+	}
+	return new AsyncErrorState(fc, error, params);
     }
 
     @Override
