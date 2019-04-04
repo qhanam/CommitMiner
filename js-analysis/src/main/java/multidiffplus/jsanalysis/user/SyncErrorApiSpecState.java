@@ -20,9 +20,9 @@ import multidiffplus.jsanalysis.abstractdomain.Criterion;
 import multidiffplus.jsanalysis.flow.JavaScriptAnalysisState;
 import multidiffplus.jsanalysis.interpreter.ExpEval;
 
-public class SyncErrorApiState implements IUserState {
+public class SyncErrorApiSpecState implements IUserState {
 
-    private SyncErrorApiState() {
+    private SyncErrorApiSpecState() {
     }
 
     @Override
@@ -66,12 +66,15 @@ public class SyncErrorApiState implements IUserState {
 
 	// Is the criterion an API the checker targets?
 	for (Criterion criterion : targetObject.deps.getDependencies()) {
-	    if (criterion.getType() == Criterion.Type.VALUE && isProtected(fc)) {
+	    if (criterion.getType() == Criterion.Type.VALUE && isProtected(fc)
+		    && criterion.getNode().toSource().contains("require")) {
 		// This new call site is protected. Create a warning.
-		Criterion api = Criterion.of(fc, Criterion.Type.MUTABLE_SYNC_ERROR_API);
-		Criterion function = Criterion.of(fc, Criterion.Type.MUTABLE_SYNC_ERROR_FUNCTION);
-		criterion.getNode().addDependency(api.getType().toString(), api.getId());
-		funct.addDependency(function.getType().toString(), function.getId());
+		Criterion api = Criterion.of(criterion.getNode(),
+			Criterion.Type.MUTABLE_SYNC_ERROR_API);
+		Criterion function = Criterion.of(funct,
+			Criterion.Type.MUTABLE_SYNC_ERROR_FUNCTION);
+		fc.addDependency(api.getType().toString(), api.getId());
+		fc.addDependency(function.getType().toString(), function.getId());
 	    }
 	}
 
@@ -117,8 +120,8 @@ public class SyncErrorApiState implements IUserState {
      * This should only be called once per analysis. All other states should be
      * created by either interpreting statements or joining two states.
      */
-    public static SyncErrorApiState initializeScriptState() {
-	return new SyncErrorApiState();
+    public static SyncErrorApiSpecState initializeScriptState() {
+	return new SyncErrorApiSpecState();
     }
 
 }
