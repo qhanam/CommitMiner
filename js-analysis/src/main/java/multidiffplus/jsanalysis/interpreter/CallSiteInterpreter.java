@@ -213,7 +213,7 @@ public class CallSiteInterpreter {
 	    else if (funVal != null && funVal.change.isChanged())
 		// The target has changed.
 		argVal.change = argVal.change.join(funVal.change);
-	    else if (Change.testU(arg) && !expEval.wasRenamed(arg))
+	    else if (arg instanceof Name && Change.testU(arg) && !expEval.wasRenamed(arg))
 		// The argument has changed.
 		argVal.change = argVal.change
 			.join(Change.convU(arg, Dependencies::injectValueChange));
