@@ -10,25 +10,21 @@ import org.mozilla.javascript.ast.Name;
 import org.mozilla.javascript.ast.NodeVisitor;
 import org.mozilla.javascript.ast.PropertyGet;
 
-import multidiffplus.jsanalysis.abstractdomain.Criterion;
-import multidiffplus.jsanalysis.abstractdomain.Variable;
-
 class ParamUseVisitor implements NodeVisitor {
 
-    Map<String, Criterion> params;
-    Set<Criterion> usedParams;
+    Map<String, Name> params;
+    Set<Name> usedParams;
 
-    public static Set<Criterion> findUsedParams(AstNode statement,
-	    Map<Variable, Criterion> params) {
+    public static Set<Name> findUsedParams(AstNode statement, Set<Name> params) {
 	ParamUseVisitor visitor = new ParamUseVisitor(params);
 	statement.visit(visitor);
 	return visitor.usedParams;
     }
 
-    private ParamUseVisitor(Map<Variable, Criterion> params) {
-	this.params = new HashMap<String, Criterion>();
-	params.entrySet().forEach(entry -> this.params.put(entry.getKey().name, entry.getValue()));
-	usedParams = new HashSet<Criterion>();
+    private ParamUseVisitor(Set<Name> params) {
+	this.params = new HashMap<>();
+	params.forEach(param -> this.params.put(param.toSource(), param));
+	this.usedParams = new HashSet<>();
     }
 
     @Override

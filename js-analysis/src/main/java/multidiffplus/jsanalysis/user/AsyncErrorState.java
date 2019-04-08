@@ -1,11 +1,9 @@
 package multidiffplus.jsanalysis.user;
 
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.mozilla.javascript.ast.AstNode;
 import org.mozilla.javascript.ast.FunctionCall;
 import org.mozilla.javascript.ast.FunctionNode;
@@ -21,7 +19,6 @@ import multidiffplus.jsanalysis.abstractdomain.BValue;
 import multidiffplus.jsanalysis.abstractdomain.Change;
 import multidiffplus.jsanalysis.abstractdomain.Criterion;
 import multidiffplus.jsanalysis.abstractdomain.Str;
-import multidiffplus.jsanalysis.abstractdomain.Variable;
 import multidiffplus.jsanalysis.flow.JavaScriptAnalysisState;
 import multidiffplus.jsanalysis.interpreter.ExpEval;
 
@@ -30,37 +27,45 @@ public class AsyncErrorState implements IUserState {
     /**
      * Tracks the async call sites that ran the callback function.
      */
-    private Map<FunctionCall, Criterion> asyncCallsites;
+    private Set<FunctionCall> asyncCallsites;
 
     /**
      * The error from the asynchronous function.
      */
-    private Pair<Variable, Criterion> error;
+    private Name error;
 
     /**
      * The return values from the asynchronous function.
      */
-    private Map<Variable, Criterion> returnValues;
+    private Set<Name> returnValues;
+
+    /**
+     * The async APIs that trigger the callback.
+     */
+    private Set<AstNode> apis;
 
     private AsyncErrorState() {
-	this.asyncCallsites = new HashMap<>();
+	this.asyncCallsites = new HashSet<>();
 	this.error = null;
-	this.returnValues = new HashMap<>();
+	this.returnValues = new HashSet<>();
+	this.apis = new HashSet<>();
     }
 
-    private AsyncErrorState(FunctionCall fc, Pair<Variable, Criterion> error,
-	    Map<Variable, Criterion> returnValues) {
-	this.asyncCallsites = new HashMap<>();
-	this.asyncCallsites.put(fc, Criterion.of(fc, Criterion.Type.ASYNC_ERROR_CALL_SITE));
+    private AsyncErrorState(FunctionCall fc, Name error, Set<Name> returnValues,
+	    Set<AstNode> apis) {
+	this.asyncCallsites = new HashSet<>();
+	this.asyncCallsites.add(fc);
 	this.error = error;
 	this.returnValues = returnValues;
+	this.apis = apis;
     }
 
-    private AsyncErrorState(Map<FunctionCall, Criterion> asyncCallsites,
-	    Pair<Variable, Criterion> error, Map<Variable, Criterion> returnValues) {
+    private AsyncErrorState(Set<FunctionCall> asyncCallsites, Name error, Set<Name> returnValues,
+	    Set<AstNode> apis) {
 	this.asyncCallsites = asyncCallsites;
 	this.error = error;
 	this.returnValues = returnValues;
+	this.apis = apis;
     }
 
     @Override
@@ -73,7 +78,7 @@ public class AsyncErrorState implements IUserState {
 	// Look up the BValue of the parameter e === null || e !== null
 	AstNode node = (AstNode) statement;
 	ExpEval eval = ((JavaScriptAnalysisState) builtin).getExpressionEvaluator();
-	BValue val = eval.resolveValue(new Name(0, error.getKey().name));
+	BValue val = eval.resolveValue(error);
 
 	if (val.stringAD.le == Str.LatticeElement.SBLANK
 		|| val.stringAD.le == Str.LatticeElement.BOTTOM) {
@@ -81,20 +86,20 @@ public class AsyncErrorState implements IUserState {
 	    return this;
 	}
 
-	Set<Criterion> usedParams = ParamUseVisitor.findUsedParams(node, returnValues);
+	Set<Name> usedParams = ParamUseVisitor.findUsedParams(node, returnValues);
 	if (usedParams.isEmpty()) {
 	    // No parameters are used within the statement.
 	    return this;
 	}
 
 	// The error parameter may be non-null.
-	for (Criterion criterion : asyncCallsites.values()) {
-	    node.addDependency(criterion.getType().toString(), criterion.getId());
-	}
-	for (Criterion criterion : usedParams) {
-	    node.addDependency(criterion.getType().toString(), criterion.getId());
-	}
-	node.addDependency(error.getValue().getType().toString(), error.getValue().getId());
+	Criterion criterion = Criterion.of(node, Criterion.Type.ASYNC_ERROR_API);
+	asyncCallsites.forEach(asyncCallsite -> asyncCallsite
+		.addDependency(criterion.getType().toString(), criterion.getId()));
+	usedParams.forEach(usedParam -> usedParam.addDependency(criterion.getType().toString(),
+		criterion.getId()));
+	error.addDependency(criterion.getType().toString(), criterion.getId());
+	apis.forEach(api -> api.addDependency(criterion.getType().toString(), criterion.getId()));
 
 	return this;
     }
@@ -138,56 +143,50 @@ public class AsyncErrorState implements IUserState {
 	BValue targetObject = eval.eval(target.getLeft());
 
 	// Is the criterion an API the checker targets?
-	boolean targetOfInterest = false;
+	Set<AstNode> apis = new HashSet<>();
 	for (Criterion criterion : targetObject.deps.getDependencies()) {
 	    if (criterion.getType() == Criterion.Type.VALUE
 		    && criterion.getNode().toSource().equals("require('fs')")
 		    && funct.toSource().equals("readFile")) {
-		Criterion api = Criterion.of(criterion.getNode(), Criterion.Type.ASYNC_ERROR_API);
-		criterion.getNode().addCriterion(api.getType().toString(), api.getId());
-		targetOfInterest = true;
+		apis.add(criterion.getNode());
 	    }
 	}
 
-	if (!targetOfInterest) {
+	if (apis.isEmpty()) {
 	    // This is not a call site of interest.
 	    return new AsyncErrorState();
 	}
 
 	FunctionNode f = (FunctionNode) function.getEntryNode().getStatement();
-	Pair<Variable, Criterion> error = null;
-	Map<Variable, Criterion> params = new HashMap<>();
+	Name error = null;
+	Set<Name> params = new HashSet<>();
 	int i = 0;
 	for (AstNode param : f.getParams()) {
 	    if (i == 0) {
-		Variable v = jsBuiltin.getUnderlyingState().env.apply((Name) param);
-		error = Pair.of(v, Criterion.of(param, Criterion.Type.ASYNC_ERROR_EPARAM));
+		error = (Name) param;
 	    } else {
-		Variable v = jsBuiltin.getUnderlyingState().env.apply((Name) param);
-		params.put(v, Criterion.of(param, Criterion.Type.ASYNC_ERROR_VPARAM));
+		params.add((Name) param);
 	    }
 	    i++;
 	}
-	return new AsyncErrorState(fc, error, params);
+	return new AsyncErrorState(fc, error, params, apis);
     }
 
     @Override
     public IUserState join(IUserState that) {
-	Map<FunctionCall, Criterion> newAsyncCallsites = new HashMap<>();
-	newAsyncCallsites.putAll(this.asyncCallsites);
-	newAsyncCallsites.putAll(((AsyncErrorState) that).asyncCallsites);
-	return new AsyncErrorState(newAsyncCallsites, error, returnValues);
+	Set<FunctionCall> newAsyncCallsites = new HashSet<>();
+	newAsyncCallsites.addAll(this.asyncCallsites);
+	newAsyncCallsites.addAll(((AsyncErrorState) that).asyncCallsites);
+	return new AsyncErrorState(newAsyncCallsites, error, returnValues, apis);
     }
 
     @Override
     public boolean equivalentTo(IUserState that) {
-	if (!this.asyncCallsites.keySet()
-		.containsAll(((AsyncErrorState) that).asyncCallsites.keySet())) {
+	if (!this.asyncCallsites.containsAll(((AsyncErrorState) that).asyncCallsites)) {
 	    // that contains elements that this does not contain.
 	    return false;
 	}
-	if (!((AsyncErrorState) that).asyncCallsites.keySet()
-		.containsAll(this.asyncCallsites.keySet())) {
+	if (!((AsyncErrorState) that).asyncCallsites.containsAll(this.asyncCallsites)) {
 	    // this contains elements that that does not contain.
 	    return false;
 	}

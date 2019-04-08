@@ -103,7 +103,7 @@ public class AnalysisState {
 	for (Pair<CFG, IBuiltinState> callback : builtinEvaluator.getCallbacks()) {
 	    IUserState[] initUserStates = new IUserState[userStates.length];
 	    for (int i = 0; i < userStates.length; i++) {
-		initUserStates[i] = userStates[i].initializeCallback(builtinState, callSite,
+		initUserStates[i] = userStates[i].initializeCallback(callback.getValue(), callSite,
 			callback.getKey());
 	    }
 	    AnalysisState primeState = AnalysisState.initializeAnalysisState(callback.getValue(),
