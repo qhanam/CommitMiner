@@ -16,7 +16,7 @@ import multidiffplus.cfg.IUserState;
 import multidiffplus.facts.AnnotationFactBase;
 import multidiffplus.jsanalysis.interpreter.Helpers;
 import multidiffplus.jsanalysis.user.AsyncErrorState;
-import multidiffplus.jsanalysis.user.SyncErrorApiSpecState;
+import multidiffplus.jsanalysis.user.SyncErrorApiState;
 import multidiffplus.jsanalysis.user.SyncErrorState;
 
 public class JavaScriptAnalysis extends Analysis {
@@ -46,7 +46,7 @@ public class JavaScriptAnalysis extends Analysis {
     private static IUserState[] getUserStates(ClassifiedASTNode root, CfgMap cfgs) {
 	IUserState[] userStates = new IUserState[3];
 	userStates[0] = SyncErrorState.initializeScriptState();
-	userStates[1] = SyncErrorApiSpecState.initializeScriptState();
+	userStates[1] = SyncErrorApiState.initializeScriptState();
 	userStates[2] = AsyncErrorState.initializeScriptState();
 	return userStates;
     }

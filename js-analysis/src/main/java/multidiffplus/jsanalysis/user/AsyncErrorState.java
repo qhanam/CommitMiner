@@ -93,7 +93,7 @@ public class AsyncErrorState implements IUserState {
 	}
 
 	// The error parameter may be non-null.
-	Criterion criterion = Criterion.of(node, Criterion.Type.ASYNC_ERROR_API);
+	Criterion criterion = Criterion.of(node, Criterion.Type.ASYNC_ERROR);
 	asyncCallsites.forEach(asyncCallsite -> asyncCallsite
 		.addDependency(criterion.getType().toString(), criterion.getId()));
 	usedParams.forEach(usedParam -> usedParam.addDependency(criterion.getType().toString(),
@@ -141,6 +141,11 @@ public class AsyncErrorState implements IUserState {
 	Name funct = (Name) target.getRight();
 	ExpEval eval = jsBuiltin.getExpressionEvaluator();
 	BValue targetObject = eval.eval(target.getLeft());
+
+	if (targetObject == null) {
+	    // Could not evaluate target.
+	    return new AsyncErrorState();
+	}
 
 	// Is the criterion an API the checker targets?
 	Set<AstNode> apis = new HashSet<>();

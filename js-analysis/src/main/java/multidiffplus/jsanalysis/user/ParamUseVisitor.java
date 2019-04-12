@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.mozilla.javascript.ast.AstNode;
+import org.mozilla.javascript.ast.FunctionNode;
 import org.mozilla.javascript.ast.Name;
 import org.mozilla.javascript.ast.NodeVisitor;
 import org.mozilla.javascript.ast.PropertyGet;
@@ -36,6 +37,8 @@ class ParamUseVisitor implements NodeVisitor {
 	    return false;
 	} else if (node instanceof PropertyGet) {
 	    visit(((PropertyGet) node).getLeft());
+	    return false;
+	} else if (node instanceof FunctionNode) {
 	    return false;
 	} else {
 	    return true;

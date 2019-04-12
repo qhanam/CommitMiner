@@ -101,7 +101,8 @@ public interface ICFGFactory {
 		addIncomingAndDetectLoops(visited, path, outEdge);
 		path.remove(outEdge);
 	    } else if (path.contains(outEdge)) {
-		outEdge.isLoopEdge = true;
+		edge.incomingLoopEdge = true;
+		outEdge.outgoingLoopEdge = true;
 	    }
 	}
 

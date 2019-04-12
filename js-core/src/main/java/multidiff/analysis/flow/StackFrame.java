@@ -102,12 +102,12 @@ public class StackFrame {
 	    semaphore = semaphore - 1;
 	    visitedNodes.put(node.getId(), semaphore);
 
-	    List<CFGEdge> unvisitedEdges = node.getOutgoingEdges().stream()
-		    .filter(child -> !child.isLoopEdge && !visitedEdges.contains(child.getId()))
+	    List<CFGEdge> unvisitedEdges = node.getOutgoingEdges().stream().filter(
+		    child -> !child.outgoingLoopEdge && !visitedEdges.contains(child.getId()))
 		    .collect(Collectors.toList());
 
-	    List<CFGEdge> unvisitedLoopEdges = node.getOutgoingEdges().stream()
-		    .filter(child -> child.isLoopEdge && !visitedEdges.contains(child.getId()))
+	    List<CFGEdge> unvisitedLoopEdges = node.getOutgoingEdges().stream().filter(
+		    child -> child.outgoingLoopEdge && !visitedEdges.contains(child.getId()))
 		    .collect(Collectors.toList());
 
 	    if (semaphore == 0) {
@@ -116,7 +116,11 @@ public class StackFrame {
 		unvisitedEdges.forEach(child -> {
 		    edges.add(child);
 		});
-	    } else if (semaphore == unvisitedLoopEdges.size()) {
+	    }
+
+	    if (semaphore != 0 && semaphore == node.getIncommingEdges().stream()
+		    .filter(e -> e.incomingLoopEdge).count()) {
+		// } else if (semaphore == unvisitedLoopEdges.size()) {
 		// There are only incoming edges that are reachable from outgoing edges.
 		addNodeInstructions(node, instructions);
 		unvisitedLoopEdges.forEach(child -> {

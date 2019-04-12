@@ -20,9 +20,9 @@ import multidiffplus.jsanalysis.abstractdomain.Criterion;
 import multidiffplus.jsanalysis.flow.JavaScriptAnalysisState;
 import multidiffplus.jsanalysis.interpreter.ExpEval;
 
-public class SyncErrorApiSpecState implements IUserState {
+public class SyncErrorApiState implements IUserState {
 
-    private SyncErrorApiSpecState() {
+    private SyncErrorApiState() {
     }
 
     @Override
@@ -89,7 +89,7 @@ public class SyncErrorApiSpecState implements IUserState {
      */
     private boolean isProtected(FunctionCall fc) {
 	AstNode ancestor = fc.getParent();
-	while (!(ancestor instanceof ScriptNode)) {
+	while (!(ancestor instanceof ScriptNode) && ancestor != null) {
 	    if (ancestor instanceof TryStatement) {
 		return true;
 	    }
@@ -120,8 +120,8 @@ public class SyncErrorApiSpecState implements IUserState {
      * This should only be called once per analysis. All other states should be
      * created by either interpreting statements or joining two states.
      */
-    public static SyncErrorApiSpecState initializeScriptState() {
-	return new SyncErrorApiSpecState();
+    public static SyncErrorApiState initializeScriptState() {
+	return new SyncErrorApiState();
     }
 
 }

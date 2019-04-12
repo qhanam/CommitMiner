@@ -33,7 +33,10 @@ public class CFGEdge {
     public ChangeType changeType;
 
     /** True if this edge is the first edge of a loop. **/
-    public boolean isLoopEdge;
+    public boolean outgoingLoopEdge;
+
+    /** True if the node this edge flows into already exists on the path. */
+    public boolean incomingLoopEdge;
 
     /**
      * The state of the environment and store before transferring over the term

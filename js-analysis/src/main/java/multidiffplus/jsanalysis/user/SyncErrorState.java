@@ -70,10 +70,9 @@ public class SyncErrorState implements IUserState {
 		    && criterion.getNode().toSource().equals("require('fs')")
 		    && funct.toSource().equals("readFileSync") && !isProtected(fc)) {
 		// This new call site is not protected. Create a warning.
-		Criterion api = Criterion.of(criterion.getNode(), Criterion.Type.SYNC_ERROR_API);
-		Criterion fun = Criterion.of(funct, Criterion.Type.SYNC_ERROR_FUNCTION);
-		fc.addDependency(api.getType().toString(), api.getId());
-		fc.addDependency(fun.getType().toString(), fun.getId());
+		Criterion warn = Criterion.of(fc, Criterion.Type.SYNC_ERROR);
+		criterion.getNode().addDependency(warn.getType().toString(), warn.getId());
+		funct.addDependency(warn.getType().toString(), warn.getId());
 	    }
 	}
 
