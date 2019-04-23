@@ -854,6 +854,8 @@ public class JavaScriptCFGFactory implements ICFGFactory {
 
 	    /* Add the final default condition. */
 	    defaultEdge.setCondition(defaultCondition);
+	    defaultEdge.setCallSiteNodes(CallSiteVisitor.getCallSites(defaultCondition));
+	    CallSiteVisitor.getCallSites(defaultCondition);
 
 	    /* The rest of the exit nodes are exit nodes for the statement. */
 	    cfg.addAllExitNodes(previousSubGraph.getExitNodes());

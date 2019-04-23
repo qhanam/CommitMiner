@@ -96,6 +96,20 @@ public class CFGEdge {
     }
 
     /**
+     * Sets the call site nodes contained within the branch condition.
+     */
+    public void setCallSiteNodes(List<ClassifiedASTNode> callSites) {
+	this.callSiteNodes = new CallSiteNode[callSites.size()];
+	for (int i = 0; i < callSites.size(); i++) {
+	    if (i == 0)
+		this.callSiteNodes[i] = new CallSiteNode(callSites.get(i), from);
+	    else
+		this.callSiteNodes[i] = new CallSiteNode(callSites.get(i),
+			this.callSiteNodes[i - 1]);
+	}
+    }
+
+    /**
      * Accepts and runs a visitor.
      */
     public void accept(ICFGVisitor visitor) {

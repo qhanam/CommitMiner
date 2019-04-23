@@ -906,11 +906,12 @@ public class ExpEval {
      */
     public Set<Address> resolveOrCreateExpression(AstNode node) {
 
+	Set<Address> addrs = new HashSet<Address>();
+
 	/* Resolve the expression to a value. */
 	BValue val = this.eval(node);
 
-	/* Place the value on the store */
-	Set<Address> addrs = new HashSet<Address>();
+	/* Place the value on the store, if it was resolved. */
 	Address addr = state.trace.makeAddr(node.getID(), "");
 	state.store = state.store.alloc(addr, val, new Name());
 	addrs.add(addr);
