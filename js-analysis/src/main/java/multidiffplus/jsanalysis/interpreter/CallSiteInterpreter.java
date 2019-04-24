@@ -175,7 +175,7 @@ public class CallSiteInterpreter {
 
 	// Update the state for (1) side effects on the store and (2) the return
 	// value of the function call.
-	this.state.store = returnState.store;
+	this.state.store = this.state.store.join(returnState.store);
 	this.state.scratch = this.state.scratch.weakUpdate(fc, retVal);
 
     }

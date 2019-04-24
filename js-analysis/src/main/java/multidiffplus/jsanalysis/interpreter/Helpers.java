@@ -28,6 +28,7 @@ import multidiffplus.jsanalysis.abstractdomain.Dependencies;
 import multidiffplus.jsanalysis.abstractdomain.Environment;
 import multidiffplus.jsanalysis.abstractdomain.FunctionClosure;
 import multidiffplus.jsanalysis.abstractdomain.InternalFunctionProperties;
+import multidiffplus.jsanalysis.abstractdomain.InternalObjectProperties;
 import multidiffplus.jsanalysis.abstractdomain.JSClass;
 import multidiffplus.jsanalysis.abstractdomain.Num;
 import multidiffplus.jsanalysis.abstractdomain.Obj;
@@ -83,6 +84,88 @@ public class Helpers {
 		closure, JSClass.CFunction);
 
 	store = store.alloc(address, new Obj(external, internal));
+
+	return store;
+
+    }
+
+    /**
+     * Initializes the parameters for a function call. This involves (1) creating
+     * the argument object and (2) initializing the parameters as local variables
+     * which point to the argument object.
+     * 
+     * @param env
+     *            The environment (or closure) in which the function executes.
+     * @param store
+     *            The current store.
+     * @param function
+     *            The code we are analyzing.
+     * @param cfgs
+     *            The control flow graphs for the file. Needed for initializing
+     *            lifted functions.
+     * @param trace
+     *            The program trace including the call site of this function.
+     * @return The new store. The environment is updated directly (no new object is
+     *         created)
+     */
+    public static Store initParams(Environment env, Store store, Scratchpad scratchpad, Trace trace,
+	    FunctionNode function) {
+
+	/* Create the arguments object. */
+	Map<String, Property> ext = new HashMap<String, Property>();
+	int i = 0;
+	for (BValue argVal : scratchpad.applyArgs()) {
+	    AstNode dependentToken = i < function.getParams().size() ? function.getParams().get(i)
+		    : new Name();
+	    store = Helpers.addProp(function.getID(), String.valueOf(i), argVal, ext, store, trace,
+		    dependentToken);
+	    i++;
+	}
+
+	InternalObjectProperties internal = new InternalObjectProperties(
+		Address.inject(StoreFactory.Arguments_Addr, Change.u(), Dependencies.bot()),
+		JSClass.CObject);
+	Obj argObj = new Obj(ext, internal);
+
+	/* Put the argument object on the store. */
+	Address argAddr = trace.makeAddr(function.getID(), "");
+	store = store.alloc(argAddr, argObj);
+
+	i = 0;
+	for (AstNode param : function.getParams()) {
+	    if (param instanceof Name) {
+
+		Name paramName = (Name) param;
+		Property prop = argObj.externalProperties.get(String.valueOf(i));
+
+		if (prop == null) {
+
+		    /*
+		     * No argument was given for this parameter. Create a dummy value.
+		     */
+
+		    /* Add the argument address to the argument object. */
+		    BValue argVal = BValue.top(
+			    Change.convU(param, (n) -> Dependencies.injectValueChange(n)),
+			    Dependencies.injectValue(param));
+		    store = Helpers.addProp(param.getID(), String.valueOf(i), argVal,
+			    argObj.externalProperties, store, trace, param);
+		    prop = argObj.externalProperties.get(String.valueOf(i));
+
+		    /* Add or update the argument object to the store. */
+		    argAddr = trace.makeAddr(param.getID(), String.valueOf(i));
+		    store = store.alloc(argAddr, argObj);
+
+		}
+
+		String name = paramName.toSource();
+		Variable identity = Variable.inject(name, prop.address,
+			Change.convU(param, (n) -> Dependencies.injectVariableChange(n)),
+			Dependencies.injectVariable(param));
+		env.strongUpdateNoCopy(name, identity);
+	    }
+	    i++;
+	}
 
 	return store;
 
