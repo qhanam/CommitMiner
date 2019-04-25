@@ -4,6 +4,7 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.Stack;
 
+import multidiffplus.cfg.CFG;
 import multidiffplus.cfg.CfgMap;
 
 /**
@@ -19,11 +20,6 @@ public class CallStack {
      * must be analyzed with a fresh call stack).
      */
     private Queue<StackFrame> eventLoop;
-
-    /**
-     * TODO: Add 'asyncFunctions' for functions that will be run from the JavaScript
-     * event loop.
-     */
 
     public CallStack(CfgMap cfgMap) {
 	this.callStack = new Stack<StackFrame>();
@@ -44,6 +40,17 @@ public class CallStack {
 
     public StackFrame pop() {
 	return callStack.pop();
+    }
+
+    /**
+     * Returns {@code true} if the call stack contains a stack frame with the given
+     * CFG.
+     * 
+     * @param cfg
+     * @return
+     */
+    public boolean contains(CFG cfg) {
+	return callStack.stream().anyMatch(frame -> frame.getCFG() == cfg);
     }
 
     /**

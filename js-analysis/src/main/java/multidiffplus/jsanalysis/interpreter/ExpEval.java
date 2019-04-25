@@ -108,7 +108,8 @@ public class ExpEval {
     private BValue evalFunctionCall(FunctionCall fc) {
 	// The function call has already been interpreted by a prior
 	// instruction, and its return value is stored in scratch space.
-	return state.scratch.applyCall(fc);
+	BValue val = state.scratch.applyCall(fc);
+	return val != null ? val : BValue.top(Change.bottom(), Dependencies.bot());
     }
 
     /**

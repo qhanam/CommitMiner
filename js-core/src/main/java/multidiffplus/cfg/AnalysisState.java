@@ -1,5 +1,6 @@
 package multidiffplus.cfg;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
@@ -48,6 +49,11 @@ public class AnalysisState {
 		.entrySet()) {
 	    AnalysisState newState, oldState, primeState;
 
+	    // Don't support recursion.
+	    if (callStack.contains(entry.getKey())) {
+		return this;
+	    }
+
 	    // Check for changes to target's initial state.
 	    newState = AnalysisState.initializeAnalysisState(entry.getValue(), userStates);
 	    oldState = entry.getKey().getEntryNode().getBeforeState();
@@ -73,9 +79,10 @@ public class AnalysisState {
 	IUserState[] newUserStates = userStates;
 
 	// Interpret the exit state of function calls.
-	List<IBuiltinState> builtinExitStates = builtinEvaluator.getInitialTargetStates().keySet()
-		.stream().map(cfg -> cfg.getMergedExitState().builtinState)
-		.collect(Collectors.toList());
+	List<IBuiltinState> builtinExitStates = new ArrayList<>();
+	for (CFG cfg : builtinEvaluator.getInitialTargetStates().keySet()) {
+	    builtinExitStates.add(cfg.getMergedExitState().builtinState);
+	}
 
 	if (newBuiltinState == null && builtinExitStates.isEmpty())
 	    throw new Error("There was no return value for " + callSite.toString());
