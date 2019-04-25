@@ -58,7 +58,7 @@ public class AnalysisState {
 	    newState = AnalysisState.initializeAnalysisState(entry.getValue(), userStates);
 	    oldState = entry.getKey().getEntryNode().getBeforeState();
 
-	    if (oldState == null) {
+	    if (oldState == null || entry.getKey().getMergedExitState() == null) {
 		// We need to analyze this target for the first time.
 		callStack.push(new StackFrame(entry.getKey(), newState));
 		return null;

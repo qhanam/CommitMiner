@@ -54,7 +54,6 @@ public class ExpressionInstruction extends Instruction {
 	else
 	    node.setAfterState(node.getAfterState()
 		    .join(node.getBeforeState().interpretStatement(node.getStatement())));
-
     }
 
     @Override
