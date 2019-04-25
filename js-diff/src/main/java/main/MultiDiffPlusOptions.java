@@ -6,11 +6,11 @@ public class MultiDiffPlusOptions {
 
     @Option(name = "-j", aliases = { "--json" },
 	    usage = "The output file to write JSON diff results to.")
-    private String jsonOutFile = "out.json";
+    private String jsonOutFile = null;
 
     @Option(name = "-f", aliases = { "--file" },
 	    usage = "The output file to write HTML diff results to.")
-    private String htmlOutFile = "out.html";
+    private String htmlOutFile = null;
 
     @Option(name = "-o", aliases = { "--original" }, usage = "The original file.")
     private String original = null;
@@ -39,6 +39,14 @@ public class MultiDiffPlusOptions {
 
     public boolean getHelp() {
 	return help;
+    }
+
+    public boolean writeToHtml() {
+	return htmlOutFile != null;
+    }
+
+    public boolean writeToJson() {
+	return jsonOutFile != null;
     }
 
 }

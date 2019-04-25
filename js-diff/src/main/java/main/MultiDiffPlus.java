@@ -77,20 +77,22 @@ public class MultiDiffPlus {
 	/* Run the analysis. */
 	commitAnalysis.analyze(commit);
 
-	/*
-	 * Only annotate the destination file. The source file isn't especially useful.
-	 */
-	String annotatedDst = HTMLMultiDiffViewer.annotate(dstCode, factBase);
+	if (options.writeToHtml()) {
+	    /* Only annotate the new version of the file. */
+	    String annotatedDst = HTMLMultiDiffViewer.annotate(dstCode, factBase);
 
-	/* Combine the annotated file with the UnixDiff. */
-	String annotatedCombined = HTMLUnixDiffViewer.annotate(srcCode, dstCode, annotatedDst);
-	Files.write(Paths.get(options.getOutputFile()), annotatedCombined.getBytes(),
-		StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+	    /* Combine the annotated file with the UnixDiff. */
+	    String annotatedCombined = HTMLUnixDiffViewer.annotate(srcCode, dstCode, annotatedDst);
+	    Files.write(Paths.get(options.getOutputFile()), annotatedCombined.getBytes(),
+		    StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+	}
 
-	/* Write the json file. */
-	JsonFactBase jsonFactBase = JsonFactBase.getInstance(sourceCodeFileChange);
-	Files.write(Paths.get(options.getJsonFile()), jsonFactBase.getJson().toString().getBytes(),
-		StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+	if (options.writeToJson()) {
+	    JsonFactBase jsonFactBase = JsonFactBase.getInstance(sourceCodeFileChange);
+	    Files.write(Paths.get(options.getJsonFile()),
+		    jsonFactBase.getJson().toString().getBytes(), StandardOpenOption.CREATE,
+		    StandardOpenOption.TRUNCATE_EXISTING);
+	}
     }
 
     /**

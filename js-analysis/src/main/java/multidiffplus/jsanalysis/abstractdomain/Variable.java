@@ -21,12 +21,6 @@ public class Variable {
      * Joins the given Identifier with this Identifier.
      */
     public Variable join(Variable that) {
-
-	if (!this.deps.equals(that.deps) || !this.name.equals(that.name)) {
-	    if (!this.name.equalsIgnoreCase("~retval~"))
-		System.err.println("Variable::join -- WARNING -- joining different identifiers.");
-	}
-
 	return new Variable(this.name, this.addresses.join(that.addresses),
 		this.change.join(that.change), this.deps.join(that.deps));
     }
